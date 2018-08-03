@@ -241,9 +241,11 @@ static void update_block_data(struct block_priv *s, int forced)
 
 static int block_init(struct ngl_node *node)
 {
+    struct block_priv *s = node->priv_data;
+
+#ifndef VULKAN_BACKEND
     struct ngl_ctx *ctx = node->ctx;
     struct glcontext *gl = ctx->glcontext;
-    struct block_priv *s = node->priv_data;
 
     if (s->layout == NGLI_BLOCK_LAYOUT_STD140 && !(gl->features & FEATURES_STD140)) {
         LOG(ERROR, "std140 blocks are not supported by this context");
@@ -254,6 +256,7 @@ static int block_init(struct ngl_node *node)
         LOG(ERROR, "std430 blocks are not supported by this context");
         return NGL_ERROR_UNSUPPORTED;
     }
+#endif
 
     ngli_block_init(&s->block, s->layout);
 

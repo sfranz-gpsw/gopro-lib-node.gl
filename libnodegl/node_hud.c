@@ -1217,6 +1217,30 @@ static void widgets_uninit(struct ngl_node *node)
 }
 
 static const char * const vertex_data =
+#ifdef VULKAN_BACKEND
+    "#version 450"                                                          "\n"
+    "#extension GL_ARB_separate_shader_objects : enable"                    "\n"
+    ""                                                                      "\n"
+    "out gl_PerVertex {"                                                    "\n"
+    "    vec4 gl_Position;"                                                 "\n"
+    "};"                                                                    "\n"
+    ""                                                                      "\n"
+    "layout(location = 0) in vec4 coords;"                                  "\n"
+    "layout(location = 0) out vec2 var_tex_coord;"                          "\n"
+    ""                                                                      "\n"
+    "layout(binding = 0, std140) uniform ngl {"                             "\n"
+    "    mat4 modelview_matrix;"                                            "\n"
+    "    mat4 projection_matrix;"                                           "\n"
+    "};"                                                                    "\n"
+    ""                                                                      "\n"
+    "void main()"                                                           "\n"
+    "{"                                                                     "\n"
+    "    gl_Position = modelview_matrix"                                    "\n"
+    "                * projection_matrix"                                   "\n"
+    "                * vec4(coords.xy, 0.0, 1.0);"                          "\n"
+    "    var_tex_coord = coords.zw;"                                        "\n"
+    "}";
+#else
     "#version 100"                                                          "\n"
     "precision highp float;"                                                "\n"
     "attribute vec4 coords;"                                                "\n"
@@ -1230,8 +1254,27 @@ static const char * const vertex_data =
     "                * vec4(coords.xy, 0.0, 1.0);"                          "\n"
     "    var_tex_coord = coords.zw;"                                        "\n"
     "}";
+#endif
 
 static const char * const fragment_data =
+#ifdef VULKAN_BACKEND
+    "#version 450"                                                          "\n"
+    "#extension GL_ARB_separate_shader_objects : enable"                    "\n"
+    ""                                                                      "\n"
+    "layout(location = 0) out vec4 out_color;"                              "\n"
+    "layout(location = 0) in vec2 var_tex_coord;"                           "\n"
+    ""                                                                      "\n"
+    "layout(binding = 0, std140) uniform ngl {"                             "\n"
+    "    mat4 modelview_matrix;"                                            "\n"
+    "    mat4 projection_matrix;"                                           "\n"
+    "};"                                                                    "\n"
+    ""                                                                      "\n"
+    "layout(binding = 1) uniform sampler2D tex;"                            "\n"
+    ""                                                                      "\n"
+    "void main() {"                                                         "\n"
+    "    out_color = texture(tex, var_tex_coord);"                          "\n"
+    "}";
+#else
     "#version 100"                                                          "\n"
     "precision highp float;"                                                "\n"
     "uniform sampler2D tex;"                                                "\n"
@@ -1240,6 +1283,7 @@ static const char * const fragment_data =
     "{"                                                                     "\n"
     "    gl_FragColor = texture2D(tex, var_tex_coord);"                     "\n"
     "}";
+#endif
 
 static int hud_init(struct ngl_node *node)
 {
