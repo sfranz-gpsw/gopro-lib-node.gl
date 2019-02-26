@@ -85,7 +85,7 @@ static int rtt_init(struct ngl_node *node)
 
     s->flags = s->features;
 
-    float default_clear_color[4] = DEFAULT_CLEAR_COLOR;
+    static const float default_clear_color[4] = DEFAULT_CLEAR_COLOR;
     if (memcmp(s->clear_color, default_clear_color, sizeof(s->clear_color)))
         s->flags |= FLAG_CLEAR_COLOR;
 
