@@ -34,12 +34,14 @@
 #define FLAG_DEPTH          (1 << 0)
 #define FLAG_STENCIL        (1 << 1)
 #define FLAG_CLEAR_COLOR    (1 << 2)
+#define FLAG_NO_CLEAR       (1 << 3)
 
 static const struct param_choices feature_choices = {
     .name = "framebuffer_features",
     .consts = {
         {"depth",   FLAG_DEPTH,   .desc=NGLI_DOCSTRING("depth")},
         {"stencil", FLAG_STENCIL, .desc=NGLI_DOCSTRING("stencil")},
+        {"no_clear",FLAG_NO_CLEAR,.desc=NGLI_DOCSTRING("no clear")},
         {NULL}
     }
 };
@@ -311,12 +313,14 @@ static void rtt_draw(struct ngl_node *node)
     ngli_glGetIntegerv(gl, GL_VIEWPORT, viewport);
     ngli_glViewport(gl, 0, 0, s->width, s->height);
 
-    if (s->flags & FLAG_CLEAR_COLOR) {
-        float *rgba = s->clear_color;
-        ngli_glClearColor(gl, rgba[0], rgba[1], rgba[2], rgba[3]);
-    }
+    if ((s->flags & FLAG_NO_CLEAR) == 0) {
+        if (s->flags & FLAG_CLEAR_COLOR) {
+            float *rgba = s->clear_color;
+            ngli_glClearColor(gl, rgba[0], rgba[1], rgba[2], rgba[3]);
+        }
 
-    ngli_glClear(gl, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        ngli_glClear(gl, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    }
 
     ngli_node_draw(s->child);
 
