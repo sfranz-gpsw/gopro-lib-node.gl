@@ -82,6 +82,8 @@ static int rtt_init(struct ngl_node *node)
 {
     struct rtt_priv *s = node->priv_data;
 
+    s->flags = s->features;
+
     float clear_color[4] = DEFAULT_CLEAR_COLOR;
     s->use_clear_color = memcmp(s->clear_color, clear_color, sizeof(s->clear_color));
 
@@ -210,14 +212,14 @@ static int rtt_prefetch(struct ngl_node *node)
     if (depth_texture) {
         struct texture *dt = &depth_texture->texture;
         depth_format = depth_texture_params->format;
-        s->features |= FEATURE_DEPTH;
-        s->features |= has_stencil(depth_format) ? FEATURE_STENCIL : 0;
+        s->flags |= FEATURE_DEPTH;
+        s->flags |= has_stencil(depth_format) ? FEATURE_STENCIL : 0;
         if (!ngli_darray_push(&attachments, &dt))
             goto error;
     } else {
-        if (s->features & FEATURE_STENCIL)
+        if (s->flags & FEATURE_STENCIL)
             depth_format = NGLI_FORMAT_D24_UNORM_S8_UINT;
-        else if (s->features & FEATURE_DEPTH)
+        else if (s->flags & FEATURE_DEPTH)
             depth_format = NGLI_FORMAT_D16_UNORM;
 
         if (depth_format != NGLI_FORMAT_UNDEFINED) {
