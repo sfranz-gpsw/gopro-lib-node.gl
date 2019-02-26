@@ -275,6 +275,7 @@ struct rtt_priv {
     struct ngl_node **color_textures;
     int nb_color_textures;
     struct ngl_node *depth_texture;
+    float scissor[4];
     int samples;
     float clear_color[4];
     int features;
