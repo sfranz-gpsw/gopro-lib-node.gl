@@ -404,6 +404,7 @@ Parameter | Ctor. | Live-chg. | Type | Description | Default
 `child` | ✓ |  | [`Node`](#parameter-types) | scene to be rasterized to `color_texture` and optionally to `depth_texture` | 
 `color_texture` | ✓ |  | [`Node`](#parameter-types) ([Texture2D](#texture2d), [TextureCube](#texturecube)) | destination color texture | 
 `depth_texture` |  |  | [`Node`](#parameter-types) ([Texture2D](#texture2d)) | destination depth (and potentially combined stencil) texture | 
+`scissor` |  |  | [`vec4`](#parameter-types) | scissor used used to write to `color_texture` and optionally to `depth_texture` | (`-1`,`-1`,`-1`,`-1`)
 `samples` |  |  | [`int`](#parameter-types) | number of samples used for multisampling anti-aliasing | `0`
 `clear_color` |  |  | [`vec4`](#parameter-types) | color used to clear the `color_texture` | (`-1`,`-1`,`-1`,`-1`)
 `features` |  |  | [`framebuffer_features`](#framebuffer_features-choices) | framebuffer feature mask | `0`

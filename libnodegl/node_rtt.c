@@ -31,10 +31,12 @@
 #include "utils.h"
 
 #define DEFAULT_CLEAR_COLOR {-1.0f, -1.0f, -1.0f, -1.0f}
+#define DEFAULT_SCISSOR     {-1.0f, -1.0f, -1.0f, -1.0f}
 #define FLAG_DEPTH          (1 << 0)
 #define FLAG_STENCIL        (1 << 1)
 #define FLAG_CLEAR_COLOR    (1 << 2)
 #define FLAG_NO_CLEAR       (1 << 3)
+#define FLAG_SCISSOR        (1 << 4)
 
 static const struct param_choices feature_choices = {
     .name = "framebuffer_features",
@@ -59,6 +61,8 @@ static const struct node_param rtt_params[] = {
                       .flags=PARAM_FLAG_DOT_DISPLAY_FIELDNAME,
                       .node_types=(const int[]){NGL_NODE_TEXTURE2D, -1},
                       .desc=NGLI_DOCSTRING("destination depth (and potentially combined stencil) texture")},
+    {"scissor",       PARAM_TYPE_VEC4, OFFSET(scissor), {.vec=DEFAULT_SCISSOR},
+                      .desc=NGLI_DOCSTRING("scissor used used to write to `color_texture` and optionally to `depth_texture`")},
     {"samples",       PARAM_TYPE_INT, OFFSET(samples),
                       .desc=NGLI_DOCSTRING("number of samples used for multisampling anti-aliasing")},
     {"clear_color",   PARAM_TYPE_VEC4, OFFSET(clear_color), {.vec=DEFAULT_CLEAR_COLOR},
@@ -91,6 +95,10 @@ static int rtt_init(struct ngl_node *node)
     const float default_clear_color[4] = DEFAULT_CLEAR_COLOR;
     if (memcmp(s->clear_color, default_clear_color, sizeof(s->clear_color)))
         s->flags |= FLAG_CLEAR_COLOR;
+
+    const float default_scissor[4] = DEFAULT_SCISSOR;
+    if (memcmp(s->scissor, default_scissor, sizeof(s->scissor)))
+        s->flags |= FLAG_SCISSOR;
 
     return 0;
 }
@@ -251,6 +259,17 @@ static void rtt_draw(struct ngl_node *node)
         ngli_glClear(gl, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     }
 
+    GLint scissor[4];
+    GLboolean scissor_test;
+    if (s->flags & FLAG_SCISSOR) {
+        ngli_glGetBooleanv(gl, GL_SCISSOR_TEST, &scissor_test);
+        ngli_glGetIntegerv(gl, GL_SCISSOR_BOX, scissor);
+        ngli_glScissor(gl, s->scissor[0], s->scissor[1], s->scissor[2], s->scissor[3]);
+
+        if (!scissor_test)
+            ngli_glEnable(gl, GL_SCISSOR_TEST);
+    }
+
     ngli_node_draw(s->child);
 
     if (s->flags & FLAG_CLEAR_COLOR) {
@@ -265,6 +284,11 @@ static void rtt_draw(struct ngl_node *node)
     ngli_fbo_invalidate_depth_buffers(fbo);
     ngli_fbo_unbind(fbo);
 
+    if (s->flags & FLAG_SCISSOR) {
+        if (!scissor_test)
+            ngli_glDisable(gl, GL_SCISSOR_TEST);
+        ngli_glScissor(gl, scissor[0], scissor[1], scissor[2], scissor[3]);
+    }
     ngli_glViewport(gl, viewport[0], viewport[1], viewport[2], viewport[3]);
 
     struct ngl_node *texture_node = s->color_texture;

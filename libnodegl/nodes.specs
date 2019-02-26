@@ -296,6 +296,7 @@
         - [color_texture, Node]
     optional:
         - [depth_texture, Node]
+        - [scissor, vec4]
         - [samples, int]
         - [clear_color, vec4]
         - [features, flags]
