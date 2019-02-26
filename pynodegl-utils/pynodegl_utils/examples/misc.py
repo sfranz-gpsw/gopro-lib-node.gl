@@ -682,3 +682,152 @@ def text(cfg):
                               blend_dst_factor='one_minus_src_alpha',
                               blend_src_factor_a='zero',
                               blend_dst_factor_a='one')
+
+
+@scene(slitscan_type={'type': 'range', 'range': [0, 1]},
+        texture_count={'type': 'range', 'range': [1, 64]})
+def slitscan(cfg, slitscan_type=1, texture_count=32):
+    '''Accumulates texture to create a slitscan effect'''
+    texture_width = 640
+    texture_height = texture_width * cfg.aspect_ratio_float
+
+    # create cube
+    vertices = ngl.BufferVec3(data=array.array('f', [-0.5, +0.5, +0.5,  # front
+                                                     +0.5, +0.5, +0.5,
+                                                     +0.5, -0.5, +0.5,
+                                                     +0.5, -0.5, +0.5,
+                                                     -0.5, -0.5, +0.5,
+                                                     -0.5, +0.5, +0.5,
+                                                     +0.5, -0.5, -0.5,  # back
+                                                     +0.5, +0.5, -0.5,
+                                                     -0.5, +0.5, -0.5,
+                                                     -0.5, +0.5, -0.5,
+                                                     -0.5, -0.5, -0.5,
+                                                     +0.5, -0.5, -0.5,
+                                                     -0.5, +0.5, -0.5,  # top
+                                                     +0.5, +0.5, -0.5,
+                                                     +0.5, +0.5, +0.5,
+                                                     +0.5, +0.5, +0.5,
+                                                     -0.5, +0.5, +0.5,
+                                                     -0.5, +0.5, -0.5,
+                                                     +0.5, -0.5, -0.5,  # bottom
+                                                     -0.5, -0.5, -0.5,
+                                                     -0.5, -0.5, +0.5,
+                                                     -0.5, -0.5, +0.5,
+                                                     +0.5, -0.5, +0.5,
+                                                     +0.5, -0.5, -0.5,
+                                                     -0.5, +0.5, -0.5,  # left
+                                                     -0.5, +0.5, +0.5,
+                                                     -0.5, -0.5, +0.5,
+                                                     -0.5, -0.5, +0.5,
+                                                     -0.5, -0.5, -0.5,
+                                                     -0.5, +0.5, -0.5,
+                                                     +0.5, +0.5, +0.5,  # right
+                                                     +0.5, +0.5, -0.5,
+                                                     +0.5, -0.5, -0.5,
+                                                     +0.5, -0.5, -0.5,
+                                                     +0.5, -0.5, +0.5,
+                                                     +0.5, +0.5, +0.5]))
+    colors_data = array.array('f')
+    for i in range(6):
+        colors_data.extend([1.0, 0.0, 0.0, 1.0,
+                            0.0, 1.0, 0.0, 1.0,
+                            0.0, 0.0, 1.0, 1.0,
+                            0.0, 0.0, 1.0, 1.0,
+                            0.0, 1.0, 0.0, 1.0,
+                            1.0, 0.0, 0.0, 1.0])
+    colors = ngl.BufferVec4(data=colors_data)
+    cube = ngl.Geometry(vertices=vertices)
+
+    # render cube with animation
+    program = ngl.Program(fragment=cfg.get_frag('triangle'), vertex=cfg.get_vert('triangle'))
+    render = ngl.Render(geometry=cube, program=program)
+    render.update_attributes(edge_color=colors)
+    render = ngl.GraphicConfig(render,
+                               cull_face=True,
+                               cull_face_mode='front')
+
+    speed_factor = cfg.duration / 30.0
+    for i in range(3):
+        rot_animkf = ngl.AnimatedFloat([ngl.AnimKeyFrameFloat(0,            0),
+                                        ngl.AnimKeyFrameFloat(cfg.duration/2, 360 * speed_factor),
+                                        ngl.AnimKeyFrameFloat(cfg.duration, -180 * speed_factor)])
+        axis = [int(i == x) for x in range(3)]
+        render = ngl.Rotate(render, axis=axis, anim=rot_animkf)
+
+    camera = ngl.Camera(render)
+    camera.set_eye(0.0, 0.0, 2.0)
+    camera.set_center(0.0, 0.0, 0.0)
+    camera.set_up(0.0, 1.0, 0.0)
+    camera.set_perspective(45.0, cfg.aspect_ratio_float)
+    camera.set_clipping(1.0, 10.0)
+
+    # render animated cube to texture
+    group = ngl.Group()
+    cube_texture = ngl.Texture2D(width=texture_width, height=texture_height)
+    rtt = ngl.RenderToTexture(child=camera, color_texture=cube_texture)
+    group.add_children(rtt)
+
+    output_texture = ngl.Texture2D(width=texture_width, height=texture_height)
+    render_cube = ngl.Render(ngl.Quad((-1, -1, 0), (2, 0, 0), (0, 2, 0)))
+    render_cube.update_textures(tex0=cube_texture)
+
+    # simple slitscan
+    if slitscan_type == 0:
+        time_step = cfg.duration / texture_height
+        for i in range(texture_height):
+
+            time = i*time_step
+            time_ranges = [ngl.TimeRangeModeOnce(time, time)]
+
+            rtt = ngl.RenderToTexture(child=render_cube, color_texture=output_texture, scissor=(0, i, texture_width, texture_height-i))
+            rtt.set_features("no_clear")
+            time_range_filter = ngl.TimeRangeFilter(rtt, ranges=time_ranges)
+            group.add_children(time_range_filter)
+
+    # slitscan with time displacement
+    else:
+        renders = []
+        textures = []
+        for i in range(texture_count):
+            texture = ngl.Texture2D(width=texture_width, height=texture_height)
+            textures.append(texture)
+            render = ngl.Render(ngl.Quad((-1, -1, 0), (2, 0, 0), (0, 2, 0)))
+            render.update_textures(tex0=texture)
+            renders.append(render)
+
+        frame_count = int(cfg.duration * (cfg.framerate[0] / cfg.framerate[1]))
+        time_step = cfg.duration / frame_count
+        for i in range(frame_count):
+
+            time = i*time_step
+            time_ranges_madatory = [
+                ngl.TimeRangeModeNoop(0),
+                ngl.TimeRangeModeOnce(time, time)
+            ]
+
+            texture_index = i % texture_count
+            rtt = ngl.RenderToTexture(child=render_cube, color_texture=textures[texture_index])
+            time_range_filter = ngl.TimeRangeFilter(rtt, ranges=time_ranges_madatory)
+            group.add_children(time_range_filter)
+
+            time_ranges = [
+                ngl.TimeRangeModeNoop(0),
+                ngl.TimeRangeModeCont(i*time_step),
+                ngl.TimeRangeModeNoop((i+1)*time_step),
+            ]
+
+            texture_rendered_count = min(i+1, texture_count)
+            pixel_height = texture_height / texture_rendered_count
+            for j in range(texture_rendered_count):
+                render_index = (i - j) % texture_count
+                rtt = ngl.RenderToTexture(child=renders[render_index], color_texture=output_texture, scissor=(0, j*pixel_height, texture_width, pixel_height))
+                rtt.set_features("no_clear")
+                time_range_filter = ngl.TimeRangeFilter(rtt, ranges=time_ranges)
+                group.add_children(time_range_filter)
+
+    render = ngl.Render(ngl.Quad((-1, -1, 0), (2, 0, 0), (0, 2, 0)))
+    render.update_textures(tex0=output_texture)
+    group.add_children(render)
+
+    return group
