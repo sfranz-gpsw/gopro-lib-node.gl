@@ -280,7 +280,6 @@ struct rtt_priv {
     int features;
     int vflip;
 
-    int use_clear_color;
     int flags;
     int width;
     int height;

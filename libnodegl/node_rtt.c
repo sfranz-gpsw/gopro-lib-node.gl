@@ -33,6 +33,7 @@
 #define DEFAULT_CLEAR_COLOR {-1.0f, -1.0f, -1.0f, -1.0f}
 #define FLAG_DEPTH          (1 << 0)
 #define FLAG_STENCIL        (1 << 1)
+#define FLAG_CLEAR_COLOR    (1 << 2)
 
 static const struct param_choices feature_choices = {
     .name = "framebuffer_features",
@@ -85,7 +86,8 @@ static int rtt_init(struct ngl_node *node)
     s->flags = s->features;
 
     float clear_color[4] = DEFAULT_CLEAR_COLOR;
-    s->use_clear_color = memcmp(s->clear_color, clear_color, sizeof(s->clear_color));
+    if (memcmp(s->clear_color, clear_color, sizeof(s->clear_color)))
+        s->flags |= FLAG_CLEAR_COLOR;
 
     return 0;
 }
@@ -309,7 +311,7 @@ static void rtt_draw(struct ngl_node *node)
     ngli_glGetIntegerv(gl, GL_VIEWPORT, viewport);
     ngli_glViewport(gl, 0, 0, s->width, s->height);
 
-    if (s->use_clear_color) {
+    if (s->flags & FLAG_CLEAR_COLOR) {
         float *rgba = s->clear_color;
         ngli_glClearColor(gl, rgba[0], rgba[1], rgba[2], rgba[3]);
     }
@@ -318,7 +320,7 @@ static void rtt_draw(struct ngl_node *node)
 
     ngli_node_draw(s->child);
 
-    if (s->use_clear_color) {
+    if (s->flags & FLAG_CLEAR_COLOR) {
         struct ngl_config *config = &ctx->config;
         float *rgba = config->clear_color;
         ngli_glClearColor(gl, rgba[0], rgba[1], rgba[2], rgba[3]);
