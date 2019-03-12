@@ -464,7 +464,13 @@ def cube(cfg, display_depth_buffer=False):
         texture = ngl.Texture2D()
         texture.set_width(640)
         texture.set_height(480)
-        rtt = ngl.RenderToTexture(camera, texture)
+
+        texture2 = ngl.Texture2D()
+        texture2.set_width(640)
+        texture2.set_height(480)
+
+        rtt = ngl.RenderToTexture(camera)
+        rtt.add_color_textures(texture, texture2)
         rtt.set_depth_texture(depth_texture)
 
         quad = ngl.Quad((-1.0, -1.0, 0), (1, 0, 0), (0, 1, 0))
@@ -472,6 +478,13 @@ def cube(cfg, display_depth_buffer=False):
         render = ngl.Render(quad, program)
         render.update_textures(tex0=texture)
         group.add_children(rtt, render)
+
+        quad = ngl.Quad((-0.5, -0.5, 0), (1, 0, 0), (0, 1, 0))
+        program = ngl.Program()
+        render = ngl.Render(quad, program)
+        render.update_textures(tex0=texture2)
+        group.add_children(rtt, render)
+
 
         quad = ngl.Quad((0.0, 0.0, 0), (1, 0, 0), (0, 1, 0))
         program = ngl.Program()
