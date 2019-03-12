@@ -253,6 +253,23 @@ static void serialize_options(struct hmap *nlist,
                 print_doubles(b, nb_elems, elems);
                 break;
             }
+            case PARAM_TYPE_INTLIST: {
+                uint8_t *elems_p = priv + p->offset;
+                uint8_t *nb_elems_p = priv + p->offset + sizeof(int *);
+                const int *elems = *(int **)elems_p;
+                const int nb_elems = *(int *)nb_elems_p;
+                if (!nb_elems)
+                    break;
+                if (constructor)
+                    ngli_bstr_print(b, " ");
+                else
+                    ngli_bstr_print(b, " %s:", p->key);
+                for (int i = 0; i < nb_elems; i++) {
+                    ngli_bstr_print(b, "%s", i ? "," : "");
+                    ngli_bstr_print(b, "%d", elems[i]);
+                }
+                break;
+            }
             case PARAM_TYPE_NODEDICT: {
                 struct hmap *hmap = *(struct hmap **)(priv + p->offset);
                 const int nb_nodes = hmap ? ngli_hmap_count(hmap) : 0;

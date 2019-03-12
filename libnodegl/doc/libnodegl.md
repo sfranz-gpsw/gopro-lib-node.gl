@@ -705,6 +705,7 @@ Type | Description
 `Node` | node.gl Node
 `NodeList` | List of node.gl Node
 `doubleList` | List of double-precision floats
+`intList` | List of 32-bit integers
 `NodeDict` | Dictionary mapping arbitrary string identifiers to node.gl Nodes
 `select` | Selection of one constant (expressed as a string)
 `flags` | Combination of constants (expressed as strings), using `+` as separator. Can be empty for none.

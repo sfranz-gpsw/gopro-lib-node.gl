@@ -97,6 +97,11 @@ const struct param_specs ngli_params_specs[] = {
         .size = sizeof(double *) + sizeof(int),
         .desc = NGLI_DOCSTRING("List of double-precision floats"),
     },
+    [PARAM_TYPE_INTLIST] = {
+        .name = "intList",
+        .size = sizeof(int *) + sizeof(int),
+        .desc = NGLI_DOCSTRING("List of 32-bit integers"),
+    },
     [PARAM_TYPE_NODEDICT] = {
         .name = "NodeDict",
         .size = sizeof(struct hmap *),
@@ -295,6 +300,15 @@ void ngli_params_bstr_print_val(struct bstr *b, uint8_t *base_ptr, const struct 
             const int nb_elems = *(int *)nb_elems_p;
             for (int i = 0; i < nb_elems; i++)
                 ngli_bstr_print(b, "%s%g", i ? "," : "", elems[i]);
+            break;
+        }
+        case PARAM_TYPE_INTLIST: {
+            uint8_t *elems_p = base_ptr + par->offset;
+            uint8_t *nb_elems_p = base_ptr + par->offset + sizeof(int *);
+            const int *elems = *(int **)elems_p;
+            const int nb_elems = *(int *)nb_elems_p;
+            for (int i = 0; i < nb_elems; i++)
+                ngli_bstr_print(b, "%s%d", i ? "," : "", elems[i]);
             break;
         }
         case PARAM_TYPE_RATIONAL: {
@@ -640,6 +654,24 @@ int ngli_params_add(uint8_t *base_ptr, const struct node_param *par,
             *(int *)nb_cur_elems_p = nb_new_elems;
             break;
         }
+        case PARAM_TYPE_INTLIST: {
+            uint8_t *cur_elems_p = base_ptr + par->offset;
+            uint8_t *nb_cur_elems_p = base_ptr + par->offset + sizeof(int *);
+            int *cur_elems = *(int **)cur_elems_p;
+            const int nb_cur_elems = *(int *)nb_cur_elems_p;
+            const int nb_new_elems = nb_cur_elems + nb_elems;
+            int *new_elems = ngli_realloc(cur_elems, nb_new_elems * sizeof(*new_elems));
+            int *new_elems_addp = new_elems + nb_cur_elems;
+            int *add_elems = elems;
+
+            if (!new_elems)
+                return -1;
+            for (int i = 0; i < nb_elems; i++)
+                new_elems_addp[i] = add_elems[i];
+            *(int **)cur_elems_p = new_elems;
+            *(int *)nb_cur_elems_p = nb_new_elems;
+            break;
+        }
         default:
             LOG(ERROR, "parameter %s is not a list", par->key);
             return -1;
@@ -687,6 +719,12 @@ void ngli_params_free(uint8_t *base_ptr, const struct node_param *params)
             case PARAM_TYPE_DBLLIST: {
                 uint8_t *elems_p = base_ptr + par->offset;
                 double *elems = *(double **)elems_p;
+                ngli_free(elems);
+                break;
+            }
+            case PARAM_TYPE_INTLIST: {
+                uint8_t *elems_p = base_ptr + par->offset;
+                int *elems = *(int **)elems_p;
                 ngli_free(elems);
                 break;
             }

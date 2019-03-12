@@ -142,6 +142,7 @@ static int parse_func##s(const char *s, type **valsp, int *nb_valsp)        \
 DECLARE_PARSE_LIST_FUNC(float,  parse_float)
 DECLARE_PARSE_LIST_FUNC(double, parse_double)
 DECLARE_PARSE_LIST_FUNC(int,    parse_hexint)
+DECLARE_PARSE_LIST_FUNC(int,    parse_int)
 
 #define FREE_KVS(count, keys, vals) do {                                    \
     for (int k = 0; k < (count); k++)                                       \
@@ -384,6 +385,19 @@ static int parse_param(struct darray *nodes_array, uint8_t *base_ptr,
                 return -1;
             int ret = ngli_params_add(base_ptr, par, nb_dbls, dbls);
             ngli_free(dbls);
+            if (ret < 0)
+                return ret;
+            break;
+        }
+
+        case PARAM_TYPE_INTLIST: {
+            int *ints;
+            int nb_ints;
+            len = parse_ints(str, &ints, &nb_ints);
+            if (len < 0)
+                return -1;
+            int ret = ngli_params_add(base_ptr, par, nb_ints, ints);
+            ngli_free(ints);
             if (ret < 0)
                 return ret;
             break;

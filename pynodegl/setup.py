@@ -220,7 +220,7 @@ cdef class _Node:
 
                 # Declare growing list helpers functions to _Node, to be used
                 # by other nodes for their specific list-based parameters.
-                for field_type in 'NodeList', 'doubleList':
+                for field_type in 'NodeList', 'doubleList', 'intList':
                     base_field_type = field_type[:-len('List')]
                     citem_type = {
                         'Node': 'ngl_node *',
