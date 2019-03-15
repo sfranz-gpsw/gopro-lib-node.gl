@@ -79,6 +79,7 @@ struct glcontext {
     int features;
     int max_texture_image_units;
     int max_compute_work_group_counts[3];
+    int max_shader_storage_buffer_bindings;
     int max_uniform_buffer_bindings;
     int max_uniform_block_size;
     int max_samples;

@@ -297,6 +297,10 @@ static int glcontext_probe_settings(struct glcontext *glcontext)
         }
     }
 
+    if (glcontext->features & NGLI_FEATURE_SHADER_STORAGE_BUFFER_OBJECT) {
+        ngli_glGetIntegerv(glcontext, GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, &glcontext->max_shader_storage_buffer_bindings);
+    }
+
     return 0;
 }
 
