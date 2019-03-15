@@ -181,6 +181,7 @@ typedef void* GLeglImageOES;
 # define GL_ACTIVE_UNIFORM_BLOCKS              0x8A36
 # define GL_UNIFORM_BUFFER                     0x8A11
 # define GL_UNIFORM_BLOCK_BINDING              0x8A3F
+# define GL_MAX_UNIFORM_BUFFER_BINDINGS        0x8A2F
 # define GL_MAX_UNIFORM_BLOCK_SIZE             0x8A30
 #endif
 
