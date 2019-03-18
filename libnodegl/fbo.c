@@ -52,6 +52,45 @@ static GLenum get_gl_attachment_index(GLenum format)
 
 static const GLenum depth_stencil_attachments[] = {GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT};
 
+static void blit(struct fbo *fbo, struct fbo *dst, int vflip)
+{
+    struct glcontext *gl = fbo->gl;
+
+    if (vflip)
+        ngli_glBlitFramebuffer(gl,
+                               0, 0, fbo->width, fbo->height, 0, dst->height, dst->width, 0,
+                               GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
+                               GL_NEAREST);
+    else
+        ngli_glBlitFramebuffer(gl,
+                               0, 0, fbo->width, fbo->height, 0, 0, dst->width, dst->height,
+                               GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
+                               GL_NEAREST);
+}
+
+static void blit_draw_buffers(struct fbo *fbo, struct fbo *dst, int vflip)
+{
+    struct glcontext *gl = fbo->gl;
+
+    const int nb_color_attachments = NGLI_MIN(fbo->nb_color_attachments, dst->nb_color_attachments);
+    GLenum *draw_buffers = ngli_calloc(nb_color_attachments, sizeof(*draw_buffers));
+    if (!draw_buffers)
+        return;
+    for (int i = 0; i < nb_color_attachments; i++) {
+        GLbitfield flags = GL_COLOR_BUFFER_BIT;
+        if (i == 0)
+            flags |= GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT;
+        ngli_glReadBuffer(gl, GL_COLOR_ATTACHMENT0 + i);
+        memset(draw_buffers, 0, nb_color_attachments * sizeof(*draw_buffers));
+        draw_buffers[i] = GL_COLOR_ATTACHMENT0 + i;
+        ngli_glDrawBuffers(gl, i + 1, draw_buffers);
+        blit(fbo, dst, vflip);
+    }
+    ngli_glReadBuffer(gl, GL_COLOR_ATTACHMENT0);
+    ngli_glDrawBuffers(gl, fbo->nb_draw_buffers, fbo->draw_buffers);
+    ngli_free(draw_buffers);
+}
+
 int ngli_fbo_init(struct fbo *fbo, struct glcontext *gl, const struct fbo_params *params)
 {
     int ret = -1;
@@ -123,6 +162,7 @@ int ngli_fbo_init(struct fbo *fbo, struct glcontext *gl, const struct fbo_params
         goto done;
     }
 
+    fbo->blit = blit;
     if (gl->features & NGLI_FEATURE_DRAW_BUFFERS) {
         fbo->nb_draw_buffers = fbo->nb_color_attachments;
         if (fbo->nb_draw_buffers > gl->max_draw_buffers) {
@@ -137,6 +177,7 @@ int ngli_fbo_init(struct fbo *fbo, struct glcontext *gl, const struct fbo_params
             for (int i = 0; i < fbo->nb_draw_buffers; i++)
                 fbo->draw_buffers[i] = GL_COLOR_ATTACHMENT0 + i;
             ngli_glDrawBuffers(gl, fbo->nb_draw_buffers, fbo->draw_buffers);
+            fbo->blit = blit_draw_buffers;
         }
     }
 
@@ -189,16 +230,7 @@ void ngli_fbo_blit(struct fbo *fbo, struct fbo *dst, int vflip)
         return;
 
     ngli_glBindFramebuffer(gl, GL_DRAW_FRAMEBUFFER, dst->id);
-    if (vflip)
-        ngli_glBlitFramebuffer(gl,
-                               0, 0, fbo->width, fbo->height, 0, dst->height, dst->width, 0,
-                               GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
-                               GL_NEAREST);
-    else
-        ngli_glBlitFramebuffer(gl,
-                               0, 0, fbo->width, fbo->height, 0, 0, dst->width, dst->height,
-                               GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
-                               GL_NEAREST);
+    fbo->blit(fbo, dst, vflip);
     ngli_glBindFramebuffer(gl, GL_DRAW_FRAMEBUFFER, fbo->id);
 }
 
