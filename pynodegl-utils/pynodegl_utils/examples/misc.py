@@ -695,3 +695,157 @@ def text(cfg):
                               blend_dst_factor='one_minus_src_alpha',
                               blend_src_factor_a='zero',
                               blend_dst_factor_a='one')
+
+
+def blur(cfg, group, node, size):
+    ar = cfg.aspect_ratio_float
+    color_texture = ngl.Texture2D(width=size, height=size*ar, min_filter='linear', mag_filter='linear')
+    rtt = ngl.RenderToTexture(node)
+    rtt.add_color_textures(color_texture)
+    group.add_children(rtt)
+
+    quad = ngl.Quad((-1, -1, 0), (2, 0, 0), (0, 2, 0))
+    program = ngl.Program(vertex=cfg.get_vert('blur'), fragment=cfg.get_frag('blur'))
+    render = ngl.Render(quad, program)
+    render.update_textures(tex0=color_texture)
+
+    camera = ngl.Camera(render)
+    camera.set_eye(0.0, 0.0, 2.0)
+    camera.set_center(0.0, 0.0, 0.0)
+    camera.set_up(0.0, 1.0, 0.0)
+    camera.set_orthographic(-1, 1, -1, 1)
+    camera.set_clipping(1.0, 10.0)
+    return camera
+
+
+@scene(samples={'type': 'range', 'range': [0, 4], 'unit_base': 0.5})
+def bloom(cfg, samples=0, count=4096):
+    random.seed(0)
+
+    # front
+    p0 = (-1.0, -1.0, 1.0)
+    p1 = ( 1.0, -1.0, 1.0)
+    p2 = ( 1.0,  1.0, 1.0)
+    p3 = (-1.0,  1.0, 1.0)
+
+    # back
+    p4 = (-1.0, -1.0, -1.0)
+    p5 = ( 1.0, -1.0, -1.0)
+    p6 = ( 1.0,  1.0, -1.0)
+    p7 = (-1.0,  1.0, -1.0)
+
+    vs = (
+        # front
+        p0, p1, p2, p2, p3, p0,
+        # right
+        p1, p5, p6, p6, p2, p1,
+        # back
+        p7, p6, p5, p5, p4, p7,
+        # left
+        p4, p0, p3, p3, p7, p4,
+        # bottom
+        p4, p5, p1, p1, p0, p4,
+        # top
+        p3, p2, p6, p6, p7, p3,
+    )
+    cube_vertices_data = array.array('f')
+    for v in vs:
+        cube_vertices_data.extend(v)
+
+    up = (0, 1, 0)
+    down = (0, -1, 0)
+    front = (0, 0, 1)
+    back = (0, 0, -1)
+    left = (-1, 0, 0)
+    right = (1, 0, 0)
+
+    ns = (
+        front,
+        right,
+        back,
+        left,
+        down,
+        up,
+    )
+    cube_normals_data = array.array('f')
+    for n in ns:
+        cube_normals_data.extend(n * 6)
+
+    colors_data = array.array('f')
+    positions_data = array.array('f')
+    scales_data = array.array('f')
+
+    for i in range(count):
+        colors_data.extend([
+            random.uniform(0.3, 1.0),
+            random.uniform(0.3, 1.0),
+            random.uniform(1.0, 1.0),
+            1.0,
+        ])
+        positions_data.extend([
+            random.uniform(-10.0, 10.0),
+            random.uniform(-1.0, 1.0),
+            random.uniform(-10.0, 10.0)
+        ])
+        scale_factor = random.uniform(0.02, 0.05)
+        scales_data.extend([scale_factor])
+
+    colors = ngl.BufferVec4(data=colors_data)
+    positions = ngl.BufferVec3(data=positions_data)
+    scales = ngl.BufferFloat(data=scales_data)
+
+    cube_vertices = ngl.BufferVec3(data=cube_vertices_data)
+    cube_normals = ngl.BufferVec3(data=cube_normals_data)
+    cube = ngl.Geometry(vertices=cube_vertices, normals=cube_normals)
+
+    shader_version = '300 es' if cfg.backend == 'gles' else '410'
+    shader_header = '#version %s\n' % shader_version
+    vertex_shader = shader_header + cfg.get_vert('cubes')
+    fragment_shader = shader_header + cfg.get_frag('cubes')
+
+    program = ngl.Program(vertex=vertex_shader, fragment=fragment_shader)
+    render = ngl.Render(cube, program, nb_instances=count)
+    render.update_instance_attributes(
+        instance_color=colors,
+        instance_position=positions,
+        instance_scale=scales,
+    )
+    config = ngl.GraphicConfig(render, depth_test=True)
+
+    camera = ngl.Camera(config)
+    camera.set_eye(2.0, 0.0, 3.0)
+    camera.set_center(0.0, 0.0, 0.0)
+    camera.set_up(0.0, 1.0, 0.0)
+    camera.set_perspective(45.0, cfg.aspect_ratio_float)
+    camera.set_clipping(1.0, 1000.0)
+
+    rot_animkf = [ngl.AnimKeyFrameFloat(0, 0),
+                  ngl.AnimKeyFrameFloat(cfg.duration, 360)]
+    rotate = ngl.Rotate(ngl.Identity(), axis=(0, 1, 0), anim=ngl.AnimatedFloat(rot_animkf))
+    camera.set_eye_transform(rotate)
+
+    size = 1080
+    ar = cfg.aspect_ratio_float
+    color_texture = ngl.Texture2D(width=size, height=size * ar, min_filter='linear', mag_filter='linear')
+    hilight_texture = ngl.Texture2D(width=size, height=size * ar, min_filter='linear', mag_filter='linear')
+
+    rtt = ngl.RenderToTexture(camera)
+    rtt.add_color_textures(color_texture, hilight_texture)
+    rtt.set_features('depth')
+    rtt.set_samples(samples)
+
+    group = ngl.Group()
+    group.add_children(rtt)
+
+    quad = ngl.Quad((-1, -1, 0), (2, 0, 0), (0, 2, 0))
+    render = ngl.Render(quad)
+    render.update_textures(tex0=color_texture)
+    group.add_children(render)
+
+    render = ngl.Render(quad)
+    render.update_textures(tex0=hilight_texture)
+    render = blur(cfg, group, render, size)
+    config = ngl.GraphicConfig(render, blend=True, blend_src_factor='one', blend_dst_factor='one')
+    group.add_children(config)
+
+    return group
