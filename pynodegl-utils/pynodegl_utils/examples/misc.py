@@ -932,7 +932,7 @@ def slitscan(cfg, slitscan_type=1, texture_count=32):
     # render animated cube to texture
     group = ngl.Group()
     cube_texture = ngl.Texture2D(width=texture_width, height=texture_height)
-    rtt = ngl.RenderToTexture(child=camera, color_texture=cube_texture)
+    rtt = ngl.RenderToTexture(child=camera, color_textures=(cube_texture,))
     group.add_children(rtt)
 
     output_texture = ngl.Texture2D(width=texture_width, height=texture_height)
@@ -947,7 +947,7 @@ def slitscan(cfg, slitscan_type=1, texture_count=32):
             time = i*time_step
             time_ranges = [ngl.TimeRangeModeOnce(time, time)]
 
-            rtt = ngl.RenderToTexture(child=render_cube, color_texture=output_texture, scissor=(0, i, texture_width, texture_height-i))
+            rtt = ngl.RenderToTexture(child=render_cube, color_textures=(output_texture,), scissor=(0, i, texture_width, texture_height-i))
             rtt.set_features("no_clear")
             time_range_filter = ngl.TimeRangeFilter(rtt, ranges=time_ranges)
             group.add_children(time_range_filter)
@@ -974,7 +974,7 @@ def slitscan(cfg, slitscan_type=1, texture_count=32):
             ]
 
             texture_index = i % texture_count
-            rtt = ngl.RenderToTexture(child=render_cube, color_texture=textures[texture_index])
+            rtt = ngl.RenderToTexture(child=render_cube, color_textures=(textures[texture_index],))
             time_range_filter = ngl.TimeRangeFilter(rtt, ranges=time_ranges_madatory)
             group.add_children(time_range_filter)
 
@@ -988,7 +988,7 @@ def slitscan(cfg, slitscan_type=1, texture_count=32):
             pixel_height = texture_height / texture_rendered_count
             for j in range(texture_rendered_count):
                 render_index = (i - j) % texture_count
-                rtt = ngl.RenderToTexture(child=renders[render_index], color_texture=output_texture, scissor=(0, j*pixel_height, texture_width, pixel_height))
+                rtt = ngl.RenderToTexture(child=renders[render_index], color_textures=(output_texture,), scissor=(0, j*pixel_height, texture_width, pixel_height))
                 rtt.set_features("no_clear")
                 time_range_filter = ngl.TimeRangeFilter(rtt, ranges=time_ranges)
                 group.add_children(time_range_filter)
