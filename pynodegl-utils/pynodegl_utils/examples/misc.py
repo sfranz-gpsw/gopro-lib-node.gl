@@ -403,22 +403,64 @@ def blending_and_stencil(cfg):
     return camera
 
 
-def _get_cube_quads():
-            # corner             width        height      color
-    return (((-0.5, -0.5,  0.5), ( 1, 0,  0), (0, 1,  0), (1, 1, 0)),  # front
-            (( 0.5, -0.5, -0.5), (-1, 0,  0), (0, 1,  0), (0, 0, 1)),  # back
-            ((-0.5, -0.5, -0.5), ( 0, 0,  1), (0, 1,  0), (0, 1, 0)),  # left
-            (( 0.5, -0.5,  0.5), ( 0, 0, -1), (0, 1,  0), (0, 1, 1)),  # right
-            ((-0.5, -0.5, -0.5), ( 1, 0,  0), (0, 0,  1), (1, 0, 0)),  # bottom
-            ((-0.5,  0.5,  0.5), ( 1, 0,  0), (0, 0, -1), (1, 0, 1)))  # top
+def get_cube():
+    # front
+    p0 = (-1, -1, 1)
+    p1 = ( 1, -1, 1)
+    p2 = ( 1,  1, 1)
+    p3 = (-1,  1, 1)
 
+    # back
+    p4 = (-1, -1, -1)
+    p5 = ( 1, -1, -1)
+    p6 = ( 1,  1, -1)
+    p7 = (-1,  1, -1)
 
-def _get_cube_side(texture, program, corner, width, height, color):
-    render = ngl.Render(ngl.Quad(corner, width, height), program)
-    render.update_textures(tex0=texture)
-    render.update_uniforms(blend_color=ngl.UniformVec3(value=color))
-    render.update_uniforms(mix_factor=ngl.UniformFloat(value=0.2))
-    return render
+    vs = (
+        # front
+        p0, p1, p2, p2, p3, p0,
+        # right
+        p1, p5, p6, p6, p2, p1,
+        # back
+        p7, p6, p5, p5, p4, p7,
+        # left
+        p4, p0, p3, p3, p7, p4,
+        # bottom
+        p4, p5, p1, p1, p0, p4,
+        # top
+        p3, p2, p6, p6, p7, p3,
+    )
+    cube_vertices_data = array.array('f')
+    for v in vs:
+        cube_vertices_data.extend(v)
+
+    uvs = (
+        0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1
+
+    )
+    cube_uvs_data = array.array('f')
+    cube_uvs_data.extend(uvs * 6)
+
+    up = (0, 1, 0)
+    down = (0, -1, 0)
+    front = (0, 0, 1)
+    back = (0, 0, -1)
+    left = (-1, 0, 0)
+    right = (1, 0, 0)
+
+    ns = (
+        front,
+        right,
+        back,
+        left,
+        down,
+        up,
+    )
+    cube_normals_data = array.array('f')
+    for n in ns:
+        cube_normals_data.extend(n * 6)
+
+    return cube_vertices_data, cube_uvs_data, cube_normals_data
 
 
 @scene(display_depth_buffer={'type': 'bool'})
@@ -427,22 +469,28 @@ def cube(cfg, display_depth_buffer=False):
     Cube with a common media Texture but a different color tainting on each side.
     Also includes a depth map visualization.
     '''
-    cube = ngl.Group(label='cube')
-
     frag_data = cfg.get_frag('tex-tint')
     program = ngl.Program(fragment=frag_data)
 
+    cube_vertices_data, cube_uvs_data, cube_normals_data = get_cube()
+    cube_vertices = ngl.BufferVec3(data=cube_vertices_data)
+    cube_uvcoords = ngl.BufferVec2(data=cube_uvs_data)
+    cube_normals = ngl.BufferVec3(data=cube_normals_data)
+    cube = ngl.Geometry(vertices=cube_vertices, uvcoords=cube_uvcoords, normals=cube_normals)
     texture = ngl.Texture2D(data_src=ngl.Media(cfg.medias[0].filename))
-    children = [_get_cube_side(texture, program, qi[0], qi[1], qi[2], qi[3]) for qi in _get_cube_quads()]
-    cube.add_children(*children)
+
+    render = ngl.Render(cube)
+    render.update_textures(tex0=texture)
+
+    render = ngl.Scale(render, factors=(.5, .5, .5))
 
     for i in range(3):
         rot_animkf = ngl.AnimatedFloat([ngl.AnimKeyFrameFloat(0,            0),
                                         ngl.AnimKeyFrameFloat(cfg.duration, 360 * (i + 1))])
         axis = [int(i == x) for x in range(3)]
-        cube = ngl.Rotate(cube, axis=axis, anim=rot_animkf)
+        render = ngl.Rotate(render, axis=axis, anim=rot_animkf)
 
-    config = ngl.GraphicConfig(cube, depth_test=True)
+    config = ngl.GraphicConfig(render, depth_test=True)
 
     camera = ngl.Camera(config)
     camera.set_eye(0.0, 0.0, 2.0)
@@ -484,7 +532,6 @@ def cube(cfg, display_depth_buffer=False):
         render = ngl.Render(quad, program)
         render.update_textures(tex0=texture2)
         group.add_children(rtt, render)
-
 
         quad = ngl.Quad((0.0, 0.0, 0), (1, 0, 0), (0, 1, 0))
         program = ngl.Program()
@@ -722,55 +769,6 @@ def blur(cfg, group, node, size):
 def bloom(cfg, samples=0, count=4096):
     random.seed(0)
 
-    # front
-    p0 = (-1.0, -1.0, 1.0)
-    p1 = ( 1.0, -1.0, 1.0)
-    p2 = ( 1.0,  1.0, 1.0)
-    p3 = (-1.0,  1.0, 1.0)
-
-    # back
-    p4 = (-1.0, -1.0, -1.0)
-    p5 = ( 1.0, -1.0, -1.0)
-    p6 = ( 1.0,  1.0, -1.0)
-    p7 = (-1.0,  1.0, -1.0)
-
-    vs = (
-        # front
-        p0, p1, p2, p2, p3, p0,
-        # right
-        p1, p5, p6, p6, p2, p1,
-        # back
-        p7, p6, p5, p5, p4, p7,
-        # left
-        p4, p0, p3, p3, p7, p4,
-        # bottom
-        p4, p5, p1, p1, p0, p4,
-        # top
-        p3, p2, p6, p6, p7, p3,
-    )
-    cube_vertices_data = array.array('f')
-    for v in vs:
-        cube_vertices_data.extend(v)
-
-    up = (0, 1, 0)
-    down = (0, -1, 0)
-    front = (0, 0, 1)
-    back = (0, 0, -1)
-    left = (-1, 0, 0)
-    right = (1, 0, 0)
-
-    ns = (
-        front,
-        right,
-        back,
-        left,
-        down,
-        up,
-    )
-    cube_normals_data = array.array('f')
-    for n in ns:
-        cube_normals_data.extend(n * 6)
-
     colors_data = array.array('f')
     positions_data = array.array('f')
     scales_data = array.array('f')
@@ -794,6 +792,7 @@ def bloom(cfg, samples=0, count=4096):
     positions = ngl.BufferVec3(data=positions_data)
     scales = ngl.BufferFloat(data=scales_data)
 
+    cube_vertices_data, _, cube_normals_data = get_cube()
     cube_vertices = ngl.BufferVec3(data=cube_vertices_data)
     cube_normals = ngl.BufferVec3(data=cube_normals_data)
     cube = ngl.Geometry(vertices=cube_vertices, normals=cube_normals)
@@ -852,67 +851,27 @@ def bloom(cfg, samples=0, count=4096):
 
 
 @scene(slitscan_type={'type': 'range', 'range': [0, 1]},
-        texture_count={'type': 'range', 'range': [1, 64]})
+       texture_count={'type': 'range', 'range': [1, 64]})
 def slitscan(cfg, slitscan_type=1, texture_count=32):
     '''Accumulates texture to create a slitscan effect'''
-    texture_width = 640
-    texture_height = texture_width * cfg.aspect_ratio_float
+    texture_width = 720
+    texture_height = int(texture_width * cfg.aspect_ratio_float)
 
-    # create cube
-    vertices = ngl.BufferVec3(data=array.array('f', [-0.5, +0.5, +0.5,  # front
-                                                     +0.5, +0.5, +0.5,
-                                                     +0.5, -0.5, +0.5,
-                                                     +0.5, -0.5, +0.5,
-                                                     -0.5, -0.5, +0.5,
-                                                     -0.5, +0.5, +0.5,
-                                                     +0.5, -0.5, -0.5,  # back
-                                                     +0.5, +0.5, -0.5,
-                                                     -0.5, +0.5, -0.5,
-                                                     -0.5, +0.5, -0.5,
-                                                     -0.5, -0.5, -0.5,
-                                                     +0.5, -0.5, -0.5,
-                                                     -0.5, +0.5, -0.5,  # top
-                                                     +0.5, +0.5, -0.5,
-                                                     +0.5, +0.5, +0.5,
-                                                     +0.5, +0.5, +0.5,
-                                                     -0.5, +0.5, +0.5,
-                                                     -0.5, +0.5, -0.5,
-                                                     +0.5, -0.5, -0.5,  # bottom
-                                                     -0.5, -0.5, -0.5,
-                                                     -0.5, -0.5, +0.5,
-                                                     -0.5, -0.5, +0.5,
-                                                     +0.5, -0.5, +0.5,
-                                                     +0.5, -0.5, -0.5,
-                                                     -0.5, +0.5, -0.5,  # left
-                                                     -0.5, +0.5, +0.5,
-                                                     -0.5, -0.5, +0.5,
-                                                     -0.5, -0.5, +0.5,
-                                                     -0.5, -0.5, -0.5,
-                                                     -0.5, +0.5, -0.5,
-                                                     +0.5, +0.5, +0.5,  # right
-                                                     +0.5, +0.5, -0.5,
-                                                     +0.5, -0.5, -0.5,
-                                                     +0.5, -0.5, -0.5,
-                                                     +0.5, -0.5, +0.5,
-                                                     +0.5, +0.5, +0.5]))
-    colors_data = array.array('f')
-    for i in range(6):
-        colors_data.extend([1.0, 0.0, 0.0, 1.0,
-                            0.0, 1.0, 0.0, 1.0,
-                            0.0, 0.0, 1.0, 1.0,
-                            0.0, 0.0, 1.0, 1.0,
-                            0.0, 1.0, 0.0, 1.0,
-                            1.0, 0.0, 0.0, 1.0])
-    colors = ngl.BufferVec4(data=colors_data)
-    cube = ngl.Geometry(vertices=vertices)
+    cube_vertices_data, cube_uvcoords_data, cube_normals_data = get_cube()
+    cube_vertices = ngl.BufferVec3(data=cube_vertices_data)
+    cube_uvcoords = ngl.BufferVec2(data=cube_uvcoords_data)
+    cube_normals = ngl.BufferVec3(data=cube_normals_data)
+    cube = ngl.Geometry(vertices=cube_vertices, uvcoords=cube_uvcoords, normals=cube_normals)
 
     # render cube with animation
+    texture = ngl.Texture2D(data_src=ngl.Media(cfg.medias[0].filename))
     program = ngl.Program(fragment=cfg.get_frag('triangle'), vertex=cfg.get_vert('triangle'))
+    program = ngl.Program()
     render = ngl.Render(geometry=cube, program=program)
-    render.update_attributes(edge_color=colors)
-    render = ngl.GraphicConfig(render,
-                               cull_face=True,
-                               cull_face_mode='front')
+    render.update_textures(tex0=texture)
+
+    render = ngl.GraphicConfig(render, depth_test=True)
+    render = ngl.Scale(render, factors=(0.5, 0.5, 0.5))
 
     speed_factor = cfg.duration / 30.0
     for i in range(3):
@@ -933,6 +892,7 @@ def slitscan(cfg, slitscan_type=1, texture_count=32):
     group = ngl.Group()
     cube_texture = ngl.Texture2D(width=texture_width, height=texture_height)
     rtt = ngl.RenderToTexture(child=camera, color_textures=(cube_texture,))
+    rtt.set_features('depth')
     group.add_children(rtt)
 
     output_texture = ngl.Texture2D(width=texture_width, height=texture_height)
