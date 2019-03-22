@@ -234,5 +234,10 @@ static const struct glfeature {
         .version        = 200,
         .es_version     = 300,
         .funcs_offsets  = (const size_t[]){OFFSET(DrawBuffers), -1}
+    }, {
+        .name           = "row_length",
+        .flag           = NGLI_FEATURE_ROW_LENGTH,
+        .version        = 300,
+        .es_version     = 300,
     }
 };
