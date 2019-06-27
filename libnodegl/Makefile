@@ -132,7 +132,7 @@ LIB_OBJS += $(LIB_OBJS_ARCH_$(ARCH))
 
 LIB_EXTRA_OBJS_Linux     = glcontext_egl.o
 LIB_EXTRA_OBJS_Darwin    = glcontext_nsgl.o hwupload_videotoolbox_darwin.o
-LIB_EXTRA_OBJS_Android   = glcontext_egl.o jni_utils.o android_utils.o android_looper.o android_surface.o android_handler.o android_handlerthread.o hwupload_mediacodec.o
+LIB_EXTRA_OBJS_Android   = glcontext_egl.o jni_utils.o android_utils.o android_looper.o android_surface.o android_handler.o android_handlerthread.o android_choreographer.o hwupload_mediacodec.o
 LIB_EXTRA_OBJS_iPhone    = glcontext_eagl.o hwupload_videotoolbox_ios.o
 LIB_EXTRA_OBJS_MinGW-w64 = glcontext_wgl.o
 
@@ -318,6 +318,7 @@ endif # mingw-w64
 	install -m 644 nodegl.h $(DESTDIR)$(PREFIX)/include/nodegl.h
 	install -m 644 $(SPECS_FILE) $(DESTDIR)$(PREFIX)/share/nodegl
 	install -m 644 android/java/OnFrameAvailableListener.java $(DESTDIR)$(PREFIX)/share/nodegl/java/org/nodegl
+	install -m 644 android/java/AChoreographer.java $(DESTDIR)$(PREFIX)/share/nodegl/java/org/nodegl
 
 uninstall:
 	$(RM) $(DESTDIR)$(PREFIX)/lib/$(LIB_NAME)

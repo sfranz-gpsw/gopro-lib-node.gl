@@ -22,6 +22,11 @@
 #include <stdio.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#include <pthread.h>
+
+#if defined(TARGET_ANDROID)
+#include "android_choreographer.h"
+#endif
 
 #if defined(TARGET_LINUX)
 #include <X11/Xlib.h>
@@ -49,6 +54,13 @@ struct egl_priv {
     EGLAPIENTRY EGLImageKHR (*CreateImageKHR)(EGLDisplay, EGLContext, EGLenum, EGLClientBuffer, const EGLint *);
     EGLAPIENTRY EGLBoolean (*DestroyImageKHR)(EGLDisplay, EGLImageKHR);
     EGLAPIENTRY void (*EGLImageTargetTexture2DOES)(GLenum, GLeglImageOES);
+#if defined(TARGET_ANDROID)
+    pthread_mutex_t lock;
+    pthread_cond_t cond;
+    int sync_event;
+    int swap_interval;
+    struct android_choreographer *choreographer;
+#endif
 };
 
 EGLImageKHR ngli_eglCreateImageKHR(struct glcontext *gl, EGLConfig context, EGLenum target, EGLClientBuffer buffer, const EGLint *attrib_list)
@@ -152,6 +164,18 @@ static EGLDisplay egl_get_display(struct egl_priv *egl, EGLNativeDisplayType nat
     return EGL_NO_DISPLAY;
 #endif
 }
+
+#if defined(TARGET_ANDROID)
+static void egl_sync_cb(void *user_data, uint64_t frame_time_ns)
+{
+    struct egl_priv *egl = user_data;
+
+    pthread_mutex_lock(&egl->lock);
+    egl->sync_event++;
+    pthread_cond_signal(&egl->cond);
+    pthread_mutex_unlock(&egl->lock);
+}
+#endif
 
 static int egl_init(struct glcontext *ctx, uintptr_t display, uintptr_t window, uintptr_t other)
 {
@@ -271,6 +295,15 @@ static int egl_init(struct glcontext *ctx, uintptr_t display, uintptr_t window, 
     if (ret < 0)
         return ret;
 
+#if defined(TARGET_ANDROID)
+    pthread_mutex_init(&egl->lock, NULL);
+    pthread_cond_init(&egl->cond, NULL);
+    egl->choreographer = ngli_android_choreographer_new(egl_sync_cb, egl);
+    if (!egl->choreographer) {
+        LOG(ERROR, "failed to create a choreographer, vsync won't work properly");
+    }
+#endif
+
     return 0;
 }
 
@@ -293,6 +326,12 @@ static void egl_uninit(struct glcontext *ctx)
     if (egl->own_native_display) {
         XCloseDisplay(egl->native_display);
     }
+#endif
+
+#if defined(TARGET_ANDROID)
+    ngli_android_choreographer_free(&egl->choreographer);
+    pthread_mutex_destroy(&egl->lock);
+    pthread_cond_destroy(&egl->cond);
 #endif
 }
 
@@ -326,6 +365,18 @@ static int egl_make_current(struct glcontext *ctx, int current)
 static void egl_swap_buffers(struct glcontext *ctx)
 {
     struct egl_priv *egl = ctx->priv_data;
+
+#if defined(TARGET_ANDROID)
+    if (egl->choreographer && egl->swap_interval) {
+        pthread_mutex_lock(&egl->lock);
+        do {
+            pthread_cond_wait(&egl->cond, &egl->lock);
+        } while (!egl->sync_event);
+        egl->sync_event = 0;
+        pthread_mutex_unlock(&egl->lock);
+    }
+#endif
+
     eglSwapBuffers(egl->display, egl->surface);
 }
 
@@ -333,8 +384,21 @@ static int egl_set_swap_interval(struct glcontext *ctx, int interval)
 {
     struct egl_priv *egl = ctx->priv_data;
 
-    if (!ctx->offscreen)
-        eglSwapInterval(egl->display, interval);
+    if (ctx->offscreen)
+        return 0;
+
+#if defined(TARGET_ANDROID)
+    if (egl->choreographer) {
+        pthread_mutex_lock(&egl->lock);
+        egl->swap_interval = interval;
+        egl->swap_interval ? ngli_android_choreographer_start(egl->choreographer)
+                           : ngli_android_choreographer_stop(egl->choreographer);
+        pthread_mutex_unlock(&egl->lock);
+        return 0;
+    }
+#endif
+
+    eglSwapInterval(egl->display, interval);
 
     return 0;
 }
