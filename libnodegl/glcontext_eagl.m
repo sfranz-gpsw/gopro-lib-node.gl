@@ -40,6 +40,7 @@ struct eagl_priv {
     GLuint depthbuffer;
     GLuint fbo_ms;
     GLuint colorbuffer_ms;
+    int fb_initialized;
 };
 
 static int eagl_init_layer(struct glcontext *ctx)
@@ -201,6 +202,7 @@ static int eagl_init_framebuffer(struct glcontext *ctx)
 
     ngli_glViewport(ctx, 0, 0, ctx->width, ctx->height);
 
+    eagl->fb_initialized = 1;
     return 0;
 }
 
@@ -218,9 +220,11 @@ static void eagl_uninit(struct glcontext *ctx)
 {
     struct eagl_priv *eagl = ctx->priv_data;
 
-    eagl_reset_framebuffer(ctx);
-
-    ngli_glDeleteRenderbuffers(ctx, 1, &eagl->colorbuffer);
+    if (eagl->fb_initialized) {
+        eagl_reset_framebuffer(ctx);
+        ngli_glDeleteRenderbuffers(ctx, 1, &eagl->colorbuffer);
+        eagl->fb_initialized = 0;
+    }
 
     if (eagl->framework)
         CFRelease(eagl->framework);
