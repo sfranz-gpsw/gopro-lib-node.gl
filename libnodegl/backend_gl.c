@@ -345,6 +345,8 @@ static int gl_reconfigure(struct ngl_ctx *s, const struct ngl_config *config)
     struct graphicconfig *graphicconfig = &s->graphicconfig;
     memcpy(graphicconfig->scissor, scissor, sizeof(scissor));
 
+    s->program_id = 0;
+
     return 0;
 }
 
