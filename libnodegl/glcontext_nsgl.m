@@ -231,8 +231,10 @@ static void nsgl_uninit(struct glcontext *ctx)
     if (nsgl->framework)
         CFRelease(nsgl->framework);
 
-    if (nsgl->handle)
+    if (nsgl->handle) {
+        [nsgl->handle setView:nil];
         CFRelease(nsgl->handle);
+    }
 }
 
 const struct glcontext_class ngli_glcontext_nsgl_class = {
