@@ -29,6 +29,59 @@
 #include "log.h"
 #include "nodegl.h"
 
+@interface CADisplayLinkListener : NSObject {
+    int swap_event;
+    NSCondition *swap_condition;
+}
+
+-(id) init;
+-(void) sync_callback:(nonnull CADisplayLink*)display_link;
+-(void) wait_sync;
+-(void) dealloc;
+
+@end
+
+@implementation CADisplayLinkListener
+
+-(id)init
+{
+    self = [super init];
+    if (self) {
+        self->swap_condition = [NSCondition new];
+        if (!self->swap_condition) {
+            [self release];
+            return nil;
+        }
+    }
+    return self;
+}
+
+-(void)sync_callback:(nonnull CADisplayLink*)display_link
+{
+    [self->swap_condition lock];
+    self->swap_event++;
+    [self->swap_condition signal];
+    [self->swap_condition unlock];
+}
+
+-(void)wait_sync
+{
+    [self->swap_condition lock];
+    do {
+        [self->swap_condition wait];
+    } while (!self->swap_event);
+    self->swap_event = 0;
+    [self->swap_condition unlock];
+}
+
+-(void)dealloc
+{
+    [self->swap_condition release];
+    [super dealloc];
+}
+
+@end
+
 struct eagl_priv {
     EAGLContext *handle;
     UIView *view;
@@ -41,6 +94,9 @@ struct eagl_priv {
     GLuint fbo_ms;
     GLuint colorbuffer_ms;
     int fb_initialized;
+    int swap_interval;
+    CADisplayLink *display_link;
+    CADisplayLinkListener *display_link_listener;
 };
 
 static int eagl_init_layer(struct glcontext *ctx)
@@ -127,6 +183,20 @@ static int eagl_init(struct glcontext *ctx, uintptr_t display, uintptr_t window,
         return -1;
     }
 
+    eagl->display_link_listener = [[CADisplayLinkListener alloc] init];
+    if (!eagl->display_link_listener) {
+        LOG(ERROR, "could not create display link listener");
+        return -1;
+    }
+
+    eagl->display_link = [CADisplayLink displayLinkWithTarget:eagl->display_link_listener
+                                        selector:@selector(sync_callback:)];
+    if (!eagl->display_link) {
+        LOG(ERROR, "could not create display link");
+        return -1;
+    }
+    [eagl->display_link addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSDefaultRunLoopMode];
+
     return 0;
 }
 
@@ -206,6 +276,14 @@ static void eagl_uninit(struct glcontext *ctx)
 {
     struct eagl_priv *eagl = ctx->priv_data;
 
+    if (eagl->display_link) {
+        [eagl->display_link removeFromRunLoop:[NSRunLoop mainRunLoop] forMode:NSDefaultRunLoopMode];
+        CFRelease(eagl->display_link);
+    }
+
+    if (eagl->display_link_listener)
+        CFRelease(eagl->display_link_listener);
+
     if (eagl->fb_initialized) {
         eagl_reset_framebuffer(ctx);
         ngli_glDeleteRenderbuffers(ctx, 1, &eagl->colorbuffer);
@@ -259,7 +337,18 @@ static void eagl_swap_buffers(struct glcontext *ctx)
     }
 
     ngli_glBindRenderbuffer(ctx, GL_RENDERBUFFER, eagl->colorbuffer);
+
+    if (eagl->swap_interval > 0)
+        [eagl->display_link_listener wait_sync];
+
     [eagl->handle presentRenderbuffer: GL_RENDERBUFFER];
+}
+
+static int eagl_set_swap_interval(struct glcontext *ctx, int interval)
+{
+    struct eagl_priv *eagl = ctx->priv_data;
+    eagl->swap_interval = interval;
+    return 0;
 }
 
 static void *eagl_get_texture_cache(struct glcontext *ctx)
@@ -301,6 +390,7 @@ const struct glcontext_class ngli_glcontext_eagl_class = {
     .resize = eagl_resize,
     .make_current = eagl_make_current,
     .swap_buffers = eagl_swap_buffers,
+    .set_swap_interval = eagl_set_swap_interval,
     .get_texture_cache = eagl_get_texture_cache,
     .get_proc_address = eagl_get_proc_address,
     .get_handle = eagl_get_handle,
