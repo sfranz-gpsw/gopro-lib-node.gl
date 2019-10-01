@@ -22,8 +22,12 @@
 #ifndef PIPELINE_H
 #define PIPELINE_H
 
-#include "nodes.h"
+#include "buffer.h"
+#include "glcontext.h"
 #include "program.h"
+#include "darray.h"
+
+struct ngl_ctx;
 
 struct pipeline_uniform {
     char name[MAX_ID_LEN];
