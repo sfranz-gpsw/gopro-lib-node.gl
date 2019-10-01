@@ -26,26 +26,50 @@
 #include "log.h"
 #include "nodegl.h"
 #include "nodes.h"
+#include "pipeline.h"
 #include "topology.h"
+#include "utils.h"
 
-struct ngl_node *ngli_node_geometry_generate_buffer(struct ngl_ctx *ctx, int type, int count, int size, void *data)
+static const struct {
+    const char *name;
+    int format;
+} formats_map[NGLI_NODE_GEOMETRY_INDEX_NB] = {
+    [NGLI_NODE_GEOMETRY_INDEX_VERTICES] = {"ngl_position", NGLI_FORMAT_R32G32B32_SFLOAT},
+    [NGLI_NODE_GEOMETRY_INDEX_UVCOORDS] = {"ngl_uvcoord",  NGLI_FORMAT_R32G32_SFLOAT},
+    [NGLI_NODE_GEOMETRY_INDEX_NORMALS]  = {"ngl_normals",  NGLI_FORMAT_R32G32B32_SFLOAT},
+};
+
+int ngli_node_geometry_init_attribute(struct ngl_node *node, int index, const void *data, int data_size)
 {
-    struct ngl_node *node = ngl_node_create(type, count);
-    if (!node)
-        return NULL;
+    struct ngl_ctx *ctx = node->ctx;
+    struct geometry_priv *s = node->priv_data;
 
-    if (data)
-        ngl_node_param_set(node, "data", size, data);
+    ngli_assert(index >= 0 && index < NGLI_NODE_GEOMETRY_INDEX_NB);
 
-    int ret = ngli_node_attach_ctx(node, ctx);
+    struct buffer *buffer = &s->buffers[index];
+
+    int ret = ngli_buffer_init(buffer, ctx, data_size, NGLI_BUFFER_USAGE_STATIC);
     if (ret < 0)
-        goto fail;
+        return ret;
 
-    return node;
-fail:
-    ngli_node_detach_ctx(node, ctx);
-    ngl_node_unrefp(&node);
-    return NULL;
+    ret = ngli_buffer_upload(buffer, data, data_size);
+    if (ret < 0)
+        return ret;
+
+    struct pipeline_attribute *attribute = &s->attributes[index];
+    int format = formats_map[index].format;
+    const char *name = formats_map[index].name;
+
+    *attribute = (struct pipeline_attribute) {
+        .format = format,
+        .count  = 1,
+        .stride = ngli_format_get_bytes_per_pixel(format),
+        .rate   = 0,
+        .buffer = buffer,
+    };
+    snprintf(attribute->name, sizeof(attribute->name), "%s", name);
+
+    return 0;
 }
 
 static const struct param_choices topology_choices = {
@@ -93,33 +117,105 @@ static const struct node_param geometry_params[] = {
     {NULL}
 };
 
+
+static int init_attribute(struct ngl_node *node, int index, struct ngl_node *attribute)
+{
+    struct geometry_priv *s = node->priv_data;
+    struct buffer_priv *attribute_priv = attribute->priv_data;
+
+    ngli_assert(index >= 0 && index < NGLI_NODE_GEOMETRY_INDEX_NB);
+
+    int stride = attribute_priv->data_stride;
+    int offset = 0;
+    struct buffer *buffer = &attribute_priv->buffer;
+
+    if (attribute_priv->block) {
+        struct block_priv *block = attribute_priv->block->priv_data;
+        const struct block_field_info *fi = &block->field_info[attribute_priv->block_field];
+        stride = fi->stride;
+        offset = fi->offset;
+        buffer = &block->buffer;
+    }
+
+    const char *name = formats_map[index].name;
+
+    if (attribute_priv->count != s->graphics.nb_vertices) {
+        LOG(ERROR, "%s count (%d) does not match vertices count (%d)",
+            name, attribute_priv->count, s->graphics.nb_vertices);
+        return NGL_ERROR_UNSUPPORTED;
+    }
+
+    s->attributes[index] = (struct pipeline_attribute){
+        .format = attribute_priv->data_format,
+        .stride = stride,
+        .offset = offset,
+        .count = 1,
+        .rate = 0,
+        .buffer = buffer,
+    };
+    snprintf(s->attributes[index].name, sizeof(s->attributes[index].name), "%s", name);
+
+    int ret = ngli_node_buffer_ref(attribute);
+    if (ret < 0)
+        return ret;
+
+    return 0;
+}
+
 static int geometry_init(struct ngl_node *node)
 {
     struct geometry_priv *s = node->priv_data;
-
     struct buffer_priv *vertices = s->vertices_buffer->priv_data;
 
-    if (s->uvcoords_buffer) {
-        struct buffer_priv *uvcoords = s->uvcoords_buffer->priv_data;
-        if (uvcoords->count != vertices->count) {
-            LOG(ERROR,
-                "uvcoords count (%d) does not match vertices count (%d)",
-                uvcoords->count,
-                vertices->count);
-            return NGL_ERROR_INVALID_ARG;
+    struct pipeline_graphics *graphics = &s->graphics;
+    graphics->topology = s->topology;
+    graphics->nb_instances = 1;
+    graphics->nb_vertices = vertices->count;
+
+    if (s->indices_buffer) {
+        struct ngl_node *indices = s->indices_buffer;
+        int ret = ngli_node_buffer_ref(indices);
+        if (ret < 0)
+            return ret;
+
+        struct buffer_priv *indices_priv = indices->priv_data;
+        if (indices_priv->block) {
+            LOG(ERROR, "geometry indices buffers referencing a block are not supported");
+            return NGL_ERROR_UNSUPPORTED;
         }
+
+        graphics->nb_indices = indices_priv->count;
+        graphics->indices_format = indices_priv->data_format;
+        graphics->indices = &indices_priv->buffer;
     }
 
-    if (s->normals_buffer) {
-        struct buffer_priv *normals = s->normals_buffer->priv_data;
-        if (normals->count != vertices->count) {
-            LOG(ERROR,
-                "normals count (%d) does not match vertices count (%d)",
-                normals->count,
-                vertices->count);
-            return NGL_ERROR_INVALID_ARG;
-        }
-    }
+    int ret = init_attribute(node, NGLI_NODE_GEOMETRY_INDEX_VERTICES, s->vertices_buffer);
+    if (ret < 0)
+        return ret;
+
+    ret = init_attribute(node, NGLI_NODE_GEOMETRY_INDEX_UVCOORDS, s->uvcoords_buffer);
+    if (ret < 0)
+        return ret;
+
+    ret = init_attribute(node, NGLI_NODE_GEOMETRY_INDEX_NORMALS, s->normals_buffer);
+    if (ret < 0)
+        return ret;
+
+    return 0;
+}
+
+static int update_buffer(struct ngl_node *node, double t)
+{
+    if (!node)
+        return 0;
+
+    int ret = ngli_node_update(node, t);
+    if (ret < 0)
+        return ret;
+
+    ret = ngli_node_buffer_upload(node);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
@@ -128,23 +224,24 @@ static int geometry_update(struct ngl_node *node, double t)
 {
     struct geometry_priv *s = node->priv_data;
 
-    int ret = ngli_node_update(s->vertices_buffer, t);
+    int ret = update_buffer(s->vertices_buffer, t);
     if (ret < 0)
         return ret;
 
-    if (s->uvcoords_buffer) {
-        ret = ngli_node_update(s->uvcoords_buffer, t);
-        if (ret < 0)
-            return ret;
-    }
+    ret = update_buffer(s->uvcoords_buffer, t);
+    if (ret < 0)
+        return ret;
 
-    if (s->normals_buffer) {
-        ret = ngli_node_update(s->normals_buffer, t);
-        if (ret < 0)
-            return ret;
-    }
+    ret = update_buffer(s->normals_buffer, t);
+    if (ret < 0)
+        return ret;
 
     return 0;
+}
+
+static void geometry_uninit(struct ngl_node *node)
+{
+    struct geometry_priv *s = node->priv_data;
 }
 
 const struct node_class ngli_geometry_class = {
@@ -152,6 +249,7 @@ const struct node_class ngli_geometry_class = {
     .name      = "Geometry",
     .init      = geometry_init,
     .update    = geometry_update,
+    .uninit    = geometry_uninit,
     .priv_size = sizeof(struct geometry_priv),
     .params    = geometry_params,
     .file      = __FILE__,

@@ -30,6 +30,8 @@ enum {
     NGLI_BUFFER_USAGE_NB
 };
 
+struct ngl_ctx;
+
 struct buffer {
     struct ngl_ctx *ctx;
     int size;

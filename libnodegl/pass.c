@@ -337,23 +337,22 @@ static int check_attributes(struct pass *s, struct hmap *attributes, int per_ins
     if (!attributes)
         return 0;
 
+    const struct pipeline_graphics *graphics = &s->pipeline_graphics;
     const struct hmap_entry *entry = NULL;
     while ((entry = ngli_hmap_next(attributes, entry))) {
         struct ngl_node *anode = entry->data;
         struct buffer_priv *buffer = anode->priv_data;
 
         if (per_instance) {
-            if (buffer->count != s->params.nb_instances) {
+            if (buffer->count != graphics->nb_instances) {
                 LOG(ERROR, "attribute buffer %s count (%d) does not match instance count (%d)",
-                    entry->key, buffer->count, s->params.nb_instances);
+                    entry->key, buffer->count, graphics->nb_instances);
                 return NGL_ERROR_INVALID_ARG;
             }
         } else {
-            struct geometry_priv *geometry = s->params.geometry->priv_data;
-            struct buffer_priv *vertices = geometry->vertices_buffer->priv_data;
-            if (buffer->count != vertices->count) {
+            if (buffer->count != graphics->nb_vertices) {
                 LOG(ERROR, "attribute buffer %s count (%d) does not match vertices count (%d)",
-                    entry->key, buffer->count, vertices->count);
+                    entry->key, buffer->count, graphics->nb_instances);
                 return NGL_ERROR_INVALID_ARG;
             }
         }
@@ -428,44 +427,21 @@ static int pass_graphics_init(struct pass *s)
     }
 
     struct geometry_priv *geometry_priv = params->geometry->priv_data;
-    struct pipeline_graphics *graphics = &s->pipeline_graphics;
-
-    graphics->topology = geometry_priv->topology;
-    graphics->nb_instances = s->params.nb_instances;
-
-    if (geometry_priv->indices_buffer) {
-        struct ngl_node *indices = geometry_priv->indices_buffer;
-        int ret = ngli_node_buffer_ref(indices);
-        if (ret < 0)
-            return ret;
-
-        struct buffer_priv *indices_priv = indices->priv_data;
-        if (indices_priv->block) {
-            LOG(ERROR, "geometry indices buffers referencing a block are not supported");
-            return NGL_ERROR_UNSUPPORTED;
-        }
-
-        s->indices = indices;
-        s->indices_buffer = &indices_priv->buffer;
-
-        graphics->nb_indices = indices_priv->count;
-        graphics->indices_format = indices_priv->data_format;
-        graphics->indices = &indices_priv->buffer;
-    } else {
-        struct ngl_node *vertices = geometry_priv->vertices_buffer;
-        struct buffer_priv *buffer_priv = vertices->priv_data;
-        graphics->nb_vertices = buffer_priv->count;
-    }
+    s->pipeline_graphics = geometry_priv->graphics;
+    s->pipeline_graphics.nb_instances = s->params.nb_instances;
 
     int ret;
     if ((ret = check_attributes(s, params->attributes, 0)) < 0 ||
         (ret = check_attributes(s, params->instance_attributes, 1)) < 0)
         return ret;
 
-    if ((ret = register_attribute(s, "ngl_position", geometry_priv->vertices_buffer, 0, 0)) < 0 ||
-        (ret = register_attribute(s, "ngl_uvcoord",  geometry_priv->uvcoords_buffer, 0, 0)) < 0 ||
-        (ret = register_attribute(s, "ngl_normal",   geometry_priv->normals_buffer,  0, 0)) < 0)
-        return ret;
+    for (int i = 0; i < NGLI_ARRAY_NB(geometry_priv->attributes); i++) {
+        struct pipeline_attribute *pipeline_attribute = &geometry_priv->attributes[i];
+        if (!pipeline_attribute->format)
+            continue;
+        if (!ngli_darray_push(&s->pipeline_attributes, pipeline_attribute))
+            return NGL_ERROR_MEMORY;
+    }
 
     if (params->attributes) {
         const struct hmap_entry *entry = NULL;

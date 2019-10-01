@@ -74,21 +74,13 @@ static int quad_init(struct ngl_node *node)
         UV_C(0) + UV_H(0),           1.0f - UV_C(1) - UV_H(1),
     };
 
-    s->vertices_buffer = ngli_node_geometry_generate_buffer(node->ctx,
-                                                            NGL_NODE_BUFFERVEC3,
-                                                            NB_VERTICES,
-                                                            sizeof(vertices),
-                                                            (void *)vertices);
-    if (!s->vertices_buffer)
-        return NGL_ERROR_MEMORY;
+    int ret = ngli_node_geometry_init_attribute(node, NGLI_NODE_GEOMETRY_INDEX_VERTICES, vertices, sizeof(vertices));
+    if (ret < 0)
+        return ret;
 
-    s->uvcoords_buffer = ngli_node_geometry_generate_buffer(node->ctx,
-                                                            NGL_NODE_BUFFERVEC2,
-                                                            NB_VERTICES,
-                                                            sizeof(uvs),
-                                                            (void *)uvs);
-    if (!s->uvcoords_buffer)
-        return NGL_ERROR_MEMORY;
+    ret = ngli_node_geometry_init_attribute(node, NGLI_NODE_GEOMETRY_INDEX_UVCOORDS, uvs, sizeof(uvs));
+    if (ret < 0)
+        return ret;
 
     float normals[3 * NB_VERTICES];
     ngli_vec3_normalvec(normals, vertices, vertices + 3, vertices + 6);
@@ -96,33 +88,22 @@ static int quad_init(struct ngl_node *node)
     for (int i = 1; i < NB_VERTICES; i++)
         memcpy(normals + (i * 3), normals, 3 * sizeof(*normals));
 
-    s->normals_buffer = ngli_node_geometry_generate_buffer(node->ctx,
-                                                           NGL_NODE_BUFFERVEC3,
-                                                           NB_VERTICES,
-                                                           sizeof(normals),
-                                                           normals);
-    if (!s->normals_buffer)
-        return NGL_ERROR_MEMORY;
+    ret = ngli_node_geometry_init_attribute(node, NGLI_NODE_GEOMETRY_INDEX_NORMALS, normals, sizeof(normals));
+    if (ret < 0)
+        return ret;
 
-    s->topology = NGLI_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+    s->graphics.topology = NGLI_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+    s->graphics.nb_vertices = NB_VERTICES;
 
     return 0;
 }
-
-#define NODE_UNREFP(node) do {                    \
-    if (node) {                                   \
-        ngli_node_detach_ctx(node, node->ctx);    \
-        ngl_node_unrefp(&node);                   \
-    }                                             \
-} while (0)
 
 static void quad_uninit(struct ngl_node *node)
 {
     struct geometry_priv *s = node->priv_data;
 
-    NODE_UNREFP(s->vertices_buffer);
-    NODE_UNREFP(s->uvcoords_buffer);
-    NODE_UNREFP(s->normals_buffer);
+    for (int i = 0; i < NGLI_ARRAY_NB(s->buffers); i++)
+        ngli_buffer_reset(&s->buffers[i]);
 }
 
 const struct node_class ngli_quad_class = {

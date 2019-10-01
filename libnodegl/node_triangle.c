@@ -53,21 +53,13 @@ static int triangle_init(struct ngl_node *node)
 {
     struct geometry_priv *s = node->priv_data;
 
-    s->vertices_buffer = ngli_node_geometry_generate_buffer(node->ctx,
-                                                            NGL_NODE_BUFFERVEC3,
-                                                            NB_VERTICES,
-                                                            sizeof(s->triangle_edges),
-                                                            s->triangle_edges);
-    if (!s->vertices_buffer)
-        return NGL_ERROR_MEMORY;
+    int ret = ngli_node_geometry_init_attribute(node, NGLI_NODE_GEOMETRY_INDEX_VERTICES, s->triangle_edges, sizeof(s->triangle_edges));
+    if (ret < 0)
+        return ret;
 
-    s->uvcoords_buffer = ngli_node_geometry_generate_buffer(node->ctx,
-                                                            NGL_NODE_BUFFERVEC2,
-                                                            NB_VERTICES,
-                                                            sizeof(s->triangle_uvs),
-                                                            s->triangle_uvs);
-    if (!s->uvcoords_buffer)
-        return NGL_ERROR_MEMORY;
+    ret = ngli_node_geometry_init_attribute(node, NGLI_NODE_GEOMETRY_INDEX_UVCOORDS, s->triangle_uvs, sizeof(s->triangle_uvs));
+    if (ret < 0)
+        return ret;
 
     float normals[3 * NB_VERTICES];
     ngli_vec3_normalvec(normals,
@@ -78,33 +70,22 @@ static int triangle_init(struct ngl_node *node)
     for (int i = 1; i < NB_VERTICES; i++)
         memcpy(normals + (i * 3), normals, 3 * sizeof(*normals));
 
-    s->normals_buffer = ngli_node_geometry_generate_buffer(node->ctx,
-                                                           NGL_NODE_BUFFERVEC3,
-                                                           NB_VERTICES,
-                                                           sizeof(normals),
-                                                           normals);
-    if (!s->normals_buffer)
-        return NGL_ERROR_MEMORY;
+    ret = ngli_node_geometry_init_attribute(node, NGLI_NODE_GEOMETRY_INDEX_NORMALS, normals, sizeof(normals));
+    if (ret < 0)
+        return ret;
 
-    s->topology = NGLI_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    s->graphics.topology = NGLI_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    s->graphics.nb_vertices = NB_VERTICES;
 
     return 0;
 }
-
-#define NODE_UNREFP(node) do {                    \
-    if (node) {                                   \
-        ngli_node_detach_ctx(node, node->ctx);    \
-        ngl_node_unrefp(&node);                   \
-    }                                             \
-} while (0)
 
 static void triangle_uninit(struct ngl_node *node)
 {
     struct geometry_priv *s = node->priv_data;
 
-    NODE_UNREFP(s->vertices_buffer);
-    NODE_UNREFP(s->uvcoords_buffer);
-    NODE_UNREFP(s->normals_buffer);
+    for (int i = 0; i < NGLI_ARRAY_NB(s->buffers); i++)
+        ngli_buffer_reset(&s->buffers[i]);
 }
 
 const struct node_class ngli_triangle_class = {

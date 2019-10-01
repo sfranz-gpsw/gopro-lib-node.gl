@@ -82,28 +82,20 @@ static int circle_init(struct ngl_node *node)
     for (int i = 1; i < nb_vertices; i++)
         memcpy(normals + (i * 3), normals, 3 * sizeof(*normals));
 
-    s->vertices_buffer = ngli_node_geometry_generate_buffer(node->ctx,
-                                                            NGL_NODE_BUFFERVEC3,
-                                                            nb_vertices,
-                                                            nb_vertices * sizeof(*vertices) * 3,
-                                                            vertices);
+    ret = ngli_node_geometry_init_attribute(node, NGLI_NODE_GEOMETRY_INDEX_VERTICES, vertices, nb_vertices * sizeof(*vertices) * 3);
+    if (ret < 0)
+        return ret;
 
-    s->uvcoords_buffer = ngli_node_geometry_generate_buffer(node->ctx,
-                                                            NGL_NODE_BUFFERVEC2,
-                                                            nb_vertices,
-                                                            nb_vertices * sizeof(*uvcoords) * 2,
-                                                            uvcoords);
+    ret = ngli_node_geometry_init_attribute(node, NGLI_NODE_GEOMETRY_INDEX_UVCOORDS, uvcoords, nb_vertices * sizeof(*vertices) * 2);
+    if (ret < 0)
+        return ret;
 
-    s->normals_buffer = ngli_node_geometry_generate_buffer(node->ctx,
-                                                           NGL_NODE_BUFFERVEC3,
-                                                           nb_vertices,
-                                                           nb_vertices * sizeof(*normals) * 3,
-                                                           normals);
+    ret = ngli_node_geometry_init_attribute(node, NGLI_NODE_GEOMETRY_INDEX_NORMALS, normals, nb_vertices * sizeof(*vertices) * 3);
+    if (ret < 0)
+        return ret;
 
-    if (!s->vertices_buffer || !s->uvcoords_buffer || !s->normals_buffer)
-        goto end;
-
-    s->topology = NGLI_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+    s->graphics.topology = NGLI_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+    s->graphics.nb_vertices = nb_vertices;
 
     ret = 0;
 
@@ -114,20 +106,12 @@ end:
     return ret;
 }
 
-#define NODE_UNREFP(node) do {                    \
-    if (node) {                                   \
-        ngli_node_detach_ctx(node, node->ctx);    \
-        ngl_node_unrefp(&node);                   \
-    }                                             \
-} while (0)
-
 static void circle_uninit(struct ngl_node *node)
 {
     struct geometry_priv *s = node->priv_data;
 
-    NODE_UNREFP(s->vertices_buffer);
-    NODE_UNREFP(s->uvcoords_buffer);
-    NODE_UNREFP(s->normals_buffer);
+    for (int i = 0; i < NGLI_ARRAY_NB(s->buffers); i++)
+        ngli_buffer_reset(&s->buffers[i]);
 }
 
 const struct node_class ngli_circle_class = {

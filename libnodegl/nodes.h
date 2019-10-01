@@ -41,6 +41,7 @@
 #endif
 
 #include "animation.h"
+#include "buffer.h"
 #include "drawutils.h"
 #include "glincludes.h"
 #include "glcontext.h"
@@ -50,6 +51,7 @@
 #include "image.h"
 #include "nodegl.h"
 #include "params.h"
+#include "pipeline.h"
 #include "program.h"
 #include "darray.h"
 #include "buffer.h"
@@ -143,6 +145,13 @@ struct ngl_node {
                                            NGL_NODE_IDENTITY,  \
                                            -1}
 
+enum {
+    NGLI_NODE_GEOMETRY_INDEX_VERTICES,
+    NGLI_NODE_GEOMETRY_INDEX_UVCOORDS,
+    NGLI_NODE_GEOMETRY_INDEX_NORMALS,
+    NGLI_NODE_GEOMETRY_INDEX_NB,
+};
+
 struct geometry_priv {
     /* quad params */
     float quad_corner[3];
@@ -168,9 +177,13 @@ struct geometry_priv {
     struct ngl_node *indices_buffer;
 
     int topology;
+
+    struct pipeline_graphics graphics;
+    struct buffer buffers[NGLI_NODE_GEOMETRY_INDEX_NB];
+    struct pipeline_attribute attributes[NGLI_NODE_GEOMETRY_INDEX_NB];
 };
 
-struct ngl_node *ngli_node_geometry_generate_buffer(struct ngl_ctx *ctx, int type, int count, int size, void *data);
+int ngli_node_geometry_init_attribute(struct ngl_node *node, int index, const void *data, int data_size);
 
 struct buffer_priv {
     int count;              // number of elements
