@@ -54,10 +54,8 @@ struct pipeline_attribute {
 
 struct pipeline_graphics {
     int topology;
-    union {
-        int nb_vertices;
-        int nb_indices;
-    };
+    int nb_vertices;
+    int nb_indices;
     int indices_format;
     int nb_instances;
     struct buffer *indices;
