@@ -84,16 +84,16 @@ static const struct range {
     float scales[3];
 } ranges[] = {
     {
-        .name = "Limited",
-        .range_id = SXPLAYER_COL_RNG_LIMITED,
-        .offsets = { 16.0 / 255.0, 128.0 / 255.0, 128.0 / 255.0 },
-        .scales = { 219.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0 },
+        .name           = "Limited",
+        .range_id       = SXPLAYER_COL_RNG_LIMITED,
+        .offsets        = { 16.0 / 255.0, 128.0 / 255.0, 128.0 / 255.0 },
+        .scales         = { 219.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0 },
     },
     {
-        .name = "Full",
-        .range_id = SXPLAYER_COL_RNG_FULL,
-        .offsets = { 0.0, 0.0, 0.0 },
-        .scales = { 1.0, 1.0, 1.0 },
+        .name           = "Full",
+        .range_id       = SXPLAYER_COL_RNG_FULL,
+        .offsets        = { 0.0, 0.0, 0.0 },
+        .scales         = { 1.0, 1.0, 1.0 },
     }
 };
 
