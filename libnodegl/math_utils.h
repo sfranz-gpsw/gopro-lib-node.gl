@@ -30,6 +30,7 @@
 
 float ngli_vec3_length(const float *v);
 void ngli_vec3_sub(float *dst, const float *v1, const float *v2);
+void ngli_vec3_mul(float *dst, const float *v1, const float *v2);
 void ngli_vec3_norm(float *dst, const float *v);
 void ngli_vec3_cross(float *dst, const float *v1, const float *v2);
 float ngli_vec3_dot(const float *v1, const float *v2);

@@ -39,6 +39,17 @@ void ngli_vec3_sub(float *dst, const float *v1, const float *v2)
     dst[2] = v1[2] - v2[2];
 }
 
+void ngli_vec3_mul(float *dst, const float *v1, const float *v2)
+{
+    float tmp[3];
+
+    tmp[0] = v1[0] * v2[0];
+    tmp[1] = v1[1] * v2[1];
+    tmp[2] = v1[2] * v2[2];
+
+    memcpy(dst, tmp, sizeof(tmp));
+}
+
 void ngli_vec3_norm(float *dst, const float *v)
 {
     if (!memcmp(v, zvec, 3 * sizeof(*v))) {
