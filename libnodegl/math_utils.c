@@ -168,6 +168,36 @@ void ngli_mat3_from_mat4(float *dst, const float *m)
     memcpy(dst + 6, m + 8, 3 * sizeof(*m));
 }
 
+void ngli_mat3_mul_c(float *dst, const float *m1, const float *m2)
+{
+    float m[3*3];
+
+    m[0] = m1[0]*m2[0] + m1[3]*m2[1] + m1[6]*m2[2];
+    m[1] = m1[1]*m2[0] + m1[4]*m2[1] + m1[7]*m2[2];
+    m[2] = m1[2]*m2[0] + m1[5]*m2[1] + m1[8]*m2[2];
+
+    m[3] = m1[0]*m2[3] + m1[3]*m2[4] + m1[6]*m2[5];
+    m[4] = m1[1]*m2[3] + m1[4]*m2[4] + m1[7]*m2[5];
+    m[5] = m1[2]*m2[3] + m1[5]*m2[4] + m1[8]*m2[5];
+
+    m[6] = m1[0]*m2[6] + m1[3]*m2[7] + m1[6]*m2[8];
+    m[7] = m1[1]*m2[6] + m1[4]*m2[7] + m1[7]*m2[8];
+    m[8] = m1[2]*m2[6] + m1[5]*m2[7] + m1[8]*m2[8];
+
+    memcpy(dst, m, sizeof(m));
+}
+
+void ngli_mat3_mul_vec3_c(float *dst, const float *m, const float *v)
+{
+    float tmp[3];
+
+    tmp[0] = m[0]*v[0] + m[3]*v[1] + m[6]*v[2];
+    tmp[1] = m[1]*v[0] + m[4]*v[1] + m[7]*v[2];
+    tmp[2] = m[2]*v[0] + m[5]*v[1] + m[8]*v[2];
+
+    memcpy(dst, tmp, sizeof(tmp));
+}
+
 void ngli_mat3_mul_scalar(float *dst, const float *m, float s)
 {
     float tmp[3*3];
@@ -237,6 +267,14 @@ void ngli_mat3_inverse(float *dst, const float *m)
 
     ngli_mat3_adjugate(a, m);
     ngli_mat3_mul_scalar(dst, a, 1.0 / det);
+}
+
+void ngli_mat3_scale(float *dst, float x, float y, float z)
+{
+    memset(dst, 0, 3 * 3 * sizeof(*dst));
+    dst[0] = x;
+    dst[4] = y;
+    dst[8] = z;
 }
 
 void ngli_mat4_mul_c(float *dst, const float *m1, const float *m2)
