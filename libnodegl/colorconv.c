@@ -84,7 +84,7 @@ static const struct range {
     float scales[3];
 } ranges[] = {
     {
-        .name = "Legal",
+        .name = "Limited",
         .range_id = SXPLAYER_COL_RNG_LIMITED,
         .offsets = { 16.0 / 255.0, 128.0 / 255.0, 128.0 / 255.0 },
         .scales = { 219.0 / 255.0, 224.0 / 255.0, 224.0 / 255.0 },
