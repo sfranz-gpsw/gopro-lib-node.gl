@@ -99,7 +99,7 @@ static const struct range {
 
 static int find_color_space(struct color_space *color_space, int space_id)
 {
-    for (int i = 0; i < sizeof(color_spaces) / sizeof(color_space); ++i) {
+    for (int i = 0; i < NGLI_ARRAY_NB(color_spaces); ++i) {
         if (color_spaces[i].space_id == space_id) {
             *color_space = color_spaces[i];
             return 0;
@@ -111,7 +111,7 @@ static int find_color_space(struct color_space *color_space, int space_id)
 
 static int find_range(struct range *range, int range_id)
 {
-    for (int i = 0; i < sizeof(ranges) / sizeof(range); ++i) {
+    for (int i = 0; i < NGLI_ARRAY_NB(ranges); ++i) {
         if (ranges[i].range_id == range_id) {
             *range = ranges[i];
             return 0;
