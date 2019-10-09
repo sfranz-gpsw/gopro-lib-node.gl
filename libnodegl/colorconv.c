@@ -43,37 +43,37 @@ static const struct color_space {
     struct chroma_xy white;
 } color_spaces[] = {
     {
-        .name = "SMPTE 170M",
-        .desc = "ITU-R BT.601 525, NTSC",
-        .space_id = SXPLAYER_COL_SPC_SMPTE170M,
-        .primaries_id = SXPLAYER_COL_PRI_SMPTE170M,
-        .transfer_id = SXPLAYER_COL_TRC_SMPTE170M,
-        .red =   { 0.630 , 0.340  },
-        .green = { 0.310 , 0.595  },
-        .blue =  { 0.155 , 0.070  },
-        .white = { 0.3127, 0.3290 },
+        .name           = "SMPTE 170M",
+        .desc           = "ITU-R BT.601 525, NTSC",
+        .space_id       = SXPLAYER_COL_SPC_SMPTE170M,
+        .primaries_id   = SXPLAYER_COL_PRI_SMPTE170M,
+        .transfer_id    = SXPLAYER_COL_TRC_SMPTE170M,
+        .red            = { 0.630 , 0.340  },
+        .green          = { 0.310 , 0.595  },
+        .blue           = { 0.155 , 0.070  },
+        .white          = { 0.3127, 0.3290 },
     },
     {
-        .name = "BT.709",
-        .desc = "ITU-R BT.709, HDTV",
-        .space_id = SXPLAYER_COL_SPC_BT709,
-        .primaries_id = SXPLAYER_COL_PRI_BT709,
-        .transfer_id = SXPLAYER_COL_TRC_BT709,
-        .red =   { 0.640 , 0.330  },
-        .green = { 0.300 , 0.600  },
-        .blue =  { 0.150 , 0.060  },
-        .white = { 0.3127, 0.3290 },
+        .name           = "BT.709",
+        .desc           = "ITU-R BT.709, HDTV",
+        .space_id       = SXPLAYER_COL_SPC_BT709,
+        .primaries_id   = SXPLAYER_COL_PRI_BT709,
+        .transfer_id    = SXPLAYER_COL_TRC_BT709,
+        .red            = { 0.640 , 0.330  },
+        .green          = { 0.300 , 0.600  },
+        .blue           = { 0.150 , 0.060  },
+        .white          = { 0.3127, 0.3290 },
     },
     {
-        .name = "BT.2020",
-        .desc = "ITU-R BT.2020, UHDTV",
-        .space_id = SXPLAYER_COL_SPC_BT2020_NCL,
-        .primaries_id = SXPLAYER_COL_PRI_BT2020,
-        .transfer_id = SXPLAYER_COL_TRC_SMPTE2084,
-        .red =   { 0.708 , 0.292  },
-        .green = { 0.170 , 0.797  },
-        .blue =  { 0.131 , 0.046  },
-        .white = { 0.3127, 0.3290 },
+        .name           = "BT.2020",
+        .desc           = "ITU-R BT.2020, UHDTV",
+        .space_id       = SXPLAYER_COL_SPC_BT2020_NCL,
+        .primaries_id   = SXPLAYER_COL_PRI_BT2020,
+        .transfer_id    = SXPLAYER_COL_TRC_SMPTE2084,
+        .red            = { 0.708 , 0.292  },
+        .green          = { 0.170 , 0.797  },
+        .blue           = { 0.131 , 0.046  },
+        .white          = { 0.3127, 0.3290 },
     }
 };
 
@@ -127,7 +127,8 @@ static void normalized_primary_matrix(float *dst, const struct color_space *csp)
     float p_mat[3*3] = {
         csp->red.x, csp->green.x, csp->blue.x,
         csp->red.y, csp->green.y, csp->blue.y,
-        1.0 - csp->red.x - csp->red.y, 1.0 - csp->green.x - csp->green.y, 1.0 - csp->blue.x - csp->blue.y};
+        1.0 - csp->red.x - csp->red.y, 1.0 - csp->green.x - csp->green.y, 1.0 - csp->blue.x - csp->blue.y
+    };
 
     float white_vec[3] = {
         csp->white.x / csp->white.y,
@@ -225,7 +226,8 @@ void ngli_colorconv_rgb_to_ycbcr_mat4(float *dst, int colorspace_id, int range_i
     float chroma_scale[3] = {
         1.0,
         0.5 / (1.0 - luma_coeff[2]),
-        0.5 / (1.0 - luma_coeff[0])};
+        0.5 / (1.0 - luma_coeff[0])
+    };
 
     dst[ 0] *= range.scales[0];
     dst[ 1] *= range.scales[0];
@@ -244,8 +246,7 @@ void ngli_colorconv_rgb_to_ycbcr_mat4(float *dst, int colorspace_id, int range_i
     ngli_mat4_transpose(dst, dst);
 }
 
-void ngli_colorconv_rgb_to_rgb_mat4(
-    float *dst, int colorspace_src_id, int colorspace_dst_id)
+void ngli_colorconv_rgb_to_rgb_mat4(float *dst, int colorspace_src_id, int colorspace_dst_id)
 {
     struct color_space color_space_src, color_space_dst;
     if (find_color_space(&color_space_src, colorspace_src_id) < 0)
