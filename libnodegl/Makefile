@@ -65,6 +65,7 @@ LIB_OBJS = animation.o              \
            backend_gl.o             \
            bstr.o                   \
            buffer.o                 \
+           colorconv.o              \
            darray.o                 \
            default_shaders.o        \
            deserialize.o            \
@@ -268,6 +269,7 @@ gl.xml:
 # Tests
 #
 TESTS = asm             \
+        color           \
         darray          \
         draw            \
         hmap            \
@@ -281,6 +283,7 @@ testprogs: $(TESTPROGS)
 
 test_asm: LDLIBS = $(PROJECT_LDLIBS) -lm
 test_asm: test_asm.o math_utils.o $(LIB_OBJS_ARCH_$(ARCH))
+test_color: test_color.o colorconv.o math_utils.o
 test_darray: test_darray.o darray.o memory.o
 test_draw: test_draw.o drawutils.o
 test_hmap: test_hmap.o utils.o memory.o
