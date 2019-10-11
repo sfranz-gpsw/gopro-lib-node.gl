@@ -392,6 +392,8 @@ void ngli_mat4_identity(float *dst)
 
 void ngli_mat4_from_mat3(float *dst, const float *m)
 {
+    ngli_mat4_identity(dst);
+
     memcpy(dst,     m,     3 * sizeof(*m));
     memcpy(dst + 4, m + 3, 3 * sizeof(*m));
     memcpy(dst + 8, m + 6, 3 * sizeof(*m));
