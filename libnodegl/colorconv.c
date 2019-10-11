@@ -198,6 +198,56 @@ void ngli_colorconv_ycbcr_to_rgb_mat4(float *dst, int colorspace_id, int range_i
     dst[14] = offsets[2];
 }
 
+void ngli_colorconv_ycbcr_to_rgb_2_mat4(float *dst, int colorspace_id, int range_id)
+{
+    struct color_space color_space;
+    struct range range;
+    if (find_color_space(&color_space, colorspace_id) < 0)
+        return;
+    if (find_range(&range, range_id) < 0)
+        return;
+
+    float luma_coeff[3] = { 1.0, 1.0, 1.0 };
+    luma_coefficients(luma_coeff, &color_space);
+
+    float Kr = luma_coeff[0];
+    float Kg = luma_coeff[1];
+    float Kb = luma_coeff[2];
+
+    float yrange = range.scales[0] * 255.;
+    float uvrange = range.scales[1] * 255.;
+    float yoff = range.offsets[0] * 255.;
+
+    float r_y_factor  = 255. * (1. / yrange);
+    float r_cb_factor = 0.;
+    float r_cr_factor = 255. * 2. * (1. - Kr) / uvrange;
+    float r_off       = (-yoff / yrange) - 128. * 2. * (1. - Kr) / uvrange;
+
+    float g_y_factor  = 255. * (1. - Kr - Kb) / (yrange * Kg);
+    float g_cb_factor = -255. * Kb * 2. * (1. - Kb) / (Kg * uvrange);
+    float g_cr_factor = -255. * Kr * 2. * (1. - Kr) / (Kg * uvrange);
+    float g_off       = (-yoff * (1. - Kr - Kb) / yrange + 128. * Kb * 2. * (1. - Kb) / uvrange + 128. * Kr * 2. * (1. - Kr) / uvrange) / Kg;
+
+    float b_y_factor  = 255. * 1. / yrange;
+    float b_cb_factor = 255. * 2. * (1. - Kb) / uvrange;
+    float b_cr_factor = 0.;
+    float b_off       = (-yoff / yrange) - 128. * 2. * (1. - Kb) / uvrange;
+
+    ngli_mat4_identity(dst);
+    dst[ 0] = r_y_factor;
+    dst[ 1] = g_y_factor;
+    dst[ 2] = b_y_factor;
+    dst[ 4] = r_cb_factor;
+    dst[ 5] = g_cb_factor;
+    dst[ 6] = b_cb_factor;
+    dst[ 8] = r_cr_factor;
+    dst[ 9] = g_cr_factor;
+    dst[10] = b_cr_factor;
+    dst[12] = r_off;
+    dst[13] = g_off;
+    dst[14] = b_off;
+}
+
 void ngli_colorconv_rgb_to_ycbcr_mat4(float *dst, int colorspace_id, int range_id)
 {
     struct color_space color_space;

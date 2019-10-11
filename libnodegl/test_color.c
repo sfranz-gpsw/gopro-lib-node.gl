@@ -45,11 +45,15 @@ int main(void)
     };
 
     float ycbcr_to_rgb[] = NGLI_MAT4_IDENTITY;
-    ngli_colorconv_ycbcr_to_rgb_mat4(ycbcr_to_rgb, 1, SXPLAYER_COL_RNG_LIMITED);
+    ngli_colorconv_ycbcr_to_rgb_mat4(ycbcr_to_rgb, SXPLAYER_COL_SPC_BT709, SXPLAYER_COL_RNG_LIMITED);
     printf("YCbCr to RGB:\n" NGLI_FMT_MAT4 "\n", NGLI_ARG_MAT4(ycbcr_to_rgb));
 
+    float ycbcr_to_rgb_2[] = NGLI_MAT4_IDENTITY;
+    ngli_colorconv_ycbcr_to_rgb_2_mat4(ycbcr_to_rgb_2, SXPLAYER_COL_SPC_BT709, SXPLAYER_COL_RNG_LIMITED);
+    printf("YCbCr to RGB 2:\n" NGLI_FMT_MAT4 "\n", NGLI_ARG_MAT4(ycbcr_to_rgb_2));
+
     float rgb_to_ycbcr[] = NGLI_MAT4_IDENTITY;
-    ngli_colorconv_rgb_to_ycbcr_mat4(rgb_to_ycbcr, 1, SXPLAYER_COL_RNG_LIMITED);
+    ngli_colorconv_rgb_to_ycbcr_mat4(rgb_to_ycbcr, SXPLAYER_COL_SPC_BT709, SXPLAYER_COL_RNG_LIMITED);
     printf("RGB to YCbCr:\n" NGLI_FMT_MAT4 "\n", NGLI_ARG_MAT4(rgb_to_ycbcr));
 
     ngli_mat4_mul_c(tmp, ycbcr_to_rgb, rgb_to_ycbcr);
@@ -57,6 +61,7 @@ int main(void)
 
     for (int i = 0; i < 4*4; ++i) {
         ngli_assert(fabs(ycbcr_to_rgb[i] - ycbcr_to_rgb_bt709[i]) < M_EPS);
+        ngli_assert(fabs(ycbcr_to_rgb_2[i] - ycbcr_to_rgb_bt709[i]) < M_EPS);
         ngli_assert(fabs(tmp[i] - identity[i]) < M_EPS);
     }
 

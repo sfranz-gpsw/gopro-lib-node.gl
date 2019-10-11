@@ -23,6 +23,7 @@
 #define COLORCONV_H
 
 void ngli_colorconv_ycbcr_to_rgb_mat4(float *dst, int colorspace_id, int range_id);
+void ngli_colorconv_ycbcr_to_rgb_2_mat4(float *dst, int colorspace_id, int range_id);
 void ngli_colorconv_rgb_to_ycbcr_mat4(float *dst, int colorspace_id, int range_id);
 void ngli_colorconv_rgb_to_rgb_mat4(float *dst, int colorspace_src_id, int colorspace_dst_id);
 
