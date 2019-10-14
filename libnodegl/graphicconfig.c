@@ -46,6 +46,7 @@ static const struct graphicconfig default_graphicconfig = {
     .stencil_depth_pass = NGLI_STENCIL_OP_KEEP,
     .cull_face          = 0,
     .cull_face_mode     = NGLI_CULL_MODE_BACK_BIT,
+    .framebuffer_srgb   = 0,
 };
 
 void ngli_graphicconfig_init(struct graphicconfig *s)

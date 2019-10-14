@@ -247,6 +247,7 @@
         - [cull_face_mode, flags]
         - [scissor_test, bool]
         - [scissor, vec4]
+        - [framebuffer_srgb, bool]
 
 - Group:
     optional:

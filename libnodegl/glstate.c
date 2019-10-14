@@ -138,6 +138,11 @@ void ngli_glstate_probe(const struct glcontext *gl, struct glstate *state)
     ngli_glGetBooleanv(gl, GL_SCISSOR_TEST,            &state->scissor_test);
     ngli_glGetIntegerv(gl, GL_SCISSOR_BOX,             (GLint *)&state->scissor);
 
+
+#if ! defined(TARGET_ANDROID)
+    /* Framebuffer */
+    ngli_glGetBooleanv(gl, GL_FRAMEBUFFER_SRGB,        &state->framebuffer_srgb);
+#endif
 }
 
 static void init_state(struct glstate *s, const struct graphicconfig *gc)
@@ -171,6 +176,8 @@ static void init_state(struct glstate *s, const struct graphicconfig *gc)
 
     s->scissor_test = gc->scissor_test;
     memcpy(&s->scissor, &gc->scissor, sizeof(s->scissor));
+
+    s->framebuffer_srgb = gc->framebuffer_srgb;
 }
 
 static int honor_state(const struct glcontext *gl,
@@ -283,6 +290,16 @@ static int honor_state(const struct glcontext *gl,
     if (next->scissor_test && memcmp(next->scissor, prev->scissor, sizeof(prev->scissor))) {
         ngli_glScissor(gl, next->scissor[0], next->scissor[1], next->scissor[2], next->scissor[3]);
     }
+
+#if ! defined(TARGET_ANDROID)
+    /* Framebuffer */
+    if (next->framebuffer_srgb != prev->framebuffer_srgb) {
+        if (next->framebuffer_srgb)
+            ngli_glEnable(gl, GL_FRAMEBUFFER_SRGB);
+        else
+            ngli_glDisable(gl, GL_FRAMEBUFFER_SRGB);
+    }
+#endif
 
     return 1;
 }

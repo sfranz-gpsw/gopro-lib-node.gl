@@ -117,6 +117,8 @@ struct graphicconfig {
 
     int scissor_test;
     int scissor[4];
+
+    int framebuffer_srgb;
 };
 
 void ngli_graphicconfig_init(struct graphicconfig *s);

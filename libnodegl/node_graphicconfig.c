@@ -62,6 +62,8 @@ struct graphicconfig_priv {
     float scissor[4];
     int use_scissor;
 
+    int framebuffer_srgb;
+
     struct graphicconfig graphicconfig;
 };
 
@@ -213,6 +215,8 @@ static const struct node_param graphicconfig_params[] = {
                            .desc=NGLI_DOCSTRING("enable scissor testing")},
     {"scissor",            PARAM_TYPE_VEC4, OFFSET(scissor), {.vec=DEFAULT_SCISSOR},
                            .desc=NGLI_DOCSTRING("define an area where all pixels outside are discarded")},
+    {"framebuffer_srgb",   PARAM_TYPE_BOOL, OFFSET(framebuffer_srgb), {.i64=-1},
+                           .desc=NGLI_DOCSTRING("enable framebuffer sRGB")},
     {NULL}
 };
 
@@ -287,6 +291,8 @@ static void honor_config(struct ngl_node *node, int restore)
             for (int i = 0; i < 4; i++)
                 pending->scissor[i] = s->scissor[i];
         }
+
+        COPY_PARAM(framebuffer_srgb);
     }
 }
 

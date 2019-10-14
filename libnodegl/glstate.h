@@ -54,6 +54,8 @@ struct glstate {
 
     GLboolean scissor_test;
     GLint     scissor[4];
+
+    GLboolean framebuffer_srgb;
 };
 
 void ngli_glstate_probe(const struct glcontext *gl,
