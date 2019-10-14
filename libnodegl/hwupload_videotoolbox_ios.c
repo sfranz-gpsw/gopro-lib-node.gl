@@ -60,7 +60,7 @@ struct format_desc {
     } planes[2];
 };
 
-static int vt_get_format_desc(OSType format, struct format_desc *desc)
+static int vt_get_format_desc(OSType format, struct format_desc *desc, int data_is_srgb)
 {
     switch (format) {
     case kCVPixelFormatType_32BGRA:
@@ -71,7 +71,7 @@ static int vt_get_format_desc(OSType format, struct format_desc *desc)
     case kCVPixelFormatType_32RGBA:
         desc->layout = NGLI_IMAGE_LAYOUT_DEFAULT;
         desc->nb_planes = 1;
-        desc->planes[0].format = NGLI_FORMAT_R8G8B8A8_UNORM;
+        desc->planes[0].format = data_is_srgb ? NGLI_FORMAT_R8G8B8A8_SRGB : NGLI_FORMAT_R8G8B8A8_UNORM;
         break;
     case kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange:
         desc->layout = NGLI_IMAGE_LAYOUT_NV12;
@@ -203,7 +203,7 @@ static int vt_ios_init(struct ngl_node *node, struct sxplayer_frame *frame)
     vt->height = CVPixelBufferGetHeight(cvpixbuf);
 
     struct format_desc format_desc = {0};
-    int ret = vt_get_format_desc(vt->format, &format_desc);
+    int ret = vt_get_format_desc(vt->format, &format_desc, s->data_is_srgb);
     if (ret < 0)
         return ret;
 
@@ -294,7 +294,7 @@ static int vt_ios_dr_init(struct ngl_node *node, struct sxplayer_frame *frame)
     }
 
     struct format_desc format_desc = {0};
-    int ret = vt_get_format_desc(vt->format, &format_desc);
+    int ret = vt_get_format_desc(vt->format, &format_desc, s->data_is_srgb);
     if (ret < 0)
         return ret;
 

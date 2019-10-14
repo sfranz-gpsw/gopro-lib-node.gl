@@ -370,6 +370,7 @@
         - [wrap_t, select]
         - [access, flags]
         - [data_src, Node]
+        - [data_is_srgb, bool]
         - [direct_rendering, bool]
 
 - Texture3D:

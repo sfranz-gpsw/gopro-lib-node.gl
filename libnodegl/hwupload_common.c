@@ -34,13 +34,14 @@
 #include "nodegl.h"
 #include "nodes.h"
 
-static int common_get_data_format(int pix_fmt)
+// TODO : should be a common format inference function for all hwuploader
+static int common_get_data_format(int pix_fmt, int data_is_srgb)
 {
     switch (pix_fmt) {
     case SXPLAYER_PIXFMT_RGBA:
-        return NGLI_FORMAT_R8G8B8A8_UNORM;
+        return data_is_srgb ? NGLI_FORMAT_R8G8B8A8_SRGB : NGLI_FORMAT_R8G8B8A8_UNORM;
     case SXPLAYER_PIXFMT_BGRA:
-        return NGLI_FORMAT_B8G8R8A8_UNORM;
+        return data_is_srgb ? NGLI_FORMAT_R8G8B8A8_SRGB : NGLI_FORMAT_B8G8R8A8_UNORM;
     case SXPLAYER_SMPFMT_FLT:
         return NGLI_FORMAT_R32_SFLOAT;
     default:
@@ -57,7 +58,7 @@ static int common_init(struct ngl_node *node, struct sxplayer_frame *frame)
     params.width  = frame->width;
     params.height = frame->height;
 
-    params.format = common_get_data_format(frame->pix_fmt);
+    params.format = common_get_data_format(frame->pix_fmt, s->data_is_srgb);
     if (params.format < 0)
         return -1;
 

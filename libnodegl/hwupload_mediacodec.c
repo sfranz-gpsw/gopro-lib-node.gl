@@ -48,7 +48,7 @@ static int mc_init(struct ngl_node *node, struct sxplayer_frame *frame)
     struct hwupload_mc *mc = s->hwupload_priv_data;
 
     struct texture_params params = s->params;
-    params.format = NGLI_FORMAT_R8G8B8A8_UNORM;
+    params.format = s->data_is_srgb ? NGLI_FORMAT_R8G8B8A8_SRGB : NGLI_FORMAT_R8G8B8A8_UNORM;
     params.width  = frame->width;
     params.height = frame->height;
 

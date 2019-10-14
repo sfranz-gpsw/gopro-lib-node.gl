@@ -280,6 +280,7 @@ extern const struct param_choices ngli_filter_choices;
 struct texture_priv {
     struct texture_params params;
     struct ngl_node *data_src;
+    int data_is_srgb;
     int direct_rendering;
 
     uint32_t supported_image_layouts;

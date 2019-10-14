@@ -211,6 +211,8 @@ static const struct node_param texture2d_params[] = {
                .desc=NGLI_DOCSTRING("texture access (only honored by the `Compute` node)")},
     {"data_src", PARAM_TYPE_NODE, OFFSET(data_src), .node_types=DATA_SRC_TYPES_LIST_2D,
                  .desc=NGLI_DOCSTRING("data source")},
+    {"data_is_srgb", PARAM_TYPE_BOOL, OFFSET(data_is_srgb), {.i64=0},
+                     .desc=NGLI_DOCSTRING("prefer sRGB texture formats")},
     {"direct_rendering", PARAM_TYPE_BOOL, OFFSET(direct_rendering), {.i64=1},
                          .desc=NGLI_DOCSTRING("whether direct rendering is allowed or not for media playback")},
     {NULL}

@@ -43,7 +43,7 @@ struct hwupload_vt_darwin {
     struct texture planes[2];
 };
 
-static int vt_get_data_format(struct sxplayer_frame *frame)
+static int vt_get_data_format(struct sxplayer_frame *frame, int data_is_srgb)
 {
     CVPixelBufferRef cvpixbuf = (CVPixelBufferRef)frame->data;
     OSType cvformat = CVPixelBufferGetPixelFormatType(cvpixbuf);
@@ -51,9 +51,10 @@ static int vt_get_data_format(struct sxplayer_frame *frame)
     switch (cvformat) {
     case kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange:
     case kCVPixelFormatType_32BGRA:
+        // TODO: BGR SRGB doesnt exists
         return NGLI_FORMAT_B8G8R8A8_UNORM;
     case kCVPixelFormatType_32RGBA:
-        return NGLI_FORMAT_R8G8B8A8_UNORM;
+        return data_is_srgb ? NGLI_FORMAT_R8G8B8A8_SRGB : NGLI_FORMAT_R8G8B8A8_UNORM;
     default:
         return -1;
     }
@@ -112,7 +113,7 @@ static int vt_darwin_init(struct ngl_node *node, struct sxplayer_frame * frame)
     struct hwupload_vt_darwin *vt = s->hwupload_priv_data;
 
     struct texture_params params = s->params;
-    params.format = vt_get_data_format(frame);
+    params.format = vt_get_data_format(frame, s->data_is_srgb);
     params.width  = frame->width;
     params.height = frame->height;
 
@@ -156,7 +157,7 @@ static int vt_darwin_map_frame(struct ngl_node *node, struct sxplayer_frame *fra
         ngli_texture_reset(&s->texture);
 
         struct texture_params params = s->params;
-        params.format = vt_get_data_format(frame);
+        params.format = vt_get_data_format(frame, s->data_is_srgb);
         params.width  = frame->width;
         params.height = frame->height;
 

@@ -215,7 +215,7 @@ static int vaapi_init(struct ngl_node *node, struct sxplayer_frame *frame)
         return ret;
 
     struct texture_params params = s->params;
-    params.format = NGLI_FORMAT_R8G8B8A8_UNORM;
+    params.format = s->data_is_srgb ? NGLI_FORMAT_R8G8B8A8_SRGB : NGLI_FORMAT_R8G8B8A8_UNORM;
     params.width  = frame->width;
     params.height = frame->height;
 
@@ -248,7 +248,7 @@ static int vaapi_map_frame(struct ngl_node *node, struct sxplayer_frame *frame)
         ngli_texture_reset(&s->texture);
 
         struct texture_params params = s->params;
-        params.format = NGLI_FORMAT_R8G8B8A8_UNORM;
+        params.format = s->data_is_srgb ? NGLI_FORMAT_R8G8B8A8_SRGB : NGLI_FORMAT_R8G8B8A8_UNORM;
         params.width  = frame->width;
         params.height = frame->height;
 
