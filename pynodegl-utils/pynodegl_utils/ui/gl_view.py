@@ -21,6 +21,8 @@
 # under the License.
 #
 
+from fractions import Fraction
+
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QEvent
@@ -41,8 +43,9 @@ class _GLWidget(QtWidgets.QWidget):
         self.setAttribute(Qt.WA_DontCreateNativeAncestors)
         self.setAttribute(Qt.WA_NativeWindow)
         self.setAttribute(Qt.WA_PaintOnScreen)
-        self.setMinimumSize(640, 360)
+        self.setMinimumSize(1, 1)
 
+        self._scene_ar = Fraction(1, 1)
         self._player = None
         self._last_frame_time = 0.0
         self._config = config
@@ -55,11 +58,23 @@ class _GLWidget(QtWidgets.QWidget):
             return
 
         size = event.size()
-        width = int(size.width() * self.devicePixelRatioF())
-        height = int(size.height() * self.devicePixelRatioF())
-        self._player.resize(width, height)
+        widget_width = int(size.width() * self.devicePixelRatioF())
+        widget_height = int(size.height() * self.devicePixelRatioF())
+
+        widget_ar = Fraction(widget_width, widget_height)
+        if widget_ar <= self._scene_ar:
+            width = widget_width
+            height = int(round(width / self._scene_ar))
+        else:
+            height = widget_height
+            width = int(round(height * self._scene_ar))
 
         super(_GLWidget, self).resizeEvent(event)
+        self._player.resize(width, height)
+
+        print(((self.width() - width) / 2, (self.height() - height) / 2, width, height))
+        self.setGeometry((self.width() - width) / 2, (self.height() - height) / 2, width, height)
+
 
     def event(self, event):
         if event.type() == QEvent.Paint:
@@ -84,6 +99,9 @@ class _GLWidget(QtWidgets.QWidget):
     @QtCore.pyqtSlot(int, float)
     def _set_last_frame_time(self, frame_index, frame_time):
         self._last_frame_time = frame_time
+
+    def set_aspect_ratio(self, ar):
+        self._scene_ar = ar
 
     def get_last_frame_time(self):
         return self._last_frame_time
