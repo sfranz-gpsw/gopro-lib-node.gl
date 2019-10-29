@@ -276,6 +276,7 @@
         - [max_nb_sink, int]
         - [max_pixels, int]
         - [stream_idx, int]
+        - [frame_selection_mode, select]
 
 - Program:
     optional:

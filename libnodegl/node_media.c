@@ -45,6 +45,23 @@ static const struct param_choices sxplayer_log_level_choices = {
     }
 };
 
+static const struct param_choices sxplayer_frame_selection_choices = {
+    .name = "sxplayer_frame_selection_mode",
+    .consts = {
+        {"decode", SXPLAYER_FRAME_SELECTION_DECODE, .desc=NGLI_DOCSTRING("accurate method which relies on decoding "
+                                                                         "the next frame to select the frame returned "
+                                                                         "by sxplayer_get_frame()")},
+        {"guess",  SXPLAYER_FRAME_SELECTION_GUESS,  .desc=NGLI_DOCSTRING("inaccurate method which relies on guessing "
+                                                                         "the next frame timestamp based on the media "
+                                                                         "frame rate to select the frame returned by "
+                                                                         "sxplayer_get_frame(). This method greatly "
+                                                                         "increases performance with MediaCodec decoders "
+                                                                         "that can't output more than 2 output buffers at "
+                                                                         "the same time")},
+        {NULL}
+    }
+};
+
 #define OFFSET(x) offsetof(struct media_priv, x)
 static const struct node_param media_params[] = {
     {"filename", PARAM_TYPE_STR, OFFSET(filename), {.str=NULL}, PARAM_FLAG_CONSTRUCTOR,
@@ -67,6 +84,9 @@ static const struct node_param media_params[] = {
                        .desc=NGLI_DOCSTRING("maximum number of pixels per frame")},
     {"stream_idx",     PARAM_TYPE_INT, OFFSET(stream_idx),     {.i64=-1},
                        .desc=NGLI_DOCSTRING("force a stream number instead of picking the \"best\" one")},
+    {"frame_selection_mode", PARAM_TYPE_SELECT, OFFSET(frame_selection_mode), {.i64=SXPLAYER_FRAME_SELECTION_DECODE},
+                             .choices=&sxplayer_frame_selection_choices,
+                             .desc=NGLI_DOCSTRING("frame selection mode")},
     {NULL}
 };
 
@@ -130,6 +150,7 @@ static int media_init(struct ngl_node *node)
     if (s->max_pixels)     sxplayer_set_option(s->player, "max_pixels",     s->max_pixels);
 
     sxplayer_set_option(s->player, "stream_idx", s->stream_idx);
+    sxplayer_set_option(s->player, "frame_selection_mode", s->frame_selection_mode);
 
     sxplayer_set_option(s->player, "sw_pix_fmt", SXPLAYER_PIXFMT_RGBA);
 #if defined(TARGET_IPHONE) || defined(TARGET_DARWIN)

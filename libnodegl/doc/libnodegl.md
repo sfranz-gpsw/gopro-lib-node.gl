@@ -372,6 +372,7 @@ Parameter | Ctor. | Live-chg. | Type | Description | Default
 `max_nb_sink` |  |  | [`int`](#parameter-types) | maximum number of frames in sxplayer filtering queue | `1`
 `max_pixels` |  |  | [`int`](#parameter-types) | maximum number of pixels per frame | `0`
 `stream_idx` |  |  | [`int`](#parameter-types) | force a stream number instead of picking the "best" one | `-1`
+`frame_selection_mode` |  |  | [`sxplayer_frame_selection_mode`](#sxplayer_frame_selection_mode-choices) | frame selection mode | `decode`
 
 
 **Source**: [node_media.c](/libnodegl/node_media.c)
@@ -971,6 +972,13 @@ Constant | Description
 `info` | informational messages
 `warning` | warning messages
 `error` | error messages
+
+## sxplayer_frame_selection_mode choices
+
+Constant | Description
+-------- | -----------
+`decode` | accurate method which relies on decoding the next frame to select the frame returned by sxplayer_get_frame()
+`guess` | inaccurate method which relies on guessing the next frame timestamp based on the media frame rate to select the frame returned by sxplayer_get_frame(). This method greatly increases performance with MediaCodec decoders that can't output more than 2 output buffers at the same time
 
 ## framebuffer_features choices
 
