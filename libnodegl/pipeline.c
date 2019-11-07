@@ -334,7 +334,7 @@ static int build_attribute_pairs(struct pipeline *s, const struct pipeline_param
     for (int i = 0; i < params->nb_attributes; i++) {
         const struct pipeline_attribute *attribute = &params->attributes[i];
         const struct program_variable_info *info = ngli_hmap_get(program->attributes, attribute->name);
-        if (!info)
+        if (!info || info->location < 0)
             continue;
 
         if (attribute->count > 4) {
