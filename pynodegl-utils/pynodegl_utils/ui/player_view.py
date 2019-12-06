@@ -21,7 +21,9 @@
 # under the License.
 #
 
-from PySide2 import QtCore, QtWidgets
+from fractions import Fraction
+
+from PySide2 import QtCore, QtWidgets, QtGui
 from PySide2.QtCore import Qt
 from PySide2.QtCore import QEvent
 
@@ -43,7 +45,6 @@ class _PlayerWidget(QtWidgets.QWidget):
         self.setAttribute(Qt.WA_DontCreateNativeAncestors)
         self.setAttribute(Qt.WA_NativeWindow)
         self.setAttribute(Qt.WA_PaintOnScreen)
-        self.setMinimumSize(640, 360)
 
         self._player = None
         self._last_frame_time = 0.0
@@ -111,6 +112,50 @@ class _PlayerWidget(QtWidgets.QWidget):
         return self._player
 
 
+class ConstrainedARWidget(QtWidgets.QWidget):
+
+    def __init__(self, parent, config):
+        super(ConstrainedARWidget, self).__init__(parent)
+
+        size_policy = QtWidgets.QSizePolicy()
+        size_policy.setVerticalPolicy(QtWidgets.QSizePolicy.MinimumExpanding)
+        size_policy.setHorizontalPolicy(QtWidgets.QSizePolicy.MinimumExpanding)
+        self.setSizePolicy(size_policy)
+
+        self._aspect_ratio = Fraction(1, 1)
+        self._player_widget = _PlayerWidget(self, config)
+
+        self.onPlayerAvailable = self._player_widget.onPlayerAvailable
+        self.get_last_frame_time = self._player_widget.get_last_frame_time
+        self.get_player = self._player_widget.get_player
+
+    def resizeEvent(self, event):
+        size = event.size()
+        ar = Fraction(size.width(), size.height())
+        print self._aspect_ratio
+        if ar <= self._aspect_ratio:
+            width = size.width()
+            height = int(round(width / self._aspect_ratio))
+        else:
+            height = size.height()
+            width = int(round(height * self._aspect_ratio))
+        self._player_widget.setGeometry((size.width() - width) / 2, (size.height() - height) / 2, width, height)
+
+    def event(self, event):
+        if event.type() == QtCore.QEvent.Paint:
+            print 'paint'
+            self.resizeEvent(QtGui.QResizeEvent(self.size(), self.size()))
+        return super(ConstrainedARWidget, self).event(event)
+
+    def set_aspect_ratio(self, value):
+        self._aspect_ratio = Fraction(*value)
+        #self.update()
+
+    def closeEvent(self, event):
+        self._player_widget.close()
+        super(ConstrainedARWidget, self).closeEvent(event)
+
+
 class PlayerView(QtWidgets.QWidget):
 
     def __init__(self, get_scene_func, config):
@@ -120,7 +165,7 @@ class PlayerView(QtWidgets.QWidget):
         self._cfg = None
 
         self._seekbar = Seekbar(config)
-        self._player_widget = _PlayerWidget(self, config)
+        self._player_widget = ConstrainedARWidget(self, config)
         self._player_widget.onPlayerAvailable.connect(self._connect_seekbar)
 
         screenshot_btn = QtWidgets.QToolButton()
@@ -131,7 +176,7 @@ class PlayerView(QtWidgets.QWidget):
         toolbar.addWidget(screenshot_btn)
 
         self._gl_layout = QtWidgets.QVBoxLayout(self)
-        self._gl_layout.addWidget(self._player_widget, stretch=1)
+        self._gl_layout.addWidget(self._player_widget, strech=1)
         self._gl_layout.addLayout(toolbar)
 
         screenshot_btn.clicked.connect(self._screenshot)
@@ -151,6 +196,7 @@ class PlayerView(QtWidgets.QWidget):
         self._seekbar.stop.connect(player.reset_scene)
 
         if self._cfg:
+            self._player_widget.set_aspect_ratio(self._cfg['aspect_ratio'])
             player.set_scene(self._cfg)
 
     @QtCore.Slot()
@@ -173,13 +219,13 @@ class PlayerView(QtWidgets.QWidget):
         self._cfg = self._get_scene_func()
         if not self._cfg:
             return
+        self._player_widget.set_aspect_ratio(self._cfg['aspect_ratio'])
 
         player = self._player_widget.get_player()
         if not player:
             return
         player.set_scene(self._cfg)
 
-        self._player_widget.update()
 
     def leave(self):
         player = self._player_widget.get_player()

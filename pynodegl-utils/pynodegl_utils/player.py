@@ -111,7 +111,6 @@ class Player(QtCore.QThread):
         self._framerate = config.get('framerate')
         self._duration = 0.0
         self._clear_color = config.get('clear_color')
-        self._aspect_ratio = config.get('aspect_ratio')
         self._samples = config.get('samples')
         self._backend = config.get('backend')
 
@@ -128,7 +127,7 @@ class Player(QtCore.QThread):
             window=self._window,
             width=self._width,
             height=self._height,
-            viewport=misc.get_viewport(self._width, self._height, self._aspect_ratio),
+            viewport=(0, 0, self._width, self._height),
             swap_interval=1,
             samples=self._samples,
             clear_color=self._clear_color,
@@ -226,7 +225,6 @@ class Player(QtCore.QThread):
             self._framerate = cfg['framerate']
             self._duration = cfg['duration']
             self._clear_color = cfg['clear_color']
-            self._aspect_ratio = cfg['aspect_ratio']
             self._samples = cfg['samples']
             if self._backend != cfg['backend']:
                 self._backend = cfg['backend']
