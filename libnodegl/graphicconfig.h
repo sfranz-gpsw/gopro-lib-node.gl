@@ -38,6 +38,9 @@ enum {
     NGLI_BLEND_FACTOR_NB
 };
 
+#define BLEND_FACTOR_NBITS 4
+NGLI_STATIC_ASSERT(blend_factors_4bits, NGLI_BLEND_FACTOR_NB <= (1<<BLEND_FACTOR_NBITS));
+
 enum {
     NGLI_BLEND_OP_ADD,
     NGLI_BLEND_OP_SUBTRACT,
@@ -46,6 +49,9 @@ enum {
     NGLI_BLEND_OP_MAX,
     NGLI_BLEND_OP_NB
 };
+
+#define BLEND_OP_NBITS 3
+NGLI_STATIC_ASSERT(blend_op_3bits, NGLI_BLEND_OP_NB <= (1<<BLEND_OP_NBITS));
 
 enum {
     NGLI_COMPARE_OP_NEVER,
@@ -59,6 +65,9 @@ enum {
     NGLI_COMPARE_OP_NB
 };
 
+#define COMPARE_OP_NBITS 3
+NGLI_STATIC_ASSERT(compare_op_3bits, NGLI_COMPARE_OP_NB <= (1<<COMPARE_OP_NBITS));
+
 enum {
     NGLI_STENCIL_OP_KEEP,
     NGLI_STENCIL_OP_ZERO,
@@ -71,6 +80,9 @@ enum {
     NGLI_STENCIL_OP_NB
 };
 
+#define STENCIL_OP_NBITS 3
+NGLI_STATIC_ASSERT(stencil_op_3bits, NGLI_STENCIL_OP_NB <= (1<<STENCIL_OP_NBITS));
+
 enum {
     NGLI_CULL_MODE_NONE,
     NGLI_CULL_MODE_FRONT_BIT,
@@ -78,6 +90,8 @@ enum {
     NGLI_CULL_MODE_FRONT_AND_BACK,
     NGLI_CULL_MODE_NB
 };
+
+#define CULL_MODE_OP_NBITS 2
 
 NGLI_STATIC_ASSERT(cull_mode, (NGLI_CULL_MODE_FRONT_BIT | NGLI_CULL_MODE_BACK_BIT) == NGLI_CULL_MODE_FRONT_AND_BACK);
 
@@ -89,33 +103,33 @@ enum {
 };
 
 struct graphicconfig {
-    int blend;
-    int blend_dst_factor;
-    int blend_src_factor;
-    int blend_dst_factor_a;
-    int blend_src_factor_a;
-    int blend_op;
-    int blend_op_a;
+    unsigned blend:1;
+    unsigned blend_dst_factor:BLEND_FACTOR_NBITS;
+    unsigned blend_src_factor:BLEND_FACTOR_NBITS;
+    unsigned blend_dst_factor_a:BLEND_FACTOR_NBITS;
+    unsigned blend_src_factor_a:BLEND_FACTOR_NBITS;
+    unsigned blend_op:BLEND_OP_NBITS;
+    unsigned blend_op_a:BLEND_OP_NBITS;
 
-    int color_write_mask;
+    unsigned color_write_mask:4;
 
-    int depth_test;
-    int depth_write_mask;
-    int depth_func;
+    unsigned depth_test:1;
+    unsigned depth_write_mask:1;
+    unsigned depth_func:COMPARE_OP_NBITS;
 
-    int stencil_test;
-    int stencil_write_mask;
-    int stencil_func;
-    int stencil_ref;
-    int stencil_read_mask;
-    int stencil_fail;
-    int stencil_depth_fail;
-    int stencil_depth_pass;
+    unsigned stencil_test:1;
+    unsigned stencil_write_mask:1;
+    unsigned stencil_func:COMPARE_OP_NBITS;
+    unsigned stencil_ref:8;
+    unsigned stencil_read_mask:8;
+    unsigned stencil_fail:STENCIL_OP_NBITS;
+    unsigned stencil_depth_fail:STENCIL_OP_NBITS;
+    unsigned stencil_depth_pass:STENCIL_OP_NBITS;
 
-    int cull_face;
-    int cull_face_mode;
+    unsigned cull_face:1;
+    unsigned cull_face_mode:CULL_MODE_OP_NBITS;
 
-    int scissor_test;
+    unsigned scissor_test:1;
 };
 
 void ngli_graphicconfig_init(struct graphicconfig *s);
