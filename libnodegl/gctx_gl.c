@@ -497,6 +497,10 @@ static void gl_flush(struct gctx *s)
     ngli_glFlush(gl);
 }
 
+static void gl_wait_idle(struct gctx *s)
+{
+}
+
 const struct gctx_class ngli_gctx_gl = {
     .name         = "OpenGL",
     .create       = gl_create,
@@ -504,6 +508,7 @@ const struct gctx_class ngli_gctx_gl = {
     .resize       = gl_resize,
     .pre_draw     = gl_pre_draw,
     .post_draw    = gl_post_draw,
+    .wait_idle    = gl_wait_idle,
     .destroy      = gl_destroy,
 
     .transform_cull_mode              = gl_transform_cull_mode,
@@ -574,6 +579,7 @@ const struct gctx_class ngli_gctx_gles = {
     .resize       = gl_resize,
     .pre_draw     = gl_pre_draw,
     .post_draw    = gl_post_draw,
+    .wait_idle    = gl_wait_idle,
     .destroy      = gl_destroy,
 
     .transform_cull_mode              = gl_transform_cull_mode,
