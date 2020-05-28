@@ -46,6 +46,7 @@ class _SpawnView(QtWidgets.QGroupBox):
         backend_names = {
             'gl': 'OpenGL',
             'gles': 'OpenGL ES',
+            'vk': 'Vulkan',
         }
         all_backends = config.CHOICES['backend']
         default_backend = config.get('backend')
@@ -94,7 +95,7 @@ class _SpawnView(QtWidgets.QGroupBox):
     @QtCore.Slot()
     def _spawn(self):
         loglevel = self._config.CHOICES['log_level'][self._loglevel_cbbox.currentIndex()]
-        backend_remap = dict(gl='opengl', gles='opengles')
+        backend_remap = dict(gl='opengl', gles='opengles', vk='vulkan')
         backend = backend_remap[self._config.CHOICES['backend'][self._backend_cbbox.currentIndex()]]
         listen = self._listen_text.text()
         port = self._port_spin.value()
