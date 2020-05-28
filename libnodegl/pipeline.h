@@ -125,12 +125,6 @@ struct pipeline {
     struct pipeline_graphics graphics;
     const struct program *program;
 
-    struct darray uniform_descs;
-    struct darray texture_descs;
-    struct darray buffer_descs;
-    struct darray attribute_descs;
-    int nb_unbound_attributes;
-
     const struct block *ublock[NGLI_PROGRAM_SHADER_NB];
     struct buffer *ubuffer[NGLI_PROGRAM_SHADER_NB];
     uint8_t *udata[NGLI_PROGRAM_SHADER_NB];

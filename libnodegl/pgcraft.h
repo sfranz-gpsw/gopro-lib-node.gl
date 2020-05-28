@@ -200,6 +200,8 @@ struct pgcraft {
     int has_precision_qualifiers;
     int has_modern_texture_picking;
     int has_explicit_bindings;
+    int *next_in_location;  // 1st stage only
+    int *next_out_location; // last stage only
 };
 
 struct pgcraft *ngli_pgcraft_create(struct ngl_ctx *ctx);
