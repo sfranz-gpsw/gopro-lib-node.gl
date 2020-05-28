@@ -41,6 +41,7 @@ struct gctx_class {
     int (*post_update)(struct gctx *s, double t);
     int (*pre_draw)(struct gctx *s, double t);
     int (*post_draw)(struct gctx *s, double t);
+    void (*wait_idle)(struct gctx *s);
     void (*destroy)(struct gctx *s);
 
     int (*transform_cull_mode)(struct gctx *s, int cull_mode);
@@ -124,6 +125,7 @@ int ngli_gctx_init(struct gctx *s);
 int ngli_gctx_resize(struct gctx *s, int width, int height, const int *viewport);
 int ngli_gctx_update(struct gctx *s, struct ngl_node *scene, double t);
 int ngli_gctx_draw(struct gctx *s, struct ngl_node *scene, double t);
+void ngli_gctx_wait_idle(struct gctx *s);
 void ngli_gctx_freep(struct gctx **sp);
 
 int ngli_gctx_transform_cull_mode(struct gctx *s, int cull_mode);

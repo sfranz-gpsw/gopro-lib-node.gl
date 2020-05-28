@@ -56,6 +56,7 @@ class Config(QtCore.QObject):
         'backend': [
             'gl',
             'gles',
+            'vk',
         ],
     }
 
@@ -70,7 +71,7 @@ class Config(QtCore.QObject):
             'clear_color': (0.0, 0.0, 0.0, 1.0),
             'enable_hud': False,
             'hud_scale': 1,
-            'backend': 'gl',
+            'backend': 'vk',
 
             # Export
             'export_width': 1280,
