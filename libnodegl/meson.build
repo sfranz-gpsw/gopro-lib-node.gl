@@ -302,6 +302,37 @@ gbackends_cfg = {
       },
     },
   },
+  'vk': {
+    'src': files(
+      'buffer_vk.c',
+      'format_vk.c',
+      'gctx_vk.c',
+      'gtimer_vk.c',
+      'pipeline_vk.c',
+      'program_vk.c',
+      'texture_vk.c',
+      'topology_vk.c',
+      'rendertarget_vk.c',
+      'vkcontext.c',
+      'vkutils.c',
+    ),
+    'cfg': 'BACKEND_VK',
+    'hosts_cfg': {
+      'linux': {
+        'deps': ['shaderc', 'vulkan'],
+      },
+      'darwin': {
+      },
+      'android': {
+        'deps': ['shaderc'],
+      },
+      'iphone': {
+      },
+      'windows': {
+        'deps': ['shaderc'],
+      },
+    },
+  },
 }
 
 if host_system in ['darwin', 'iphone']
@@ -334,11 +365,19 @@ foreach gbackend_name, gbackend_cfg : gbackends_cfg
       lib_src += files('hwupload_vaapi_gl.c')
     endif
 
-    lib_src += gbackend_cfg.get('src')
-    lib_src += host_backend_cfg.get('src')
+    if 'src' in gbackend_cfg
+      lib_src += gbackend_cfg.get('src')
+    endif
+    if 'src' in host_backend_cfg
+      lib_src += host_backend_cfg.get('src')
+    endif
     lib_deps += gbackend_deps
-    conf_data_dict += {gbackend_cfg.get('cfg'): true}
-    conf_data_dict += {host_backend_cfg.get('cfg') : true}
+    if 'cfg' in gbackend_cfg
+      conf_data_dict += {gbackend_cfg.get('cfg'): true}
+    endif
+    if 'cfg' in host_backend_cfg
+      conf_data_dict += {host_backend_cfg.get('cfg') : true}
+    endif
   endif
 endforeach
 
@@ -384,7 +423,7 @@ pkg = import('pkgconfig')
 pkg.generate(
   libnodegl,
   name: 'libnodegl',  # not specifying the name would fallback on "nodegl.pc" instead of "libnodegl.pc"
-  description: 'Node/Graph based OpenGL engine',
+  description: 'Node/Graph based graphic engine',
   variables: ['datarootdir=${prefix}/share'],
 )
 

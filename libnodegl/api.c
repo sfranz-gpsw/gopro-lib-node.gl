@@ -54,7 +54,11 @@
 #if defined(TARGET_IPHONE) || defined(TARGET_ANDROID)
 # define DEFAULT_BACKEND NGL_BACKEND_OPENGLES
 #else
-# define DEFAULT_BACKEND NGL_BACKEND_OPENGL
+# if defined(BACKEND_VK)
+#  define DEFAULT_BACKEND NGL_BACKEND_VULKAN
+# else
+#  define DEFAULT_BACKEND NGL_BACKEND_OPENGL
+# endif
 #endif
 
 static int get_default_platform(void)
@@ -176,6 +180,8 @@ static int cmd_resize(struct ngl_ctx *s, void *arg)
 static int cmd_set_scene(struct ngl_ctx *s, void *arg)
 {
     if (s->scene) {
+        // FIXME: wait_idle
+        ngli_gctx_wait_idle(s->gctx);
         ngli_node_detach_ctx(s->scene, s);
         ngl_node_unrefp(&s->scene);
     }
@@ -413,6 +419,9 @@ static const int backend_ids[] = {
 #ifdef BACKEND_GL
     NGL_BACKEND_OPENGL,
     NGL_BACKEND_OPENGLES,
+#endif
+#ifdef BACKEND_VK
+    NGL_BACKEND_VULKAN,
 #endif
 };
 
