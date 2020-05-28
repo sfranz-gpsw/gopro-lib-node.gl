@@ -134,6 +134,7 @@ static int camera_init(struct ngl_node *node)
 static int camera_update(struct ngl_node *node, double t)
 {
     struct ngl_ctx *ctx = node->ctx;
+    const struct ngl_config *config = &ctx->config;
     struct camera_priv *s = node->priv_data;
     struct ngl_node *child = s->child;
 
