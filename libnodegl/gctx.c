@@ -29,6 +29,7 @@
 
 extern const struct gctx_class ngli_gctx_gl;
 extern const struct gctx_class ngli_gctx_gles;
+extern const struct gctx_class ngli_gctx_vk;
 
 static const struct {
     const char *string_id;
@@ -44,6 +45,12 @@ static const struct {
         .string_id = "opengles",
 #ifdef BACKEND_GL
         .cls = &ngli_gctx_gles,
+#endif
+    },
+    [NGL_BACKEND_VULKAN] = {
+        .string_id = "vulkan",
+#ifdef BACKEND_VK
+        .cls = &ngli_gctx_vk,
 #endif
     },
 };
@@ -115,6 +122,11 @@ int ngli_gctx_end_draw(struct gctx *s, double t)
 int ngli_gctx_query_draw_time(struct gctx *s, int64_t *time)
 {
     return s->class->query_draw_time(s, time);
+}
+
+void ngli_gctx_wait_idle(struct gctx *s)
+{
+    s->class->wait_idle(s);
 }
 
 void ngli_gctx_freep(struct gctx **sp)
