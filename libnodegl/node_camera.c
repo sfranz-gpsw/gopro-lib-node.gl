@@ -133,6 +133,7 @@ static int camera_init(struct ngl_node *node)
 static int camera_update(struct ngl_node *node, double t)
 {
     struct ngl_ctx *ctx = node->ctx;
+    const struct ngl_config *config = &ctx->config;
     struct camera_priv *s = node->priv_data;
     struct ngl_node *child = s->child;
 
@@ -194,6 +195,16 @@ static int camera_update(struct ngl_node *node, double t)
                                s->clipping[1]);
     } else {
         ngli_mat4_identity(s->projection_matrix);
+    }
+
+    if (config->backend == NGL_BACKEND_VULKAN) {
+        NGLI_ALIGNED_MAT(gl_to_vk_matrix) = {
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f,-1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 0.5f, 0.0f,
+            0.0f, 0.0f, 0.5f, 1.0f,
+        };
+        ngli_mat4_mul(s->projection_matrix, gl_to_vk_matrix, s->projection_matrix);
     }
 
     return ngli_node_update(child, t);

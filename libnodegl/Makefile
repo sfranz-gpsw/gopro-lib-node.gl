@@ -25,6 +25,7 @@ DEBUG_GL ?= no
 LOGTRACE ?= no
 
 BACKEND_GL ?= yes
+BACKEND_VK ?= yes
 
 ifeq ($(DEBUG_GL),yes)
 	PROJECT_CFLAGS += -DDEBUG_GL
@@ -196,6 +197,34 @@ LIB_EXTRA_LDLIBS_Darwin         += -framework OpenGL
 LIB_EXTRA_LDLIBS_Android        += -legl
 LIB_EXTRA_LDLIBS_MinGW-w64      += -lopengl32 -lgdi32
 LIB_EXTRA_PKG_CONFIG_LIBS_Linux += gl egl
+endif
+
+ifeq ($(BACKEND_VK),yes)
+# XXX/HACK
+VKSDK_VER = 1.1.77.0
+VKSDK_FILE = vulkansdk-macos-$(VKSDK_VER)
+VKSDK_TGZ = $(VKSDK_FILE).tar.gz
+VKSDK_BASEURL = https://sdk.lunarg.com/sdk/download/$(VKSDK_VER)/mac/
+MVK_ROOT = vulkansdk-macos-$(VKSDK_VER)/MoltenVK/
+
+LIB_OBJS_VK += buffer_vk.o          \
+               format_vk.o          \
+               gctx_vk.o            \
+               gtimer_vk.o          \
+               pipeline_vk.o        \
+               program_vk.o         \
+               texture_vk.o         \
+               topology_vk.o        \
+               rendertarget_vk.o    \
+
+LIB_OBJS                        += $(LIB_OBJS_VK)
+LIB_CFLAGS                      += -DBACKEND_VK
+LIB_LDLIBS                      += -lshaderc_shared
+LIB_EXTRA_CFLAGS_Darwin         += -I$(MVK_ROOT)/include/
+LIB_EXTRA_CFLAGS_iPhone         += -I$(MVK_ROOT)/include/
+LIB_EXTRA_LDLIBS_Darwin         += -L$(MVK_ROOT)/macOS -Wl,-rpath,$(MVK_ROOT)/macOS -lMoltenVK
+LIB_EXTRA_LDLIBS_iPhone         += -L$(MVK_ROOT)/iOS -Wl,-rpath,$(MVK_ROOT)/iOS -lMoltenVK
+LIB_EXTRA_PKG_CONFIG_LIBS_Linux += vulkan
 endif
 
 WAYLAND_PKG_CONFIG_LIBS = "wayland-client wayland-egl"
@@ -413,6 +442,12 @@ uninstall:
 	$(RM) $(DESTDIR)$(PREFIX)/include/nodegl.h
 	$(RM) -r $(DESTDIR)$(PREFIX)/share/nodegl
 
-.PHONY: all updatespecs clean install uninstall gen-gl-wrappers testprogs tests
+# XXX/HACK
+vksdk: $(VKSDK_TGZ)
+	tar xf $<
+$(VKSDK_TGZ):
+	wget $(VKSDK_BASEURL)/$@
+
+.PHONY: all updatespecs clean install uninstall gen-gl-wrappers testprogs tests vksdk
 
 -include $(LIB_DEPS)

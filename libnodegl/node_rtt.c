@@ -116,6 +116,11 @@ static int rtt_init(struct ngl_node *node)
     static const float clear_color[4] = DEFAULT_CLEAR_COLOR;
     s->use_clear_color = memcmp(s->clear_color, clear_color, sizeof(s->clear_color));
 
+    struct ngl_ctx *ctx = node->ctx;
+    const struct ngl_config *config = &ctx->config;
+    if (config->backend == NGL_BACKEND_VULKAN)
+        s->vflip = 0;
+
     return 0;
 }
 

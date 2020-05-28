@@ -40,6 +40,7 @@ struct gctx_class {
     int (*resize)(struct gctx *s, int width, int height, const int *viewport);
     int (*pre_draw)(struct gctx *s, double t);
     int (*post_draw)(struct gctx *s, double t);
+    void (*wait_idle)(struct gctx *s);
     void (*destroy)(struct gctx *s);
 
     void (*set_rendertarget)(struct gctx *s, struct rendertarget *rt);
@@ -109,6 +110,7 @@ struct gctx *ngli_gctx_create(struct ngl_ctx *ctx);
 int ngli_gctx_init(struct gctx *s);
 int ngli_gctx_resize(struct gctx *s, int width, int height, const int *viewport);
 int ngli_gctx_draw(struct gctx *s, double t);
+void ngli_gctx_wait_idle(struct gctx *s);
 void ngli_gctx_freep(struct gctx **sp);
 
 void ngli_gctx_set_rendertarget(struct gctx *s, struct rendertarget *rt);

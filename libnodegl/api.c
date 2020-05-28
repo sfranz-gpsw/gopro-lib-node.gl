@@ -128,6 +128,8 @@ static int cmd_resize(struct ngl_ctx *s, void *arg)
 static int cmd_set_scene(struct ngl_ctx *s, void *arg)
 {
     if (s->scene) {
+        // FIXME: wait_idle
+        //s->backend->wait_idle(s);
         ngli_node_detach_ctx(s->scene, s);
         ngl_node_unrefp(&s->scene);
     }
