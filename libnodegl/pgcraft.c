@@ -312,6 +312,7 @@ static int inject_texture_info(struct pgcraft *s, struct pgcraft_texture_info *i
                 .location = -1,
                 .binding  = -1,
                 .access   = info->writable ? NGLI_ACCESS_READ_WRITE : NGLI_ACCESS_READ_BIT,
+                .stage    = stage,
             };
             snprintf(pl_texture_desc.name, sizeof(pl_texture_desc.name), "%s", field->name);
 
@@ -390,6 +391,7 @@ static int inject_block(struct pgcraft *s, struct bstr *b,
         .type    = block->type,
         .binding = -1,
         .access  = named_block->writable ? NGLI_ACCESS_READ_WRITE : NGLI_ACCESS_READ_BIT,
+        .stage   = stage,
     };
     int len = snprintf(pl_buffer_desc.name, sizeof(pl_buffer_desc.name), "%s_block", named_block->name);
     if (len >= sizeof(pl_buffer_desc.name)) {
