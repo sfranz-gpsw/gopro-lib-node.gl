@@ -252,6 +252,7 @@ static int graphicconfig_update(struct ngl_node *node, double t)
 static void honor_config(struct ngl_node *node, int restore)
 {
     struct ngl_ctx *ctx = node->ctx;
+    const struct ngl_config *config = &ctx->config;
     struct graphicconfig_priv *s = node->priv_data;
 
     if (restore) {
@@ -284,7 +285,19 @@ static void honor_config(struct ngl_node *node, int restore)
         COPY_PARAM(stencil_depth_pass);
 
         COPY_PARAM(cull_face);
-        COPY_PARAM(cull_face_mode);
+        if (s->cull_face_mode != -1) {
+            if (config->backend == NGL_BACKEND_VULKAN) {
+                static const int cull_face_mode_map[NGLI_CULL_MODE_NB] = {
+                    [NGLI_CULL_MODE_NONE]           = NGLI_CULL_MODE_NONE,
+                    [NGLI_CULL_MODE_FRONT_BIT]      = NGLI_CULL_MODE_BACK_BIT,
+                    [NGLI_CULL_MODE_BACK_BIT]       = NGLI_CULL_MODE_FRONT_BIT,
+                    [NGLI_CULL_MODE_FRONT_AND_BACK] = NGLI_CULL_MODE_FRONT_AND_BACK,
+                };
+                pending->cull_face_mode = cull_face_mode_map[s->cull_face_mode];
+            } else {
+                pending->cull_face_mode = s->cull_face_mode;
+            }
+        }
 
         COPY_PARAM(scissor_test);
     }
