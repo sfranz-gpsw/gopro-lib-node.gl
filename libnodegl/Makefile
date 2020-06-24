@@ -200,13 +200,6 @@ LIB_EXTRA_PKG_CONFIG_LIBS_Linux += gl egl
 endif
 
 ifeq ($(BACKEND_VK),yes)
-# XXX/HACK
-VKSDK_VER = 1.1.77.0
-VKSDK_FILE = vulkansdk-macos-$(VKSDK_VER)
-VKSDK_TGZ = $(VKSDK_FILE).tar.gz
-VKSDK_BASEURL = https://sdk.lunarg.com/sdk/download/$(VKSDK_VER)/mac/
-MVK_ROOT = vulkansdk-macos-$(VKSDK_VER)/MoltenVK/
-
 LIB_OBJS_VK += buffer_vk.o          \
                format_vk.o          \
                gctx_vk.o            \
@@ -219,11 +212,9 @@ LIB_OBJS_VK += buffer_vk.o          \
 
 LIB_OBJS                        += $(LIB_OBJS_VK)
 LIB_CFLAGS                      += -DBACKEND_VK
-LIB_LDLIBS                      += -lshaderc_shared
-LIB_EXTRA_CFLAGS_Darwin         += -I$(MVK_ROOT)/include/
-LIB_EXTRA_CFLAGS_iPhone         += -I$(MVK_ROOT)/include/
-LIB_EXTRA_LDLIBS_Darwin         += -L$(MVK_ROOT)/macOS -Wl,-rpath,$(MVK_ROOT)/macOS -lMoltenVK
-LIB_EXTRA_LDLIBS_iPhone         += -L$(MVK_ROOT)/iOS -Wl,-rpath,$(MVK_ROOT)/iOS -lMoltenVK
+LIB_EXTRA_LDLIBS_Darwin         += -lMoltenVK
+LIB_EXTRA_LDLIBS_iPhone         += -lMoltenVK
+LIB_PKG_CONFIG_LIBS             += shaderc
 LIB_EXTRA_PKG_CONFIG_LIBS_Linux += vulkan
 endif
 
@@ -442,12 +433,6 @@ uninstall:
 	$(RM) $(DESTDIR)$(PREFIX)/include/nodegl.h
 	$(RM) -r $(DESTDIR)$(PREFIX)/share/nodegl
 
-# XXX/HACK
-vksdk: $(VKSDK_TGZ)
-	tar xf $<
-$(VKSDK_TGZ):
-	wget $(VKSDK_BASEURL)/$@
-
-.PHONY: all updatespecs clean install uninstall gen-gl-wrappers testprogs tests vksdk
+.PHONY: all updatespecs clean install uninstall gen-gl-wrappers testprogs tests
 
 -include $(LIB_DEPS)
