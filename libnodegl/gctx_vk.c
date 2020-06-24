@@ -634,7 +634,8 @@ static VkResult create_vulkan_device(struct vkcontext *vk)
 static VkResult create_swapchain(struct vkcontext *vk)
 {
     // set maximum in flight frames
-    vk->nb_in_flight_frames = 2;
+    // FIXME: nb_in_flight_frames needs nb_in_flight_frames sets of dynamic resources
+    vk->nb_in_flight_frames = 1;
 
     // re-query the swapchain to get current extent
     VkResult ret = query_swapchain_support(&vk->swapchain_support, vk->surface, vk->physical_device);
