@@ -27,6 +27,8 @@
 
 struct rendertarget_gl {
     struct rendertarget parent;
+    int nb_color_attachments;
+    int nb_resolve_color_attachments;
     GLuint id;
     GLuint resolve_id;
     GLuint prev_id;

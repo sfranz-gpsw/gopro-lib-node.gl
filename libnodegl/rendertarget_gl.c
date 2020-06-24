@@ -86,7 +86,7 @@ static void blit_draw_buffers(struct rendertarget *s, int nb_color_attachments, 
         blit(s, width, height, vflip, flags);
     }
     ngli_glReadBuffer(gl, GL_COLOR_ATTACHMENT0);
-    ngli_glDrawBuffers(gl, s->nb_color_attachments, s_priv->draw_buffers);
+    ngli_glDrawBuffers(gl, s_priv->nb_color_attachments, s_priv->draw_buffers);
 }
 
 static void resolve_no_draw_buffers(struct rendertarget *s)
@@ -116,7 +116,7 @@ static void resolve_draw_buffers(struct rendertarget *s)
         blit(s, s->width, s->height, 0, flags);
     }
     ngli_glReadBuffer(gl, GL_COLOR_ATTACHMENT0);
-    ngli_glDrawBuffers(gl, s->nb_color_attachments, s_priv->draw_buffers);
+    ngli_glDrawBuffers(gl, s_priv->nb_color_attachments, s_priv->draw_buffers);
 }
 
 static int create_fbo(struct rendertarget *s, int resolve)
@@ -199,10 +199,10 @@ static int create_fbo(struct rendertarget *s, int resolve)
 
     if (resolve) {
         s_priv->resolve_id = id;
-        s->nb_resolve_color_attachments = nb_color_attachments;
+        s_priv->nb_resolve_color_attachments = nb_color_attachments;
     } else {
         s_priv->id = id;
-        s->nb_color_attachments = nb_color_attachments;
+        s_priv->nb_color_attachments = nb_color_attachments;
     }
 
     return 0;
@@ -257,19 +257,19 @@ int ngli_rendertarget_gl_init(struct rendertarget *s, const struct rendertarget_
     s_priv->blit = blit_no_draw_buffers;
     s_priv->resolve = resolve_no_draw_buffers;
     if (gl->features & NGLI_FEATURE_DRAW_BUFFERS) {
-        if (s->nb_color_attachments > limits->max_draw_buffers) {
+        if (s_priv->nb_color_attachments > limits->max_draw_buffers) {
             LOG(ERROR, "draw buffer count (%d) exceeds driver limit (%d)",
                 s->nb_color_attachments, limits->max_draw_buffers);
             ret = NGL_ERROR_UNSUPPORTED;
             goto done;
         }
-        if (s->nb_color_attachments > 1) {
-            for (int i = 0; i < s->nb_color_attachments; i++)
+        if (s_priv->nb_color_attachments > 1) {
+            for (int i = 0; i < s_priv->nb_color_attachments; i++)
                 s_priv->draw_buffers[i] = GL_COLOR_ATTACHMENT0 + i;
-            ngli_glDrawBuffers(gl, s->nb_color_attachments, s_priv->draw_buffers);
+            ngli_glDrawBuffers(gl, s_priv->nb_color_attachments, s_priv->draw_buffers);
 
             GLenum *draw_buffers = s_priv->blit_draw_buffers;
-            for (int i = 0; i < s->nb_color_attachments; i++) {
+            for (int i = 0; i < s_priv->nb_color_attachments; i++) {
                 draw_buffers += i + 1;
                 draw_buffers[-1] = GL_COLOR_ATTACHMENT0 + i;
             }
@@ -300,7 +300,7 @@ void ngli_rendertarget_gl_blit(struct rendertarget *s, struct rendertarget *dst,
     struct rendertarget_gl *dst_gl = (struct rendertarget_gl *)dst;
     ngli_glBindFramebuffer(gl, GL_READ_FRAMEBUFFER, s_priv->id);
     ngli_glBindFramebuffer(gl, GL_DRAW_FRAMEBUFFER, dst_gl->id);
-    s_priv->blit(s, dst->nb_color_attachments, dst->width, dst->height, vflip);
+    s_priv->blit(s, dst_gl->nb_color_attachments, dst->width, dst->height, vflip);
 
     struct rendertarget *rt = gctx_gl->rendertarget;
     struct rendertarget_gl *rt_gl = (struct rendertarget_gl *)rt;
