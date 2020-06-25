@@ -179,7 +179,7 @@ int ngli_texture_vk_init(struct texture *s,
     VkMemoryPropertyFlags memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     if (params->staging) {
         tiling = VK_IMAGE_TILING_LINEAR;
-        memory_property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+        memory_property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
     }
 
     s_priv->mipmap_levels = 1;
