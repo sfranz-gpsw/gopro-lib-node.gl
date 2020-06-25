@@ -92,7 +92,7 @@ sxplayer-$(SXPLAYER_VERSION): sxplayer-$(SXPLAYER_VERSION).tar.gz
 sxplayer-$(SXPLAYER_VERSION).tar.gz:
 	$(CURL) -L https://github.com/Stupeflix/sxplayer/archive/v$(SXPLAYER_VERSION).tar.gz -o $@
 
-shaderc: SHADERC_LIBFILENAME = libshaderc_shared.1.dylib
+shaderc: SHADERC_LIB_FILENAME = libshaderc_shared.1.dylib
 shaderc: shaderc-$(SHADERC_VERSION) $(PREFIX)
 	(cd $< && ./utils/git-sync-deps)
 	cmake -B $</build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PREFIX) $<
