@@ -199,10 +199,14 @@ static uint32_t clip_u32(uint32_t x, uint32_t min, uint32_t max)
 static VkExtent2D select_swapchain_current_extent(const struct vkcontext *vk,
                                                   VkSurfaceCapabilitiesKHR caps)
 {
+    // XXX: we want to rely on value passed by the user (set to vk->width, vk->height in vk_resize()
+    // so the viewport and scissor matches the extent
+#if 0
     if (caps.currentExtent.width != UINT32_MAX) {
         LOG(DEBUG, "current extent: %dx%d", caps.currentExtent.width, caps.currentExtent.height);
         return caps.currentExtent;
     }
+#endif
 
     VkExtent2D ext = {
         .width  = clip_u32(vk->width,  caps.minImageExtent.width,  caps.maxImageExtent.width),
@@ -241,8 +245,10 @@ static VkResult query_swapchain_support(struct vk_swapchain_support *swap,
     return VK_SUCCESS;
 }
 
-static VkResult probe_vulkan_extensions(struct vkcontext *vk)
+static VkResult probe_vulkan_extensions(struct gctx *s)
 {
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+
     uint32_t ext_count = 0;
     vkEnumerateInstanceExtensionProperties(NULL, &ext_count, NULL);
     VkExtensionProperties *ext_props = ngli_calloc(ext_count, sizeof(*ext_props));
@@ -255,16 +261,16 @@ static VkResult probe_vulkan_extensions(struct vkcontext *vk)
                ext_props[i].extensionName, ext_props[i].specVersion);
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
         if (!strcmp(ext_props[i].extensionName, VK_KHR_XLIB_SURFACE_EXTENSION_NAME))
-            vk->surface_create_type = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
+            s_priv->surface_create_type = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
 #elif defined(VK_USE_PLATFORM_ANDROID_KHR)
         if (!strcmp(ext_props[i].extensionName, VK_KHR_ANDROID_SURFACE_EXTENSION_NAME))
-            vk->surface_create_type = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
+            s_priv->surface_create_type = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
 #elif defined(VK_USE_PLATFORM_MACOS_MVK)
         if (!strcmp(ext_props[i].extensionName, VK_MVK_MACOS_SURFACE_EXTENSION_NAME))
-            vk->surface_create_type = VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK;
+            s_priv->surface_create_type = VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK;
 #elif defined(VK_USE_PLATFORM_IOS_MVK)
         if (!strcmp(ext_props[i].extensionName, VK_MVK_IOS_SURFACE_EXTENSION_NAME))
-            vk->surface_create_type = VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK;
+            s_priv->surface_create_type = VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK;
 #endif
     }
     ngli_free(ext_props);
@@ -631,11 +637,14 @@ static VkResult create_vulkan_device(struct vkcontext *vk)
     return ret;
 }
 
-static VkResult create_swapchain(struct vkcontext *vk)
+static VkResult create_swapchain(struct gctx *s)
 {
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+    struct vkcontext *vk = s_priv->vkcontext;
+
     // set maximum in flight frames
     // FIXME: nb_in_flight_frames needs nb_in_flight_frames sets of dynamic resources
-    vk->nb_in_flight_frames = 1;
+    s_priv->nb_in_flight_frames = 1;
 
     // re-query the swapchain to get current extent
     VkResult ret = query_swapchain_support(&vk->swapchain_support, vk->surface, vk->physical_device);
@@ -646,10 +655,10 @@ static VkResult create_swapchain(struct vkcontext *vk)
 
     vk->surface_format = select_swapchain_surface_format(swap->formats, swap->nb_formats);
     vk->present_mode = select_swapchain_present_mode(swap->present_modes, swap->nb_present_modes);
-    vk->extent = select_swapchain_current_extent(vk, swap->caps);
-    vk->width = vk->extent.width;
-    vk->height = vk->extent.height;
-    LOG(DEBUG, "current extent: %dx%d", vk->extent.width, vk->extent.height);
+    s_priv->extent = select_swapchain_current_extent(vk, swap->caps);
+    vk->width = s_priv->extent.width;
+    vk->height = s_priv->extent.height;
+    LOG(INFO, "current extent: %dx%d", s_priv->extent.width, s_priv->extent.height);
 
     uint32_t img_count = swap->caps.minImageCount + 1;
     if (swap->caps.maxImageCount && img_count > swap->caps.maxImageCount)
@@ -663,7 +672,7 @@ static VkResult create_swapchain(struct vkcontext *vk)
         .minImageCount = img_count,
         .imageFormat = vk->surface_format.format,
         .imageColorSpace = vk->surface_format.colorSpace,
-        .imageExtent = vk->extent,
+        .imageExtent = s_priv->extent,
         .imageArrayLayers = 1,
         .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
@@ -683,60 +692,142 @@ static VkResult create_swapchain(struct vkcontext *vk)
         swapchain_create_info.pQueueFamilyIndices = queue_family_indices;
     }
 
-    return vkCreateSwapchainKHR(vk->device, &swapchain_create_info, NULL, &vk->swapchain);
+    VkResult res = vkCreateSwapchainKHR(vk->device, &swapchain_create_info, NULL, &vk->swapchain);
+    if (res != VK_SUCCESS)
+        return res;
+
+    return res;
 }
 
-// XXX: re-entrant
-static VkResult create_swapchain_images(struct vkcontext *vk)
+static VkResult create_swapchain_images(struct gctx *s)
 {
-    vkGetSwapchainImagesKHR(vk->device, vk->swapchain, &vk->nb_images, NULL);
-    VkImage *imgs = ngli_realloc(vk->images, vk->nb_images * sizeof(*vk->images));
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+    struct vkcontext *vk = s_priv->vkcontext;
+    struct ngl_ctx *ctx = s->ctx;
+    struct ngl_config *config = &ctx->config;
+
+    vkGetSwapchainImagesKHR(vk->device, vk->swapchain, &s_priv->nb_images, NULL);
+    VkImage *imgs = ngli_realloc(s_priv->images, s_priv->nb_images * sizeof(*s_priv->images));
     if (!imgs)
         return VK_ERROR_OUT_OF_HOST_MEMORY;
-    vk->images = imgs;
-    vkGetSwapchainImagesKHR(vk->device, vk->swapchain, &vk->nb_images, vk->images);
-    return VK_SUCCESS;
-}
+    s_priv->images = imgs;
+    vkGetSwapchainImagesKHR(vk->device, vk->swapchain, &s_priv->nb_images, s_priv->images);
 
-static VkResult create_swapchain_image_views(struct vkcontext *vk)
-{
-    vk->nb_image_views = vk->nb_images;
-    vk->image_views = ngli_calloc(vk->nb_image_views, sizeof(*vk->image_views));
-    if (!vk->image_views)
+    struct texture **wrapped_textures = ngli_realloc(s_priv->wrapped_textures, s_priv->nb_images * sizeof(*s_priv->wrapped_textures));
+    if (!wrapped_textures)
         return VK_ERROR_OUT_OF_HOST_MEMORY;
-    for (uint32_t i = 0; i < vk->nb_images; i++) {
-        VkImageViewCreateInfo image_view_create_info = {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .image = vk->images[i],
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = vk->surface_format.format,
-            .components = {
-                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .a = VK_COMPONENT_SWIZZLE_IDENTITY,
-            },
-            .subresourceRange = {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .levelCount = 1,
-                .layerCount = 1,
-            },
+
+    struct texture **depth_textures = ngli_realloc(s_priv->depth_textures, s_priv->nb_images * sizeof(*s_priv->depth_textures));
+    if (!depth_textures)
+        return VK_ERROR_OUT_OF_HOST_MEMORY;
+
+    struct texture **textures = ngli_realloc(s_priv->textures, s_priv->nb_images * sizeof(*s_priv->textures));
+    if (!textures)
+        return VK_ERROR_OUT_OF_HOST_MEMORY;
+
+    struct rendertarget **rts = ngli_realloc(s_priv->rts, s_priv->nb_images * sizeof(*s_priv->rts));
+    if (!rts)
+        return VK_ERROR_OUT_OF_HOST_MEMORY;
+
+    memset(wrapped_textures, 0, s_priv->nb_images * sizeof(*s_priv->wrapped_textures));
+    memset(textures, 0, s_priv->nb_images * sizeof(s_priv->textures));
+    memset(depth_textures, 0, s_priv->nb_images * sizeof(*s_priv->depth_textures));
+    memset(rts, 0, s_priv->nb_images * sizeof(*s_priv->rts));
+
+    s_priv->wrapped_textures = wrapped_textures;
+    s_priv->textures = textures;
+    s_priv->depth_textures = depth_textures;
+    s_priv->rts = rts;
+    s_priv->nb_wrapped_textures = s_priv->nb_images;
+
+    for (uint32_t i = 0; i < s_priv->nb_images; i++) {
+        s_priv->wrapped_textures[i] = ngli_texture_create(s);
+        if (!s_priv->wrapped_textures[i])
+            return VK_ERROR_OUT_OF_HOST_MEMORY;
+
+        struct texture_params params = {
+            .type = NGLI_TEXTURE_TYPE_2D,
+            .format = NGLI_FORMAT_B8G8R8A8_UNORM,
+            .width = s_priv->extent.width,
+            .height = s_priv->extent.height,
+            .external_storage = 1,
+            .usage = NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY,
         };
-        VkResult ret = vkCreateImageView(vk->device, &image_view_create_info,
-                                         NULL, &vk->image_views[i]);
-        if (ret != VK_SUCCESS)
+
+        int ret = ngli_texture_vk_wrap(s_priv->wrapped_textures[i], &params, s_priv->images[i], VK_IMAGE_LAYOUT_UNDEFINED);
+        if (ret < 0)
+            return ret;
+
+        s_priv->depth_textures[i] = ngli_texture_create(s);
+        if (!s_priv->depth_textures[i])
+            return VK_ERROR_OUT_OF_HOST_MEMORY;
+
+        struct texture_params depth_params = {
+            .type = NGLI_TEXTURE_TYPE_2D,
+            .format = NGLI_FORMAT_D32_SFLOAT_S8_UINT,
+            .width = s_priv->extent.width,
+            .height = s_priv->extent.height,
+            .samples = config->samples,
+            .usage = NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY,
+        };
+
+        ret = ngli_texture_vk_init(s_priv->depth_textures[i], &depth_params);
+        if (ret < 0)
+            return ret;
+
+        struct rendertarget_params rt_params = {
+            .width = s_priv->extent.width,
+            .height = s_priv->extent.height,
+            .nb_colors = 1,
+            .colors[0].attachment = s_priv->wrapped_textures[i],
+            .depth_stencil.attachment = s_priv->depth_textures[i],
+        };
+
+#if 1
+        if (config->samples) {
+            struct texture_params texture_params = NGLI_TEXTURE_PARAM_DEFAULTS;
+            texture_params.width = s_priv->extent.width;
+            texture_params.height = s_priv->extent.height;
+            texture_params.format = NGLI_FORMAT_B8G8R8A8_UNORM;
+            texture_params.samples = config->samples;
+            texture_params.usage = NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY,
+            s_priv->rt_resolve_color = ngli_texture_create(s);
+            if (!s_priv->rt_resolve_color)
+                return NGL_ERROR_MEMORY;
+
+            s_priv->textures[i] = ngli_texture_create(s);
+            if (!s_priv->textures[i])
+                return NGL_ERROR_MEMORY;
+
+            ret = ngli_texture_init(s_priv->textures[i], &texture_params);
+            if (ret < 0)
+                return ret;
+            rt_params.colors[0].attachment = s_priv->textures[i];
+            rt_params.colors[0].resolve_target = s_priv->wrapped_textures[i];
+        }
+#endif
+
+        s_priv->rts[i] = ngli_rendertarget_create(s);
+        if (!s_priv->rts[i])
+            return NGL_ERROR_MEMORY;
+
+        ret = ngli_rendertarget_init(s_priv->rts[i], &rt_params);
+        if (ret < 0)
             return ret;
     }
 
     return VK_SUCCESS;
 }
 
-int ngli_vk_begin_transient_command(struct vkcontext *vk, VkCommandBuffer *command_buffer)
+int ngli_gctx_vk_begin_transient_command(struct gctx *s, VkCommandBuffer *command_buffer)
 {
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+    struct vkcontext *vk = s_priv->vkcontext;
+
     VkCommandBufferAllocateInfo alloc_info = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandPool = vk->transient_command_buffer_pool,
+        .commandPool = s_priv->transient_command_buffer_pool,
         .commandBufferCount = 1,
     };
 
@@ -752,8 +843,11 @@ int ngli_vk_begin_transient_command(struct vkcontext *vk, VkCommandBuffer *comma
     return 0;
 }
 
-int ngli_vk_execute_transient_command(struct vkcontext *vk, VkCommandBuffer command_buffer)
+int ngli_gctx_vk_execute_transient_command(struct gctx *s, VkCommandBuffer command_buffer)
 {
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+    struct vkcontext *vk = s_priv->vkcontext;
+
     vkEndCommandBuffer(command_buffer);
 
     VkSubmitInfo submit_info = {
@@ -762,217 +856,20 @@ int ngli_vk_execute_transient_command(struct vkcontext *vk, VkCommandBuffer comm
         .pCommandBuffers = &command_buffer,
     };
 
-    vkResetFences(vk->device, 1, &vk->transient_command_buffer_fence);
+    vkResetFences(vk->device, 1, &s_priv->transient_command_buffer_fence);
 
     VkQueue graphic_queue;
     vkGetDeviceQueue(vk->device, vk->queue_family_graphics_id, 0, &graphic_queue);
 
-    VkResult ret = vkQueueSubmit(graphic_queue, 1, &submit_info, vk->transient_command_buffer_fence);
+    VkResult ret = vkQueueSubmit(graphic_queue, 1, &submit_info, s_priv->transient_command_buffer_fence);
     if (ret != VK_SUCCESS)
         return ret;
-    vkWaitForFences(vk->device, 1, &vk->transient_command_buffer_fence, 1, UINT64_MAX);
+    vkWaitForFences(vk->device, 1, &s_priv->transient_command_buffer_fence, 1, UINT64_MAX);
 
     vkQueueWaitIdle(graphic_queue);
-    vkFreeCommandBuffers(vk->device, vk->transient_command_buffer_pool, 1, &command_buffer);
+    vkFreeCommandBuffers(vk->device, s_priv->transient_command_buffer_pool, 1, &command_buffer);
 
     return ret;
-}
-
-static VkResult create_depth_images(struct gctx *gctx, struct vkcontext *vk)
-{
-    vk->nb_depth_images = vk->nb_images;
-    vk->depth_images = ngli_calloc(vk->nb_depth_images, sizeof(*vk->depth_images));
-    if (!vk->depth_images)
-        return VK_ERROR_OUT_OF_HOST_MEMORY;
-
-    // FIXME: memory leak on error
-    vk->depth_image_views = ngli_calloc(vk->nb_depth_images, sizeof(*vk->depth_image_views));
-    if (!vk->depth_image_views)
-        return VK_ERROR_OUT_OF_HOST_MEMORY;
-
-    vk->depth_device_memories = ngli_calloc(vk->nb_depth_images, sizeof(*vk->depth_device_memories));
-    if (!vk->depth_device_memories)
-        return VK_ERROR_OUT_OF_HOST_MEMORY;
-
-    for (uint32_t i = 0; i < vk->nb_depth_images; i++) {
-        VkImageCreateInfo image_create_info = {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-            .imageType = VK_IMAGE_TYPE_2D,
-            .extent.width = vk->width,
-            .extent.height = vk->height,
-            .extent.depth = 1,
-            .mipLevels = 1,
-            .arrayLayers = 1,
-            .format = vk->prefered_vk_depth_stencil_format,
-            .tiling = VK_IMAGE_TILING_OPTIMAL,
-            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-            .samples = VK_SAMPLE_COUNT_1_BIT,
-            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-        };
-
-        VkImage *imagep = &vk->depth_images[i];
-        VkResult ret = vkCreateImage(vk->device, &image_create_info, NULL, imagep);
-        if (ret != VK_SUCCESS)
-            return ret;
-        VkImage image = *imagep;
-
-        VkMemoryRequirements mem_requirements;
-        vkGetImageMemoryRequirements(vk->device, image, &mem_requirements);
-
-        VkMemoryAllocateInfo alloc_info = {
-            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            .allocationSize = mem_requirements.size,
-            .memoryTypeIndex = ngli_vk_find_memory_type(vk, mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
-        };
-
-        ret = vkAllocateMemory(vk->device, &alloc_info, NULL, &vk->depth_device_memories[i]);
-        if (ret != VK_SUCCESS)
-            return ret;
-
-        vkBindImageMemory(vk->device, image, vk->depth_device_memories[i], 0);
-
-        VkCommandBuffer command_buffer = VK_NULL_HANDLE;
-        ret = ngli_vk_begin_transient_command(vk, &command_buffer);
-        if (ret < 0)
-            return ret;
-
-        const VkImageSubresourceRange subres_range = {
-            .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
-            .baseMipLevel = 0,
-            .levelCount = VK_REMAINING_MIP_LEVELS,
-            .baseArrayLayer = 0,
-            .layerCount = VK_REMAINING_ARRAY_LAYERS,
-        };
-
-        ngli_vk_transition_image_layout(vk, command_buffer, image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, &subres_range);
-        ret = ngli_vk_execute_transient_command(vk, command_buffer);
-        if (ret < 0)
-            return ret;
-
-        VkImageViewCreateInfo view_info = {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .image = image,
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = vk->prefered_vk_depth_stencil_format,
-            .subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
-            .subresourceRange.baseMipLevel = 0,
-            .subresourceRange.levelCount = 1,
-            .subresourceRange.baseArrayLayer = 0,
-            .subresourceRange.layerCount = 1,
-        };
-
-        if (vkCreateImageView(vk->device, &view_info, NULL, &vk->depth_image_views[i]) != VK_SUCCESS) {
-            return -1;
-        }
-    }
-
-    return VK_SUCCESS;
-}
-
-static VkResult create_render_pass(struct vkcontext *vk)
-{
-    VkAttachmentDescription color_attachment = {
-        .format = vk->surface_format.format,
-        .samples = VK_SAMPLE_COUNT_1_BIT,
-        .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-        .finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-    };
-
-    VkAttachmentReference color_attachment_ref = {
-        .attachment = 0,
-        .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-    };
-
-    VkAttachmentDescription depth_attachment = {
-        .format = vk->prefered_vk_depth_stencil_format,
-        .samples = VK_SAMPLE_COUNT_1_BIT,
-        .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-        .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
-        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE,
-        .initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-        .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-    };
-
-    VkAttachmentReference depth_attachment_ref = {
-        .attachment = 1,
-        .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-    };
-
-    VkSubpassDescription subpass = {
-        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-        .colorAttachmentCount = 1,
-        .pColorAttachments = &color_attachment_ref,
-        .pDepthStencilAttachment = &depth_attachment_ref,
-    };
-
-    VkSubpassDependency dependency = {
-        .srcSubpass = VK_SUBPASS_EXTERNAL,
-        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-    };
-
-    VkAttachmentDescription attachments[] = { color_attachment, depth_attachment};
-
-    VkRenderPassCreateInfo render_pass_create_info = {
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-        .attachmentCount = NGLI_ARRAY_NB(attachments),
-        .pAttachments = attachments,
-        .subpassCount = 1,
-        .pSubpasses = &subpass,
-        .dependencyCount = 1,
-        .pDependencies = &dependency,
-    };
-
-    VkResult vkret = vkCreateRenderPass(vk->device, &render_pass_create_info, NULL, &vk->render_pass);
-    if (vkret != VK_SUCCESS)
-        return vkret;
-
-    attachments[0].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-
-    vkret = vkCreateRenderPass(vk->device, &render_pass_create_info, NULL, &vk->conservative_render_pass);
-    if (vkret != VK_SUCCESS)
-        return vkret;
-
-    return VK_SUCCESS;
-}
-
-static VkResult create_swapchain_framebuffers(struct vkcontext *vk)
-{
-    vk->nb_framebuffers = vk->nb_image_views;
-    vk->framebuffers = ngli_calloc(vk->nb_framebuffers, sizeof(*vk->framebuffers));
-    if (!vk->framebuffers)
-        return VK_ERROR_OUT_OF_HOST_MEMORY;
-    for (uint32_t i = 0; i < vk->nb_framebuffers; i++) {
-        VkImageView attachments[] = {
-            vk->image_views[i],
-            vk->depth_image_views[i],
-        };
-
-        VkFramebufferCreateInfo framebuffer_create_info = {
-            .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-            .renderPass = vk->render_pass,
-            .attachmentCount = NGLI_ARRAY_NB(attachments),
-            .pAttachments = attachments,
-            .width = vk->extent.width,
-            .height = vk->extent.height,
-            .layers = 1,
-        };
-
-        VkResult ret = vkCreateFramebuffer(vk->device, &framebuffer_create_info,
-                                           NULL, &vk->framebuffers[i]);
-        if (ret != VK_SUCCESS)
-            return ret;
-    }
-
-    return VK_SUCCESS;
 }
 
 static int create_command_pool_and_buffers(struct gctx *s)
@@ -986,22 +883,22 @@ static int create_command_pool_and_buffers(struct gctx *s)
         .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // FIXME
     };
 
-    VkResult vkret = vkCreateCommandPool(vk->device, &command_pool_create_info, NULL, &vk->command_buffer_pool);
+    VkResult vkret = vkCreateCommandPool(vk->device, &command_pool_create_info, NULL, &s_priv->command_buffer_pool);
     if (vkret != VK_SUCCESS)
         return NGL_ERROR_EXTERNAL;
 
-    vk->command_buffers = ngli_calloc(vk->nb_framebuffers, sizeof(*vk->command_buffers));
-    if (!vk->command_buffers)
+    s_priv->command_buffers = ngli_calloc(s_priv->nb_images, sizeof(*s_priv->command_buffers));
+    if (!s_priv->command_buffers)
         return NGL_ERROR_MEMORY;
 
     VkCommandBufferAllocateInfo command_buffers_allocate_info = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool = vk->command_buffer_pool,
+        .commandPool = s_priv->command_buffer_pool,
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = vk->nb_framebuffers,
+        .commandBufferCount = s_priv->nb_images,
     };
 
-    VkResult ret = vkAllocateCommandBuffers(vk->device, &command_buffers_allocate_info, vk->command_buffers);
+    VkResult ret = vkAllocateCommandBuffers(vk->device, &command_buffers_allocate_info, s_priv->command_buffers);
     if (ret != VK_SUCCESS)
         return NGL_ERROR_EXTERNAL;
 
@@ -1013,26 +910,28 @@ static void destroy_command_pool_and_buffers(struct gctx *s)
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
     struct vkcontext *vk = s_priv->vkcontext;
 
-    vkFreeCommandBuffers(vk->device, vk->command_buffer_pool, vk->nb_framebuffers, vk->command_buffers);
-    ngli_free(vk->command_buffers);
+    vkFreeCommandBuffers(vk->device, s_priv->command_buffer_pool, s_priv->nb_images, s_priv->command_buffers);
+    ngli_free(s_priv->command_buffers);
 
-    vkDestroyCommandPool(vk->device, vk->command_buffer_pool, NULL);
+    vkDestroyCommandPool(vk->device, s_priv->command_buffer_pool, NULL);
 }
 
-static VkResult create_semaphores(struct vkcontext *vk)
+static VkResult create_semaphores(struct gctx *s)
 {
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+    struct vkcontext *vk = s_priv->vkcontext;
     VkResult ret;
 
-    vk->sem_img_avail = ngli_calloc(vk->nb_in_flight_frames, sizeof(VkSemaphore));
-    if (!vk->sem_img_avail)
+    s_priv->sem_img_avail = ngli_calloc(s_priv->nb_in_flight_frames, sizeof(VkSemaphore));
+    if (!s_priv->sem_img_avail)
         return VK_ERROR_OUT_OF_HOST_MEMORY;
 
-    vk->sem_render_finished = ngli_calloc(vk->nb_in_flight_frames, sizeof(VkSemaphore));
-    if (!vk->sem_render_finished)
+    s_priv->sem_render_finished = ngli_calloc(s_priv->nb_in_flight_frames, sizeof(VkSemaphore));
+    if (!s_priv->sem_render_finished)
         return VK_ERROR_OUT_OF_HOST_MEMORY;
 
-    vk->fences = ngli_calloc(vk->nb_in_flight_frames, sizeof(VkFence));
-    if (!vk->fences)
+    s_priv->fences = ngli_calloc(s_priv->nb_in_flight_frames, sizeof(VkFence));
+    if (!s_priv->fences)
         return VK_ERROR_OUT_OF_HOST_MEMORY;
 
     VkSemaphoreCreateInfo semaphore_create_info = {
@@ -1044,27 +943,30 @@ static VkResult create_semaphores(struct vkcontext *vk)
         .flags = VK_FENCE_CREATE_SIGNALED_BIT,
     };
 
-    for (int i = 0; i < vk->nb_in_flight_frames; i++) {
+    for (int i = 0; i < s_priv->nb_in_flight_frames; i++) {
         if ((ret = vkCreateSemaphore(vk->device, &semaphore_create_info, NULL,
-                                    &vk->sem_img_avail[i])) != VK_SUCCESS ||
+                                    &s_priv->sem_img_avail[i])) != VK_SUCCESS ||
             (ret = vkCreateSemaphore(vk->device, &semaphore_create_info, NULL,
-                                    &vk->sem_render_finished[i])) != VK_SUCCESS ||
+                                    &s_priv->sem_render_finished[i])) != VK_SUCCESS ||
             (ret = vkCreateFence(vk->device, &fence_create_info, NULL,
-                                 &vk->fences[i])) != VK_SUCCESS) {
+                                 &s_priv->fences[i])) != VK_SUCCESS) {
             return ret;
         }
     }
     return VK_SUCCESS;
 }
 
-static VkResult create_window_surface(struct vkcontext *vk,
+static VkResult create_window_surface(struct gctx *s,
                                       uintptr_t display,
                                       uintptr_t window,
                                       VkSurfaceKHR *surface)
 {
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+    struct vkcontext *vk = s_priv->vkcontext;
+
     VkResult ret = VK_ERROR_FEATURE_NOT_PRESENT;
 
-    if (vk->surface_create_type == VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR) {
+    if (s_priv->surface_create_type == VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR) {
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
         VkXlibSurfaceCreateInfoKHR surface_create_info = {
             .sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR,
@@ -1088,7 +990,7 @@ static VkResult create_window_surface(struct vkcontext *vk,
 
         ret = vkCreateXlibSurfaceKHR(vk->instance, &surface_create_info, NULL, surface);
 #endif
-    } else if (vk->surface_create_type == VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR) {
+    } else if (s_priv->surface_create_type == VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR) {
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
         VkAndroidSurfaceCreateInfoKHR surface_create_info = {
             .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
@@ -1101,7 +1003,7 @@ static VkResult create_window_surface(struct vkcontext *vk,
 
         ret = vkCreateAndroidSurfaceKHR(vk->instance, &surface_create_info, NULL, surface);
 #endif
-    } else if (vk->surface_create_type == VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK) {
+    } else if (s_priv->surface_create_type == VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK) {
 #if defined(VK_USE_PLATFORM_MACOS_MVK)
         VkMacOSSurfaceCreateInfoMVK surface_create_info = {
             .sType = VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK,
@@ -1114,7 +1016,7 @@ static VkResult create_window_surface(struct vkcontext *vk,
 
         ret = vkCreateMacOSSurfaceMVK(vk->instance, &surface_create_info, NULL, surface);
 #endif
-    } else if (vk->surface_create_type == VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK) {
+    } else if (s_priv->surface_create_type == VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK) {
 #if defined(VK_USE_PLATFORM_IOS_MVK)
         VkIOSSurfaceCreateInfoMVK surface_create_info = {
             .sType = VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK,
@@ -1140,6 +1042,15 @@ static int vulkan_init(struct gctx *s, struct vkcontext *vk, uintptr_t display, 
     VkResult ret;
     struct ngl_ctx *ctx = s->ctx;
     const struct ngl_config *config = &ctx->config;
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+
+    s_priv->xxx = ngli_vkcontext_create();
+    if (!s_priv->xxx)
+        return NGL_ERROR_MEMORY;
+
+    VkResult res = ngli_vkcontext_init(s_priv->xxx, config);
+    if (res != VK_SUCCESS)
+        return NGL_ERROR_EXTERNAL;
 
     vk->platform = config->platform;
     vk->backend = config->backend;
@@ -1148,24 +1059,24 @@ static int vulkan_init(struct gctx *s, struct vkcontext *vk, uintptr_t display, 
     vk->height = config->height;
     vk->samples = config->samples;
 
-    ngli_darray_init(&vk->wait_semaphores, sizeof(VkSemaphore), 0);
-    ngli_darray_init(&vk->wait_stages, sizeof(VkPipelineStageFlagBits), 0);
-    ngli_darray_init(&vk->signal_semaphores, sizeof(VkSemaphore), 0);
+    ngli_darray_init(&s_priv->wait_semaphores, sizeof(VkSemaphore), 0);
+    ngli_darray_init(&s_priv->wait_stages, sizeof(VkPipelineStageFlagBits), 0);
+    ngli_darray_init(&s_priv->signal_semaphores, sizeof(VkSemaphore), 0);
 
-    vk->spirv_compiler      = shaderc_compiler_initialize();
-    vk->spirv_compiler_opts = shaderc_compile_options_initialize();
-    if (!vk->spirv_compiler || !vk->spirv_compiler_opts)
+    s_priv->spirv_compiler      = shaderc_compiler_initialize();
+    s_priv->spirv_compiler_opts = shaderc_compile_options_initialize();
+    if (!s_priv->spirv_compiler || !s_priv->spirv_compiler_opts)
         return -1;
 
     const shaderc_env_version env_version = app_info.apiVersion == VK_API_VERSION_1_0 ? shaderc_env_version_vulkan_1_0
                                                                                       : shaderc_env_version_vulkan_1_1;
-    shaderc_compile_options_set_target_env(vk->spirv_compiler_opts, shaderc_target_env_vulkan, env_version);
-    shaderc_compile_options_set_invert_y(vk->spirv_compiler_opts, 1);
-    shaderc_compile_options_set_optimization_level(vk->spirv_compiler_opts, shaderc_optimization_level_performance);
+    shaderc_compile_options_set_target_env(s_priv->spirv_compiler_opts, shaderc_target_env_vulkan, env_version);
+    shaderc_compile_options_set_invert_y(s_priv->spirv_compiler_opts, 1);
+    shaderc_compile_options_set_optimization_level(s_priv->spirv_compiler_opts, shaderc_optimization_level_performance);
 
-    //ngli_darray_init(&vk->command_buffers, sizeof(VkCommandBuffer), 0);
+    //ngli_darray_init(&s_priv->command_buffers, sizeof(VkCommandBuffer), 0);
 
-    if ((ret = probe_vulkan_extensions(vk)) != VK_SUCCESS ||
+    if ((ret = probe_vulkan_extensions(s)) != VK_SUCCESS ||
         (ret = list_vulkan_layers()) != VK_SUCCESS ||
         (ret = create_vulkan_instance(vk)) != VK_SUCCESS)
         return -1;
@@ -1176,7 +1087,7 @@ static int vulkan_init(struct gctx *s, struct vkcontext *vk, uintptr_t display, 
 #endif
 
     if (!config->offscreen) {
-        if ((ret = create_window_surface(vk, display, window, &vk->surface)) != VK_SUCCESS)
+        if ((ret = create_window_surface(s, display, window, &vk->surface)) != VK_SUCCESS)
             return -1;
     }
 
@@ -1191,7 +1102,7 @@ static int vulkan_init(struct gctx *s, struct vkcontext *vk, uintptr_t display, 
     };
 
     /* FIXME: check return */
-    vkCreateCommandPool(vk->device, &command_pool_create_info, NULL, &vk->transient_command_buffer_pool);
+    vkCreateCommandPool(vk->device, &command_pool_create_info, NULL, &s_priv->transient_command_buffer_pool);
 
     VkFenceCreateInfo fence_create_info = {
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
@@ -1199,7 +1110,7 @@ static int vulkan_init(struct gctx *s, struct vkcontext *vk, uintptr_t display, 
         .flags = 0,
     };
 
-    vkCreateFence(vk->device, &fence_create_info, NULL, &vk->transient_command_buffer_fence);
+    vkCreateFence(vk->device, &fence_create_info, NULL, &s_priv->transient_command_buffer_fence);
 
     ret = probe_prefered_depth_stencil_format(vk);
     if (ret != VK_SUCCESS)
@@ -1211,20 +1122,20 @@ static int vulkan_init(struct gctx *s, struct vkcontext *vk, uintptr_t display, 
         texture_params.height = config->height;
         texture_params.format = NGLI_FORMAT_R8G8B8A8_UNORM;
         texture_params.samples = config->samples;
-        vk->rt_color = ngli_texture_create(s);
-        if (!vk->rt_color)
+        s_priv->rt_color = ngli_texture_create(s);
+        if (!s_priv->rt_color)
             return NGL_ERROR_MEMORY;
 
-        ret = ngli_texture_init(vk->rt_color, &texture_params);
+        ret = ngli_texture_init(s_priv->rt_color, &texture_params);
         if (ret < 0)
             return ret;
 
         texture_params.format = vk->prefered_depth_stencil_format;
-        vk->rt_depth_stencil = ngli_texture_create(s);
-        if (!vk->rt_depth_stencil)
+        s_priv->rt_depth_stencil = ngli_texture_create(s);
+        if (!s_priv->rt_depth_stencil)
             return NGL_ERROR_MEMORY;
 
-        ret = ngli_texture_init(vk->rt_depth_stencil, &texture_params);
+        ret = ngli_texture_init(s_priv->rt_depth_stencil, &texture_params);
         if (ret < 0)
             return ret;
 
@@ -1232,8 +1143,8 @@ static int vulkan_init(struct gctx *s, struct vkcontext *vk, uintptr_t display, 
             .width = config->width,
             .height = config->height,
             .nb_colors = 1,
-            .colors[0].attachment = vk->rt_color,
-            .depth_stencil.attachment = vk->rt_depth_stencil,
+            .colors[0].attachment = s_priv->rt_color,
+            .depth_stencil.attachment = s_priv->rt_depth_stencil,
             .readable = 1,
         };
 
@@ -1243,37 +1154,33 @@ static int vulkan_init(struct gctx *s, struct vkcontext *vk, uintptr_t display, 
             texture_params.height = config->height;
             texture_params.format = NGLI_FORMAT_R8G8B8A8_UNORM;
             texture_params.samples = 1;
-            vk->rt_resolve_color = ngli_texture_create(s);
-            if (!vk->rt_resolve_color)
+            s_priv->rt_resolve_color = ngli_texture_create(s);
+            if (!s_priv->rt_resolve_color)
                 return NGL_ERROR_MEMORY;
 
-            ret = ngli_texture_init(vk->rt_resolve_color, &texture_params);
+            ret = ngli_texture_init(s_priv->rt_resolve_color, &texture_params);
             if (ret < 0)
                 return ret;
-            rt_params.colors[0].resolve_target = vk->rt_resolve_color;
+            rt_params.colors[0].resolve_target = s_priv->rt_resolve_color;
         }
 
-        vk->rt = ngli_rendertarget_create(s);
-        if (!vk->rt)
+        s_priv->rt = ngli_rendertarget_create(s);
+        if (!s_priv->rt)
             return NGL_ERROR_MEMORY;
 
-        ret = ngli_rendertarget_init(vk->rt, &rt_params);
+        ret = ngli_rendertarget_init(s_priv->rt, &rt_params);
         if (ret < 0)
             return ret;
 
-        vk->nb_framebuffers = 1;
-        vk->nb_in_flight_frames = 1;
+        s_priv->nb_images = 1;
+        s_priv->nb_in_flight_frames = 1;
     } else {
-        if ((ret = create_swapchain(vk)) != VK_SUCCESS ||
-            (ret = create_swapchain_images(vk)) != VK_SUCCESS ||
-            (ret = create_swapchain_image_views(vk)) != VK_SUCCESS ||
-            (ret = create_depth_images(s, vk)) != VK_SUCCESS ||
-            (ret = create_render_pass(vk)) != VK_SUCCESS ||
-            (ret = create_swapchain_framebuffers(vk)) != VK_SUCCESS)
+        if ((ret = create_swapchain(s)) != VK_SUCCESS ||
+            (ret = create_swapchain_images(s)) != VK_SUCCESS)
             return -1;
     }
 
-    if ((ret = create_semaphores(vk)) != VK_SUCCESS) {
+    if ((ret = create_semaphores(s)) != VK_SUCCESS) {
         return -1;
     }
 
@@ -1282,20 +1189,23 @@ static int vulkan_init(struct gctx *s, struct vkcontext *vk, uintptr_t display, 
     return 0;
 }
 
-static VkResult vulkan_swap_buffers(struct vkcontext *vk)
+static VkResult vulkan_swap_buffers(struct gctx *s)
 {
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+    struct vkcontext *vk = s_priv->vkcontext;
+
     VkPresentInfoKHR present_info = {
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-        .waitSemaphoreCount = ngli_darray_count(&vk->signal_semaphores),
-        .pWaitSemaphores = ngli_darray_data(&vk->signal_semaphores),
+        .waitSemaphoreCount = ngli_darray_count(&s_priv->signal_semaphores),
+        .pWaitSemaphores = ngli_darray_data(&s_priv->signal_semaphores),
         .swapchainCount = 1,
         .pSwapchains = &vk->swapchain,
-        .pImageIndices = &vk->img_index,
+        .pImageIndices = &s_priv->img_index,
     };
 
     int ret = vkQueuePresentKHR(vk->present_queue, &present_info);
 
-    vk->signal_semaphores.count = 0;
+    s_priv->signal_semaphores.count = 0;
 
     if (ret == VK_ERROR_OUT_OF_DATE_KHR) {
         LOG(ERROR, "PRESENT OUT OF DATE");
@@ -1305,25 +1215,20 @@ static VkResult vulkan_swap_buffers(struct vkcontext *vk)
         LOG(ERROR, "failed to present image %s", vk_res2str(ret));
     }
 
-    vk->current_frame = (vk->current_frame + 1) % vk->nb_in_flight_frames;
+    s_priv->current_frame = (s_priv->current_frame + 1) % s_priv->nb_in_flight_frames;
     return ret;
 }
 
-static void cleanup_swapchain(struct vkcontext *vk)
+static void cleanup_swapchain(struct gctx *s)
 {
-    for (uint32_t i = 0; i < vk->nb_framebuffers; i++)
-        vkDestroyFramebuffer(vk->device, vk->framebuffers[i], NULL);
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+    struct vkcontext *vk = s_priv->vkcontext;
 
-    vkDestroyRenderPass(vk->device, vk->render_pass, NULL);
-    vkDestroyRenderPass(vk->device, vk->conservative_render_pass, NULL);
-
-    for (uint32_t i = 0; i < vk->nb_image_views; i++)
-        vkDestroyImageView(vk->device, vk->image_views[i], NULL);
-
-    for (uint32_t i = 0; i < vk->nb_depth_images; i++) {
-        vkDestroyImageView(vk->device, vk->depth_image_views[i], NULL);
-        vkDestroyImage(vk->device, vk->depth_images[i], NULL);
-        vkFreeMemory(vk->device, vk->depth_device_memories[i], NULL);
+    for (uint32_t i = 0; i < s_priv->nb_wrapped_textures; i++) {
+        ngli_rendertarget_freep(&s_priv->rts[i]);
+        ngli_texture_freep(&s_priv->wrapped_textures[i]);
+        ngli_texture_freep(&s_priv->textures[i]);
+        ngli_texture_freep(&s_priv->depth_textures[i]);
     }
 
     vkDestroySwapchainKHR(vk->device, vk->swapchain, NULL);
@@ -1335,13 +1240,9 @@ static int reset_swapchain(struct gctx *gctx, struct vkcontext *vk)
     VkResult ret;
 
     vkDeviceWaitIdle(vk->device);
-    cleanup_swapchain(vk);
-    if ((ret = create_swapchain(vk)) != VK_SUCCESS ||
-        (ret = create_swapchain_images(vk)) != VK_SUCCESS ||
-        (ret = create_swapchain_image_views(vk)) != VK_SUCCESS ||
-        (ret = create_depth_images(gctx, vk)) != VK_SUCCESS ||
-        (ret = create_render_pass(vk)) != VK_SUCCESS ||
-        (ret = create_swapchain_framebuffers(vk)) != VK_SUCCESS)
+    cleanup_swapchain(gctx);
+    if ((ret = create_swapchain(gctx)) != VK_SUCCESS ||
+        (ret = create_swapchain_images(gctx)) != VK_SUCCESS)
         return -1;
 
     return 0;
@@ -1362,37 +1263,33 @@ static void vulkan_uninit(struct gctx *s)
 
     destroy_command_pool_and_buffers(s);
 
-    for (int i = 0; i < vk->nb_in_flight_frames; i++) {
-        vkDestroySemaphore(vk->device, vk->sem_render_finished[i], NULL);
-        vkDestroySemaphore(vk->device, vk->sem_img_avail[i], NULL);
-        vkDestroyFence(vk->device, vk->fences[i], NULL);
+    for (int i = 0; i < s_priv->nb_in_flight_frames; i++) {
+        vkDestroySemaphore(vk->device, s_priv->sem_render_finished[i], NULL);
+        vkDestroySemaphore(vk->device, s_priv->sem_img_avail[i], NULL);
+        vkDestroyFence(vk->device, s_priv->fences[i], NULL);
     }
-    ngli_free(vk->sem_render_finished);
-    ngli_free(vk->sem_img_avail);
-    ngli_free(vk->fences);
+    ngli_free(s_priv->sem_render_finished);
+    ngli_free(s_priv->sem_img_avail);
+    ngli_free(s_priv->fences);
 
     if (config->offscreen) {
-        ngli_rendertarget_freep(&vk->rt);
-        ngli_texture_freep(&vk->rt_color);
-        ngli_texture_freep(&vk->rt_resolve_color);
-        ngli_texture_freep(&vk->rt_depth_stencil);
+        ngli_rendertarget_freep(&s_priv->rt);
+        ngli_texture_freep(&s_priv->rt_color);
+        ngli_texture_freep(&s_priv->rt_resolve_color);
+        ngli_texture_freep(&s_priv->rt_depth_stencil);
     }
 
     if (!config->offscreen)
-        cleanup_swapchain(vk);
+        cleanup_swapchain(s);
 
-    vkDestroyCommandPool(vk->device, vk->transient_command_buffer_pool, NULL);
-    vkDestroyFence(vk->device, vk->transient_command_buffer_fence, NULL);
+    vkDestroyCommandPool(vk->device, s_priv->transient_command_buffer_pool, NULL);
+    vkDestroyFence(vk->device, s_priv->transient_command_buffer_fence, NULL);
 
     ngli_free(vk->swapchain_support.formats);
     ngli_free(vk->swapchain_support.present_modes);
     if (!config->offscreen)
         vkDestroySurfaceKHR(vk->instance, vk->surface, NULL);
-    ngli_free(vk->images);
-    ngli_free(vk->image_views);
-    ngli_free(vk->depth_images);
-    ngli_free(vk->depth_image_views);
-    ngli_free(vk->depth_device_memories);
+    ngli_free(s_priv->images);
     vkDestroyDevice(vk->device, NULL);
 #if ENABLE_DEBUG
     void *proc_addr = vulkan_get_proc_addr(vk, "vkDestroyDebugUtilsMessengerEXT");
@@ -1403,12 +1300,12 @@ static void vulkan_uninit(struct gctx *s)
 #endif
     vkDestroyInstance(vk->instance, NULL);
 
-    shaderc_compiler_release(vk->spirv_compiler);
-    shaderc_compile_options_release(vk->spirv_compiler_opts);
+    shaderc_compiler_release(s_priv->spirv_compiler);
+    shaderc_compile_options_release(s_priv->spirv_compiler_opts);
 
-    ngli_darray_reset(&vk->wait_semaphores);
-    ngli_darray_reset(&vk->wait_stages);
-    ngli_darray_reset(&vk->signal_semaphores);
+    ngli_darray_reset(&s_priv->wait_semaphores);
+    ngli_darray_reset(&s_priv->wait_stages);
+    ngli_darray_reset(&s_priv->signal_semaphores);
 }
 
 static struct gctx *vk_create(struct ngl_ctx *ctx)
@@ -1477,13 +1374,16 @@ static int vk_init(struct gctx *s)
         s_priv->default_rendertarget_desc.depth_stencil.samples = config->samples;
         s_priv->default_rendertarget_desc.depth_stencil.resolve = 0;
         ctx->rendertarget_desc = &s_priv->default_rendertarget_desc;
-        ngli_gctx_set_rendertarget(s, vk->rt);
+        ngli_gctx_set_rendertarget(s, s_priv->rt);
     } else {
         s_priv->default_rendertarget_desc.nb_colors = 1;
         s_priv->default_rendertarget_desc.colors[0].format = NGLI_FORMAT_B8G8R8A8_UNORM;
+        s_priv->default_rendertarget_desc.colors[0].samples = config->samples;
+        s_priv->default_rendertarget_desc.colors[0].resolve = config->samples > 0 ? 1 : 0;
         s_priv->default_rendertarget_desc.depth_stencil.format = vk->prefered_depth_stencil_format;
+        s_priv->default_rendertarget_desc.depth_stencil.samples = config->samples;
         ctx->rendertarget_desc = &s_priv->default_rendertarget_desc;
-        ngli_gctx_set_rendertarget(s, NULL);
+        ngli_gctx_set_rendertarget(s, s_priv->rts[0]);
     }
 
     return 0;
@@ -1491,20 +1391,20 @@ static int vk_init(struct gctx *s)
 
 static int vk_resize(struct gctx *s, int width, int height, const int *viewport)
 {
-    struct ngl_ctx *ctx = s->ctx;
-    struct ngl_config *config = &ctx->config;
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+    struct vkcontext *vk = s_priv->vkcontext;
 
-    ctx->config.width = width;
-    ctx->config.height = height;
+    vk->width = width;
+    vk->height = height;
 
     if (viewport && viewport[2] > 0 && viewport[3] > 0) {
         ngli_gctx_set_viewport(s, viewport);
     } else {
-        const int default_viewport[] = {0, 0, config->width, config->height};
+        const int default_viewport[] = {0, 0, width, height};
         ngli_gctx_set_viewport(s, default_viewport);
     }
 
-    const int scissor[] = {0, 0, config->width, config->height};
+    const int scissor[] = {0, 0, width, height};
     ngli_gctx_set_scissor(s, scissor);
 
     return 0;
@@ -1518,17 +1418,17 @@ static int vk_pre_draw(struct gctx *s, double t)
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
     struct vkcontext *vk = s_priv->vkcontext;
 
-    vkWaitForFences(vk->device, 1, &vk->fences[vk->current_frame], VK_TRUE, UINT64_MAX);
-    vkResetFences(vk->device, 1, &vk->fences[vk->current_frame]);
+    vkWaitForFences(vk->device, 1, &s_priv->fences[s_priv->current_frame], VK_TRUE, UINT64_MAX);
+    vkResetFences(vk->device, 1, &s_priv->fences[s_priv->current_frame]);
 
-    struct rendertarget *rt = config->offscreen ? vk->rt : NULL;
+    struct rendertarget *rt = config->offscreen ? s_priv->rt : NULL;
     if (!config->offscreen) {
         /* TODO: swapchain_swap_buffers() | swapchain_acquire_image() */
-        VkResult vkret = vkAcquireNextImageKHR(vk->device, vk->swapchain, UINT64_MAX, vk->sem_img_avail[vk->current_frame], NULL, &vk->img_index);
+        VkResult vkret = vkAcquireNextImageKHR(vk->device, vk->swapchain, UINT64_MAX, s_priv->sem_img_avail[s_priv->current_frame], NULL, &s_priv->img_index);
         if (vkret == VK_ERROR_OUT_OF_DATE_KHR) {
             ret = reset_swapchain(s, vk);
             if (ret >= 0) {
-                VkResult vkret = vkAcquireNextImageKHR(vk->device, vk->swapchain, UINT64_MAX, vk->sem_img_avail[vk->current_frame], NULL, &vk->img_index);
+                VkResult vkret = vkAcquireNextImageKHR(vk->device, vk->swapchain, UINT64_MAX, s_priv->sem_img_avail[s_priv->current_frame], NULL, &s_priv->img_index);
                 if (vkret != VK_SUCCESS) {
                     LOG(ERROR, "failed to acquire image after resetting the swap chain");
                     ret = -1;
@@ -1546,26 +1446,28 @@ static int vk_pre_draw(struct gctx *s, double t)
         if (ret < 0)
             return ret;
 
-        if (!ngli_darray_push(&vk->wait_semaphores, &vk->sem_img_avail[vk->current_frame]))
+        rt = s_priv->rts[s_priv->img_index];
+
+        if (!ngli_darray_push(&s_priv->wait_semaphores, &s_priv->sem_img_avail[s_priv->current_frame]))
             return NGL_ERROR_MEMORY;
 
         VkPipelineStageFlagBits wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        if (!ngli_darray_push(&vk->wait_stages, &wait_stage))
+        if (!ngli_darray_push(&s_priv->wait_stages, &wait_stage))
             return NGL_ERROR_MEMORY;
 
-        if (!ngli_darray_push(&vk->signal_semaphores, &vk->sem_render_finished[vk->current_frame]))
+        if (!ngli_darray_push(&s_priv->signal_semaphores, &s_priv->sem_render_finished[s_priv->current_frame]))
             return NGL_ERROR_MEMORY;
     }
 
-    vk->cur_command_buffer = vk->command_buffers[vk->img_index];
+    s_priv->cur_command_buffer = s_priv->command_buffers[s_priv->img_index];
     VkCommandBufferBeginInfo command_buffer_begin_info = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
     };
-    VkResult vkret = vkBeginCommandBuffer(vk->cur_command_buffer, &command_buffer_begin_info);
+    VkResult vkret = vkBeginCommandBuffer(s_priv->cur_command_buffer, &command_buffer_begin_info);
     if (vkret != VK_SUCCESS)
         return -1;
-    vk->cur_command_buffer_state = 1;
+    s_priv->cur_command_buffer_state = 1;
 
     ngli_gctx_set_rendertarget(s, rt);
     ngli_gctx_clear_color(s);
@@ -1580,34 +1482,27 @@ static int vk_post_draw(struct gctx *s, double t)
     struct ngl_ctx *ctx = s->ctx;
     const struct ngl_config *config = &ctx->config;
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
-    struct vkcontext *vk = s_priv->vkcontext;
 
     if (config->offscreen) {
         if (config->capture_buffer)
-            ngli_rendertarget_read_pixels(vk->rt, config->capture_buffer);
+            ngli_rendertarget_read_pixels(s_priv->rt, config->capture_buffer);
         ngli_gctx_flush(s);
-        vk->current_frame = (vk->current_frame + 1) % vk->nb_in_flight_frames;
+        s_priv->current_frame = (s_priv->current_frame + 1) % s_priv->nb_in_flight_frames;
     } else {
         ngli_gctx_vk_end_render_pass(s);
 
-        const VkImageSubresourceRange subres_range = {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .baseMipLevel = 0,
-            .levelCount = VK_REMAINING_MIP_LEVELS,
-            .baseArrayLayer = 0,
-            .layerCount = VK_REMAINING_ARRAY_LAYERS,
-        };
-        ngli_vk_transition_image_layout(vk, vk->cur_command_buffer, vk->images[vk->img_index], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, &subres_range);
-
+        struct rendertarget *rt = s_priv->rts[s_priv->img_index];
+        struct rendertarget_params *params = &rt->params;
+        ngli_texture_vk_transition_layout(s_priv->wrapped_textures[s_priv->img_index], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
         ngli_gctx_flush(s);
-        VkResult vkret = vulkan_swap_buffers(vk);
+        VkResult vkret = vulkan_swap_buffers(s);
         if (vkret != VK_SUCCESS)
             return -1;
     }
 
     /* Reset cur_command_buffer so updating resources will use a transient
      * command buffer */
-    vk->cur_command_buffer = VK_NULL_HANDLE;
+    s_priv->cur_command_buffer = VK_NULL_HANDLE;
 
     return 0;
 }
@@ -1615,6 +1510,9 @@ static int vk_post_draw(struct gctx *s, double t)
 static void vk_destroy(struct gctx *s)
 {
     struct ngl_ctx *ctx = s->ctx;
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+    ngli_vkcontext_freep(&s_priv->xxx);
+
     ngli_pgcache_reset(&s->pgcache);
     vulkan_uninit(s);
     ngli_darray_pop(&ctx->projection_matrix_stack);
@@ -1638,9 +1536,8 @@ static void vk_wait_idle(struct gctx *s)
 void ngli_gctx_vk_commit_render_pass(struct gctx *s)
 {
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
-    struct vkcontext *vk = s_priv->vkcontext;
 
-    if (vk->cur_render_pass_state == 1)
+    if (s_priv->cur_render_pass_state == 1)
         return;
 
     if (s_priv->rendertarget) {
@@ -1662,32 +1559,31 @@ void ngli_gctx_vk_commit_render_pass(struct gctx *s)
             resolve_target_vk->image_layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     }
 
-    VkCommandBuffer cmd_buf = vk->cur_command_buffer;
+    VkCommandBuffer cmd_buf = s_priv->cur_command_buffer;
     VkRenderPassBeginInfo render_pass_begin_info = {
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        .renderPass = vk->cur_render_pass,
-        .framebuffer = vk->cur_framebuffer,
+        .renderPass = s_priv->cur_render_pass,
+        .framebuffer = s_priv->cur_framebuffer,
         .renderArea = {
-            .extent = vk->cur_render_area,
+            .extent = s_priv->cur_render_area,
         },
         .clearValueCount = 0,
         .pClearValues = NULL,
     };
     vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
-    vk->cur_render_pass_state = 1;
+    s_priv->cur_render_pass_state = 1;
 }
 
 void ngli_gctx_vk_end_render_pass(struct gctx *s)
 {
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
-    struct vkcontext *vk = s_priv->vkcontext;
 
-    if (vk->cur_render_pass_state != 1)
+    if (s_priv->cur_render_pass_state != 1)
         return;
 
-    VkCommandBuffer cmd_buf = vk->cur_command_buffer;
+    VkCommandBuffer cmd_buf = s_priv->cur_command_buffer;
     vkCmdEndRenderPass(cmd_buf);
-    vk->cur_render_pass_state = 0;
+    s_priv->cur_render_pass_state = 0;
 }
 
 static void vk_set_rendertarget(struct gctx *s, struct rendertarget *rt)
@@ -1695,26 +1591,22 @@ static void vk_set_rendertarget(struct gctx *s, struct rendertarget *rt)
     /* FIXME */
     int conservative = 0;
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
-    struct vkcontext *vk = s_priv->vkcontext;
-    if (vk->cur_render_pass && rt != s_priv->rendertarget) {
-        VkCommandBuffer cmd_buf = vk->cur_command_buffer;
-        if (vk->cur_render_pass_state == 1)
+    if (s_priv->cur_render_pass && rt != s_priv->rendertarget) {
+        VkCommandBuffer cmd_buf = s_priv->cur_command_buffer;
+        if (s_priv->cur_render_pass_state == 1)
             vkCmdEndRenderPass(cmd_buf);
     }
 
     s_priv->rendertarget = rt;
     if (rt) {
         struct rendertarget_vk *rt_vk = (struct rendertarget_vk*)rt;
-        vk->cur_framebuffer = rt_vk->framebuffer;
-        vk->cur_render_pass = conservative ? rt_vk->conservative_render_pass : rt_vk->render_pass;
-        vk->cur_render_area = rt_vk->render_area;
+        s_priv->cur_framebuffer = rt_vk->framebuffer;
+        s_priv->cur_render_pass = conservative ? rt_vk->conservative_render_pass : rt_vk->render_pass;
+        s_priv->cur_render_area = rt_vk->render_area;
     } else {
-        struct vkcontext *vk = s_priv->vkcontext;
-        vk->cur_framebuffer = vk->framebuffers[vk->img_index];
-        vk->cur_render_pass = conservative ? vk->conservative_render_pass : vk->render_pass;
-        vk->cur_render_area = vk->extent;
+        ngli_assert(0);
     }
-    vk->cur_render_pass_state = 0;
+    s_priv->cur_render_pass_state = 0;
 }
 
 static struct rendertarget *vk_get_rendertarget(struct gctx *s)
@@ -1764,8 +1656,6 @@ static void vk_clear_color(struct gctx *s)
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
     ngli_gctx_vk_commit_render_pass(s);
 
-    struct vkcontext *vk = s_priv->vkcontext;
-
     VkClearAttachment clear_attachments = {
         .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
         .colorAttachment = 0,
@@ -1777,13 +1667,13 @@ static void vk_clear_color(struct gctx *s)
     VkClearRect clear_rect = {
         .rect = {
             .offset = {0},
-            .extent = vk->cur_render_area,
+            .extent = s_priv->cur_render_area,
         },
         .baseArrayLayer = 0,
         .layerCount = 1,
     };
 
-    VkCommandBuffer cmd_buf = vk->cur_command_buffer;
+    VkCommandBuffer cmd_buf = s_priv->cur_command_buffer;
     vkCmdClearAttachments(cmd_buf, 1, &clear_attachments, 1, &clear_rect);
 }
 
@@ -1801,8 +1691,6 @@ static void vk_clear_depth_stencil(struct gctx *s)
 
     // FIXME: no-oop if there is not depth stencil
 
-    struct vkcontext *vk = s_priv->vkcontext;
-
     VkClearAttachment clear_attachments = {
         .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
         .clearValue = {
@@ -1816,13 +1704,13 @@ static void vk_clear_depth_stencil(struct gctx *s)
     VkClearRect clear_rect = {
         .rect = {
             .offset = {0},
-            .extent = vk->cur_render_area,
+            .extent = s_priv->cur_render_area,
         },
         .baseArrayLayer = 0,
         .layerCount = 1,
     };
 
-    VkCommandBuffer cmd_buf = vk->cur_command_buffer;
+    VkCommandBuffer cmd_buf = s_priv->cur_command_buffer;
     vkCmdClearAttachments(cmd_buf, 1, &clear_attachments, 1, &clear_rect);
 }
 
@@ -1836,36 +1724,36 @@ static void vk_flush(struct gctx *s)
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
     struct vkcontext *vk = s_priv->vkcontext;
 
-    VkCommandBuffer cmd_buf = vk->cur_command_buffer;
-    if (vk->cur_render_pass && vk->cur_render_pass_state == 1) {
+    VkCommandBuffer cmd_buf = s_priv->cur_command_buffer;
+    if (s_priv->cur_render_pass && s_priv->cur_render_pass_state == 1) {
         vkCmdEndRenderPass(cmd_buf);
-        vk->cur_render_pass_state = 0;
+        s_priv->cur_render_pass_state = 0;
     }
 
         VkResult vkret = vkEndCommandBuffer(cmd_buf);
         if (vkret != VK_SUCCESS)
             return;
-        vk->cur_command_buffer_state = 0;
+        s_priv->cur_command_buffer_state = 0;
 
     VkSubmitInfo submit_info = {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .waitSemaphoreCount = ngli_darray_count(&vk->wait_semaphores),
-        .pWaitSemaphores = ngli_darray_data(&vk->wait_semaphores),
-        .pWaitDstStageMask = ngli_darray_data(&vk->wait_stages),
+        .waitSemaphoreCount = ngli_darray_count(&s_priv->wait_semaphores),
+        .pWaitSemaphores = ngli_darray_data(&s_priv->wait_semaphores),
+        .pWaitDstStageMask = ngli_darray_data(&s_priv->wait_stages),
         .commandBufferCount = 1,
         .pCommandBuffers = &cmd_buf,
-        .signalSemaphoreCount = ngli_darray_count(&vk->signal_semaphores),
-        .pSignalSemaphores = ngli_darray_data(&vk->signal_semaphores),
+        .signalSemaphoreCount = ngli_darray_count(&s_priv->signal_semaphores),
+        .pSignalSemaphores = ngli_darray_data(&s_priv->signal_semaphores),
     };
 
-    VkResult ret = vkQueueSubmit(vk->graphic_queue, 1, &submit_info, vk->fences[vk->current_frame]);
+    VkResult ret = vkQueueSubmit(vk->graphic_queue, 1, &submit_info, s_priv->fences[s_priv->current_frame]);
     if (ret != VK_SUCCESS) {
         return;
     }
 
-    vk->wait_semaphores.count = 0;
-    vk->wait_stages.count = 0;
-    //vk->command_buffers.count = 0;
+    s_priv->wait_semaphores.count = 0;
+    s_priv->wait_stages.count = 0;
+    //s_priv->command_buffers.count = 0;
 }
 
 static int vk_get_prefered_depth_format(struct gctx *s)

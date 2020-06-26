@@ -70,5 +70,8 @@ VkSamplerMipmapMode ngli_texture_get_vk_mipmap_mode(int mipmap_filter);
 
 VkSamplerAddressMode ngli_texture_get_vk_wrap(int wrap);
 
+int ngli_texture_vk_wrap(struct texture *s,
+                         const struct texture_params *params,
+                         VkImage image, VkImageLayout layout);
 
 #endif

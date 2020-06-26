@@ -209,6 +209,7 @@ LIB_OBJS_VK += buffer_vk.o          \
                texture_vk.o         \
                topology_vk.o        \
                rendertarget_vk.o    \
+               vkcontext.o          \
 
 LIB_OBJS                        += $(LIB_OBJS_VK)
 LIB_CFLAGS                      += -DBACKEND_VK

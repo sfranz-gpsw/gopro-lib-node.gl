@@ -244,7 +244,6 @@ int ngli_rendertarget_vk_init(struct rendertarget *s, const struct rendertarget_
     for (int i = 0; i < params->nb_colors; i++) {
         const struct attachment *attachment = &params->colors[i];
         const struct texture_vk *texture_vk = (struct texture_vk *)attachment->attachment;
-        LOG(ERROR, "attachment_layer=%d %p", attachment->attachment_layer, texture_vk->image);
         VkImageViewCreateInfo view_info = {
             .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
             .image = texture_vk->image,
@@ -264,7 +263,6 @@ int ngli_rendertarget_vk_init(struct rendertarget *s, const struct rendertarget_
 
         if (attachment->resolve_target) {
             const struct texture_vk *texture_vk = (struct texture_vk *)attachment->resolve_target;
-            LOG(ERROR, "resolve layer=%d %p", attachment->resolve_target_layer, attachment->resolve_target);
             VkImageViewCreateInfo view_info = {
                 .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
                 .image = texture_vk->image,
@@ -325,7 +323,6 @@ int ngli_rendertarget_vk_init(struct rendertarget *s, const struct rendertarget_
         }
     }
 
-    LOG(ERROR, "attachmentCount=%d", s_priv->nb_attachments);
     VkFramebufferCreateInfo framebuffer_create_info = {
         .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
         .renderPass      = s_priv->render_pass,
@@ -395,7 +392,7 @@ void ngli_rendertarget_vk_read_pixels(struct rendertarget *s, uint8_t *data)
     if (ret < 0)
         return;
 
-    VkCommandBuffer command_buffer = vk->cur_command_buffer;
+    VkCommandBuffer command_buffer = gctx_vk->cur_command_buffer;
 
     const VkImageCopy imageCopyRegion = {
         .srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -417,31 +414,31 @@ void ngli_rendertarget_vk_read_pixels(struct rendertarget *s, uint8_t *data)
     VkResult vkret = vkEndCommandBuffer(command_buffer);
     if (vkret != VK_SUCCESS)
         return;
-    vk->cur_command_buffer_state = 0;
+    gctx_vk->cur_command_buffer_state = 0;
 
     VkSubmitInfo submit_info = {
         .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .waitSemaphoreCount   = ngli_darray_count(&vk->wait_semaphores),
-        .pWaitSemaphores      = ngli_darray_data(&vk->wait_semaphores),
-        .pWaitDstStageMask    = ngli_darray_data(&vk->wait_stages),
+        .waitSemaphoreCount   = ngli_darray_count(&gctx_vk->wait_semaphores),
+        .pWaitSemaphores      = ngli_darray_data(&gctx_vk->wait_semaphores),
+        .pWaitDstStageMask    = ngli_darray_data(&gctx_vk->wait_stages),
         .commandBufferCount   = 1,
         .pCommandBuffers      = &command_buffer,
         .signalSemaphoreCount = 0,
         .pSignalSemaphores    = NULL,
     };
-    vk->wait_semaphores.count = 0;
-    vk->wait_stages.count = 0;
+    gctx_vk->wait_semaphores.count = 0;
+    gctx_vk->wait_stages.count = 0;
 
-    vkret = vkQueueSubmit(vk->graphic_queue, 1, &submit_info, vk->fences[vk->current_frame]);
+    vkret = vkQueueSubmit(vk->graphic_queue, 1, &submit_info, gctx_vk->fences[gctx_vk->current_frame]);
     if (vkret != VK_SUCCESS) {
         return;
     }
 
-    vkret = vkWaitForFences(vk->device, 1, &vk->fences[vk->current_frame], VK_TRUE, UINT64_MAX);
+    vkret = vkWaitForFences(vk->device, 1, &gctx_vk->fences[gctx_vk->current_frame], VK_TRUE, UINT64_MAX);
     if (vkret != VK_SUCCESS)
         return;
 
-    vkret = vkResetFences(vk->device, 1, &vk->fences[vk->current_frame]);
+    vkret = vkResetFences(vk->device, 1, &gctx_vk->fences[gctx_vk->current_frame]);
     if (vkret != VK_SUCCESS)
         return;
 
@@ -456,10 +453,10 @@ void ngli_rendertarget_vk_read_pixels(struct rendertarget *s, uint8_t *data)
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
     };
-    vkret = vkBeginCommandBuffer(vk->cur_command_buffer, &command_buffer_begin_info);
+    vkret = vkBeginCommandBuffer(gctx_vk->cur_command_buffer, &command_buffer_begin_info);
     if (vkret != VK_SUCCESS)
         return;;
-    vk->cur_command_buffer_state = 1;
+    gctx_vk->cur_command_buffer_state = 1;
 }
 
 void ngli_rendertarget_vk_freep(struct rendertarget **sp)

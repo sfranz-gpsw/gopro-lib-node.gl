@@ -57,10 +57,10 @@ int ngli_program_vk_init(struct program *s, const char *vertex, const char *frag
             continue;
         struct program_shader *shader = &s_priv->shaders[i];
 
-        shader->result = shaderc_compile_into_spv(vk->spirv_compiler,
+        shader->result = shaderc_compile_into_spv(gctx_vk->spirv_compiler,
                                                   shaders[i].src, strlen(shaders[i].src),
                                                   shaders[i].kind,
-                                                  "whatever", "main", vk->spirv_compiler_opts);
+                                                  "whatever", "main", gctx_vk->spirv_compiler_opts);
         if (shaderc_result_get_compilation_status(shader->result) != shaderc_compilation_status_success) {
             LOG(ERROR, "unable to compile shader: %s", shaderc_result_get_error_message(shader->result));
             return NGL_ERROR_EXTERNAL;

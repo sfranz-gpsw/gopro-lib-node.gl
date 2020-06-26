@@ -232,7 +232,7 @@ static int pipeline_graphics_init(struct pipeline *s, const struct pipeline_para
     };
 
     VkRect2D scissor = {
-        .extent = vk->extent,
+        .extent = gctx_vk->extent,
     };
 
     VkPipelineViewportStateCreateInfo viewport_state_create_info = {
@@ -468,7 +468,7 @@ static int create_desc_set_layout_bindings(struct pipeline *s, const struct pipe
         if (!ngli_darray_push(&s->buffer_descs, &pair))
             return NGL_ERROR_MEMORY;
 
-        desc_pool_size_map[pipeline_buffer->type].descriptorCount += vk->nb_framebuffers;
+        desc_pool_size_map[pipeline_buffer->type].descriptorCount += gctx_vk->nb_images;
     }
 
     for (int i = 0; i < params->nb_textures; i++) {
@@ -490,7 +490,7 @@ static int create_desc_set_layout_bindings(struct pipeline *s, const struct pipe
         if (!ngli_darray_push(&s->texture_descs, &pair))
             return NGL_ERROR_MEMORY;
 
-        desc_pool_size_map[pipeline_texture->type].descriptorCount += vk->nb_framebuffers;
+        desc_pool_size_map[pipeline_texture->type].descriptorCount += gctx_vk->nb_images;
     }
 
     struct VkDescriptorPoolSize desc_pool_sizes[NGLI_ARRAY_NB(desc_pool_size_map)];
@@ -508,7 +508,7 @@ static int create_desc_set_layout_bindings(struct pipeline *s, const struct pipe
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         .poolSizeCount = nb_desc_pool_sizes,
         .pPoolSizes = desc_pool_sizes,
-        .maxSets = vk->nb_framebuffers,
+        .maxSets = gctx_vk->nb_images,
     };
 
     VkResult vkret = vkCreateDescriptorPool(vk->device, &descriptor_pool_create_info, NULL, &s_priv->desc_pool);
@@ -525,21 +525,21 @@ static int create_desc_set_layout_bindings(struct pipeline *s, const struct pipe
     if (vkret != VK_SUCCESS)
         return NGL_ERROR_EXTERNAL;
 
-    VkDescriptorSetLayout *desc_set_layouts = ngli_calloc(vk->nb_framebuffers, sizeof(*desc_set_layouts));
+    VkDescriptorSetLayout *desc_set_layouts = ngli_calloc(gctx_vk->nb_images, sizeof(*desc_set_layouts));
     if (!desc_set_layouts)
         return NGL_ERROR_MEMORY;
 
-    for (int i = 0; i < vk->nb_framebuffers; i++)
+    for (int i = 0; i < gctx_vk->nb_images; i++)
         desc_set_layouts[i] = s_priv->desc_set_layout;
 
     VkDescriptorSetAllocateInfo descriptor_set_allocate_info = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
         .descriptorPool = s_priv->desc_pool,
-        .descriptorSetCount = vk->nb_framebuffers,
+        .descriptorSetCount = gctx_vk->nb_images,
         .pSetLayouts = desc_set_layouts
     };
 
-    s_priv->desc_sets = ngli_calloc(vk->nb_framebuffers, sizeof(*s_priv->desc_sets));
+    s_priv->desc_sets = ngli_calloc(gctx_vk->nb_images, sizeof(*s_priv->desc_sets));
     if (!s_priv->desc_sets) {
         ngli_free(desc_set_layouts);
         return NGL_ERROR_MEMORY;
@@ -556,7 +556,7 @@ static int create_desc_set_layout_bindings(struct pipeline *s, const struct pipe
         struct buffer *buffer = pipeline_buffer->buffer;
         struct buffer_vk *buffer_vk = (struct buffer_vk *)pipeline_buffer->buffer;
 
-        for (int i = 0; i < vk->nb_framebuffers; i++) {
+        for (int i = 0; i < gctx_vk->nb_images; i++) {
             const VkDescriptorBufferInfo descriptor_buffer_info = {
                 .buffer = buffer_vk->vkbuf,
                 .offset = 0,
@@ -597,7 +597,7 @@ static int create_desc_set_layout_bindings(struct pipeline *s, const struct pipe
         if (!texture_vk)
             continue;
 
-        for (int i = 0; i < vk->nb_framebuffers; i++) {
+        for (int i = 0; i < gctx_vk->nb_images; i++) {
             VkDescriptorImageInfo image_info = {
                 .imageLayout = texture_vk->image_layout,
                 .imageView   = texture_vk->image_view,
@@ -735,7 +735,7 @@ int ngli_pipeline_vk_update_texture(struct pipeline *s, int index, struct textur
     };
     VkWriteDescriptorSet write_descriptor_set = {
         .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        .dstSet           = s_priv->desc_sets[vk->img_index],
+        .dstSet           = s_priv->desc_sets[gctx_vk->img_index],
         .dstBinding       = pipeline_texture->binding,
         .dstArrayElement  = 0,
         .descriptorType   = get_descriptor_type(pipeline_texture->type),
@@ -760,12 +760,11 @@ static VkIndexType get_vk_indices_type(int indices_format)
 void ngli_pipeline_vk_exec(struct pipeline *s)
 {
     struct gctx_vk *gctx_vk = (struct gctx_vk *)s->gctx;
-    struct vkcontext *vk = gctx_vk->vkcontext;
     struct pipeline_vk *s_priv = (struct pipeline_vk *)s;
 
     set_uniforms(s);
 
-    VkCommandBuffer cmd_buf = vk->cur_command_buffer;
+    VkCommandBuffer cmd_buf = gctx_vk->cur_command_buffer;
 
     ngli_gctx_vk_commit_render_pass(s->gctx);
 
@@ -780,7 +779,7 @@ void ngli_pipeline_vk_exec(struct pipeline *s)
     }
 
     if (s_priv->desc_sets)
-        vkCmdBindDescriptorSets(cmd_buf, s_priv->bind_point, s_priv->pipeline_layout, 0, 1, &s_priv->desc_sets[vk->img_index], 0, NULL);
+        vkCmdBindDescriptorSets(cmd_buf, s_priv->bind_point, s_priv->pipeline_layout, 0, 1, &s_priv->desc_sets[gctx_vk->img_index], 0, NULL);
 
     if (s->type == NGLI_PIPELINE_TYPE_GRAPHICS) {
         struct pipeline_graphics *graphics = &s->graphics;
@@ -799,7 +798,7 @@ void ngli_pipeline_vk_exec(struct pipeline *s)
 
         VkRect2D scissor;
         if (graphics->state.scissor_test) {
-            VkExtent2D extent = gctx_vk->rendertarget ? vk->cur_render_area : vk->extent;
+            VkExtent2D extent = gctx_vk->rendertarget ? gctx_vk->cur_render_area : gctx_vk->extent;
             scissor.offset.x = gctx_vk->scissor[0];
             scissor.offset.y = NGLI_MAX(extent.height - gctx_vk->scissor[1] - gctx_vk->scissor[3], 0);
             scissor.extent.width = gctx_vk->scissor[2];
@@ -807,7 +806,7 @@ void ngli_pipeline_vk_exec(struct pipeline *s)
         } else {
             scissor.offset.x = 0;
             scissor.offset.y = 0;
-            scissor.extent = gctx_vk->rendertarget ? vk->cur_render_area : vk->extent;
+            scissor.extent = gctx_vk->rendertarget ? gctx_vk->cur_render_area : gctx_vk->extent;
         }
 
         vkCmdSetScissor(cmd_buf, 0, 1, &scissor);

@@ -157,14 +157,20 @@ int ngli_texture_vk_init(struct texture *s,
                     VK_FORMAT_FEATURE_TRANSFER_SRC_BIT |
                     VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
 
-    VkImageUsageFlagBits usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    VkImageUsageFlagBits usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+    if (!(params->usage & NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY))
+        usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+
     if (!params->staging) {
     if (is_depth_format(s_priv->format)) {
         usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-        features |= VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT;
-    } else {
-        usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
         features |= VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    } else {
+        usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        if (!(params->usage & NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY))
+            usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+        features |= VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT;
     }
     }
 
@@ -172,7 +178,6 @@ int ngli_texture_vk_init(struct texture *s,
 
     VkFormatProperties properties;
     vkGetPhysicalDeviceFormatProperties(vk->physical_device, s_priv->format, &properties);
-    LOG(ERROR, "features = 0x%x 0x%x", properties.optimalTilingFeatures, properties.linearTilingFeatures);
     if (!(properties.optimalTilingFeatures & features))
         tiling = VK_IMAGE_TILING_LINEAR;
 
@@ -316,6 +321,226 @@ int ngli_texture_vk_init(struct texture *s,
     return 0;
 }
 
+int ngli_texture_vk_wrap(struct texture *s,
+                      const struct texture_params *params,
+                      VkImage image, VkImageLayout layout)
+{
+    s->params = *params;
+
+    struct gctx_vk *gctx_vk = (struct gctx_vk *)s->gctx;
+    struct vkcontext *vk = gctx_vk->vkcontext;
+    struct texture_vk *s_priv = (struct texture_vk *)s;
+
+    ngli_assert(params->external_storage);
+
+    int ret = ngli_format_get_vk_format(vk, s->params.format, &s_priv->format);
+    if (ret < 0)
+        return ret;
+
+#if 0
+    VkFormatFeatureFlags features =
+                    VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
+                    VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT |
+                    VK_FORMAT_FEATURE_BLIT_SRC_BIT |
+                    VK_FORMAT_FEATURE_BLIT_DST_BIT |
+                    VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT |
+                    VK_FORMAT_FEATURE_TRANSFER_SRC_BIT |
+                    VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+
+    VkImageUsageFlagBits usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    if (!params->staging) {
+    if (is_depth_format(s_priv->format)) {
+        usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        features |= VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT;
+    } else {
+        usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+        features |= VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    }
+    }
+
+    VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
+
+    VkFormatProperties properties;
+    vkGetPhysicalDeviceFormatProperties(vk->physical_device, s_priv->format, &properties);
+    LOG(ERROR, "features = 0x%x 0x%x", properties.optimalTilingFeatures, properties.linearTilingFeatures);
+    if (!(properties.optimalTilingFeatures & features))
+        tiling = VK_IMAGE_TILING_LINEAR;
+
+    VkMemoryPropertyFlags memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    if (params->staging) {
+        tiling = VK_IMAGE_TILING_LINEAR;
+        memory_property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+    }
+
+    s_priv->mipmap_levels = 1;
+    if (params->mipmap_filter != NGLI_MIPMAP_FILTER_NONE) {
+        while ((params->width | params->height) >> s_priv->mipmap_levels)
+            s_priv->mipmap_levels += 1;
+    }
+
+    VkImageType image_type;
+    VkImageViewType view_type;
+    int depth = 1;
+    int array_layers = 1;
+    int flags = 0;
+
+    if (params->type == NGLI_TEXTURE_TYPE_2D) {
+        image_type = VK_IMAGE_TYPE_2D;
+        view_type = VK_IMAGE_VIEW_TYPE_2D;
+    } else if (params->type == NGLI_TEXTURE_TYPE_3D) {
+        image_type = VK_IMAGE_TYPE_3D;
+        view_type = VK_IMAGE_VIEW_TYPE_3D;
+        depth = params->depth;
+    } else if (params->type == NGLI_TEXTURE_TYPE_CUBE) {
+        image_type = VK_IMAGE_TYPE_2D;
+        view_type = VK_IMAGE_VIEW_TYPE_CUBE;
+        array_layers = 6;
+        flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    } else {
+        ngli_assert(0);
+    }
+
+    VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;
+    switch (params->samples) {
+    case 2:
+        samples = VK_SAMPLE_COUNT_2_BIT;
+        break;
+    case 4:
+        samples = VK_SAMPLE_COUNT_4_BIT;
+        break;
+    case 8:
+        samples = VK_SAMPLE_COUNT_8_BIT;
+        break;
+    default:
+        samples = VK_SAMPLE_COUNT_1_BIT;
+    }
+
+    VkImageCreateInfo image_create_info = {
+        .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .imageType     = image_type,
+        .extent.width  = params->width,
+        .extent.height = params->height,
+        .extent.depth  = depth,
+        .mipLevels     = s_priv->mipmap_levels,
+        .arrayLayers   = array_layers,
+        .format        = s_priv->format,
+        .tiling        = tiling,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .usage         = usage,
+        .samples       = samples,
+        .sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
+        .flags         = flags,
+    };
+
+    VkResult vkret = vkCreateImage(vk->device, &image_create_info, NULL, &s_priv->image);
+    if (vkret != VK_SUCCESS)
+        return -1;
+#endif
+
+    VkImageType image_type;
+    VkImageViewType view_type;
+    int depth = 1;
+    int array_layers = 1;
+    int flags = 0;
+
+    if (params->type == NGLI_TEXTURE_TYPE_2D) {
+        image_type = VK_IMAGE_TYPE_2D;
+        view_type = VK_IMAGE_VIEW_TYPE_2D;
+    } else if (params->type == NGLI_TEXTURE_TYPE_3D) {
+        image_type = VK_IMAGE_TYPE_3D;
+        view_type = VK_IMAGE_VIEW_TYPE_3D;
+        depth = params->depth;
+    } else if (params->type == NGLI_TEXTURE_TYPE_CUBE) {
+        image_type = VK_IMAGE_TYPE_2D;
+        view_type = VK_IMAGE_VIEW_TYPE_CUBE;
+        array_layers = 6;
+        flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    } else {
+        ngli_assert(0);
+    }
+
+
+    s_priv->image = image;
+    s_priv->image_layout = layout;
+
+#if 0
+    VkMemoryRequirements mem_requirements;
+    vkGetImageMemoryRequirements(vk->device, s_priv->image, &mem_requirements);
+
+    VkMemoryAllocateInfo alloc_info = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        .allocationSize = mem_requirements.size,
+        .memoryTypeIndex = ngli_vk_find_memory_type(vk, mem_requirements.memoryTypeBits, memory_property_flags),
+    };
+
+    vkret = vkAllocateMemory(vk->device, &alloc_info, NULL, &s_priv->image_memory);
+    if (vkret != VK_SUCCESS)
+        return -1;
+
+    vkret = vkBindImageMemory(vk->device, s_priv->image, s_priv->image_memory, 0);
+    if (vkret != VK_SUCCESS)
+        return -1;
+
+
+    s_priv->image_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+    s_priv->image_size = s->params.width * s->params.height * ngli_format_get_bytes_per_pixel(s->params.format) * array_layers * (params->type == NGLI_TEXTURE_TYPE_3D ? params->depth : 1);
+
+    /* FIXME */
+    transition_image_layout(s, s_priv->image, s_priv->format, s_priv->image_layout, VK_IMAGE_LAYOUT_GENERAL);
+#endif
+
+    // FIXME
+    s_priv->mipmap_levels = 1;
+
+    VkImageViewCreateInfo view_info = {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .image = s_priv->image,
+        .viewType = view_type,
+        .format = s_priv->format,
+        .subresourceRange.aspectMask = get_vk_image_aspect_flags(s_priv->format),
+        .subresourceRange.baseMipLevel = 0,
+        .subresourceRange.levelCount = s_priv->mipmap_levels,
+        .subresourceRange.baseArrayLayer = 0,
+        .subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS,
+    };
+
+    VkResult vkret = vkCreateImageView(vk->device, &view_info, NULL, &s_priv->image_view);
+    if (vkret != VK_SUCCESS)
+        return -1;
+
+    VkSamplerCreateInfo sampler_info = {
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .magFilter = ngli_texture_get_vk_filter(s->params.mag_filter),
+        .minFilter = ngli_texture_get_vk_filter(s->params.min_filter),
+        .addressModeU = ngli_texture_get_vk_wrap(s->params.wrap_s),
+        .addressModeV = ngli_texture_get_vk_wrap(s->params.wrap_t),
+        .addressModeW = ngli_texture_get_vk_wrap(s->params.wrap_r),
+        .anisotropyEnable = VK_FALSE,
+        .maxAnisotropy = 1.0f,
+        .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+        .unnormalizedCoordinates = VK_FALSE,
+        .compareEnable = VK_FALSE,
+        .compareOp = VK_COMPARE_OP_ALWAYS,
+        .mipmapMode = ngli_texture_get_vk_mipmap_mode(s->params.mipmap_filter),
+        .minLod = 0.0f,
+        .maxLod = s_priv->mipmap_levels,
+        .mipLodBias = 0.0f,
+    };
+
+    vkret = vkCreateSampler(vk->device, &sampler_info, NULL, &s_priv->image_sampler);
+    if (vkret != VK_SUCCESS)
+        return -1;
+
+    if (!(params->usage & NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY)) {
+        create_buffer(vk, s_priv->image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                &s_priv->staging_buffer, &s_priv->staging_buffer_memory);
+    }
+
+    return 0;
+}
+
+
+
 int ngli_texture_vk_has_mipmap(const struct texture *s)
 {
     return s->params.mipmap_filter != NGLI_MIPMAP_FILTER_NONE;
@@ -425,7 +650,7 @@ static VkResult transition_image_layout(struct texture *s, VkImage image, VkForm
     struct texture_vk *s_priv = (struct texture_vk *)s;
 
     VkCommandBuffer command_buffer = VK_NULL_HANDLE;
-    int ret = ngli_vk_begin_transient_command(vk, &command_buffer);
+    int ret = ngli_gctx_vk_begin_transient_command(s->gctx, &command_buffer);
     if (ret < 0)
         return ret;
 
@@ -439,7 +664,7 @@ static VkResult transition_image_layout(struct texture *s, VkImage image, VkForm
 
     ngli_vk_transition_image_layout(vk, command_buffer, image, old_layout, new_layout, &subres_range);
 
-    ret = ngli_vk_execute_transient_command(vk, command_buffer);
+    ret = ngli_gctx_vk_execute_transient_command(s->gctx, command_buffer);
     if (ret < 0)
         return ret;
 
@@ -457,7 +682,7 @@ int ngli_texture_vk_transition_layout(struct texture *s, VkImageLayout layout)
     if (s_priv->image_layout == layout)
         return 0;
 
-    VkCommandBuffer command_buffer = vk->cur_command_buffer;
+    VkCommandBuffer command_buffer = gctx_vk->cur_command_buffer;
 
     const VkImageSubresourceRange subres_range = {
         .aspectMask = get_vk_image_aspect_flags(s_priv->format),
@@ -491,14 +716,13 @@ int ngli_texture_vk_upload(struct texture *s, const uint8_t *data, int linesize)
             face = 6;
 
         /* TODO: check return */
-        LOG(ERROR, "data=%d", face);
         void *mapped_data;
         vkMapMemory(vk->device, s_priv->staging_buffer_memory, 0, s_priv->image_size, 0, &mapped_data);
         memcpy(mapped_data, data, s_priv->image_size);
         vkUnmapMemory(vk->device, s_priv->staging_buffer_memory);
 
         VkCommandBuffer command_buffer = VK_NULL_HANDLE;
-        int ret = ngli_vk_begin_transient_command(vk, &command_buffer);
+        int ret = ngli_gctx_vk_begin_transient_command(s->gctx, &command_buffer);
         if (ret < 0)
             return ret;
 
@@ -543,7 +767,7 @@ int ngli_texture_vk_upload(struct texture *s, const uint8_t *data, int linesize)
 
         ngli_vk_transition_image_layout(vk, command_buffer, s_priv->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, s_priv->image_layout, &subres_range);
 
-        ret = ngli_vk_execute_transient_command(vk, command_buffer);
+        ret = ngli_gctx_vk_execute_transient_command(s->gctx, command_buffer);
         if (ret < 0)
             return ret;
 
@@ -572,10 +796,10 @@ int ngli_texture_vk_generate_mipmap(struct texture *s)
     }
 
     VkCommandBuffer command_buffer;
-    if (vk->cur_command_buffer)
-        command_buffer = vk->cur_command_buffer;
+    if (gctx_vk->cur_command_buffer)
+        command_buffer = gctx_vk->cur_command_buffer;
     else {
-        int ret = ngli_vk_begin_transient_command(vk, &command_buffer);
+        int ret = ngli_gctx_vk_begin_transient_command(s->gctx, &command_buffer);
         if (ret < 0)
             return ret;
     }
@@ -669,8 +893,8 @@ int ngli_texture_vk_generate_mipmap(struct texture *s)
         0, NULL,
         1, &barrier);
 
-    if (!vk->cur_command_buffer)
-        ngli_vk_execute_transient_command(vk, command_buffer);
+    if (!gctx_vk->cur_command_buffer)
+        ngli_gctx_vk_execute_transient_command(s->gctx, command_buffer);
 
     return 0;
 }
@@ -687,6 +911,7 @@ void ngli_texture_vk_freep(struct texture **sp)
 
     vkDestroySampler(vk->device, s_priv->image_sampler, NULL);
     vkDestroyImageView(vk->device, s_priv->image_view, NULL);
+    if (!s->params.external_storage)
     vkDestroyImage(vk->device, s_priv->image, NULL);
     vkDestroyBuffer(vk->device, s_priv->staging_buffer, NULL);
     vkFreeMemory(vk->device, s_priv->staging_buffer_memory, NULL);
