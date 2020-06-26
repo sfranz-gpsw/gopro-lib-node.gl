@@ -1157,14 +1157,11 @@ static int vulkan_init(struct gctx *s, struct vkcontext *vk, uintptr_t display, 
     if (!vk->spirv_compiler || !vk->spirv_compiler_opts)
         return -1;
 
-    //const shaderc_env_version env_version = app_info.apiVersion == VK_API_VERSION_1_0 ? shaderc_env_version_vulkan_1_0
-    //                                                                                  : shaderc_env_version_vulkan_1_1;
-    const shaderc_env_version env_version = shaderc_env_version_vulkan_1_0;
+    const shaderc_env_version env_version = app_info.apiVersion == VK_API_VERSION_1_0 ? shaderc_env_version_vulkan_1_0
+                                                                                      : shaderc_env_version_vulkan_1_1;
     shaderc_compile_options_set_target_env(vk->spirv_compiler_opts, shaderc_target_env_vulkan, env_version);
     shaderc_compile_options_set_invert_y(vk->spirv_compiler_opts, 1);
-
-    //shaderc_compile_options_set_optimization_level(vk->spirv_compiler_opts,
-    //                                               shaderc_optimization_level_performance);
+    shaderc_compile_options_set_optimization_level(vk->spirv_compiler_opts, shaderc_optimization_level_performance);
 
     //ngli_darray_init(&vk->command_buffers, sizeof(VkCommandBuffer), 0);
 
