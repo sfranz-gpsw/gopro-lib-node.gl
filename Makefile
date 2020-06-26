@@ -109,7 +109,7 @@ shaderc-$(SHADERC_VERSION).tar.gz:
 # Note: somehow xcodebuild sets name @rpath/libMoltenVK.dylib automatically
 # (according to otool -l) so we don't have to do anything special
 MoltenVK-install: MoltenVK
-	(cd $< && ./fetchDependencies)
+	(cd $< && ./fetchDependencies --macos)
 	$(MAKE) -C $< macos # ios
 	$(INSTALL) -d $(PREFIX)/include
 	$(INSTALL) -d $(PREFIX)/lib

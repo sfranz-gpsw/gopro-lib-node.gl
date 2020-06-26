@@ -104,7 +104,16 @@ static int quad_init(struct ngl_node *node)
     if (!s->normals_buffer)
         return NGL_ERROR_MEMORY;
 
-    s->topology = NGLI_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+    const short indices[] = { 0, 1, 2, 0, 2, 3 };
+    s->indices_buffer = ngli_node_geometry_generate_buffer(node->ctx,
+                                                           NGL_NODE_BUFFERUSHORT,
+                                                           NGLI_ARRAY_NB(indices),
+                                                           sizeof(indices),
+                                                           (void *)indices);
+    if (!s->indices_buffer)
+        return NGL_ERROR_MEMORY;
+
+    s->topology = NGLI_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
     return 0;
 }

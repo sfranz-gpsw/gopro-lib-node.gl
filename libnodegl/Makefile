@@ -213,8 +213,9 @@ LIB_OBJS_VK += buffer_vk.o          \
 
 LIB_OBJS                        += $(LIB_OBJS_VK)
 LIB_CFLAGS                      += -DBACKEND_VK
-LIB_EXTRA_LDLIBS_Darwin         += -lMoltenVK
-LIB_EXTRA_LDLIBS_iPhone         += -lMoltenVK
+LIB_EXTRA_OBJS_Darwin           += hwupload_videotoolbox_darwin_vk.o
+LIB_EXTRA_LDLIBS_Darwin         += -lMoltenVK -framework Metal
+LIB_EXTRA_LDLIBS_iPhone         += -lMoltenVK -framework Metal
 LIB_PKG_CONFIG_LIBS             += shaderc
 LIB_EXTRA_PKG_CONFIG_LIBS_Linux += vulkan
 endif

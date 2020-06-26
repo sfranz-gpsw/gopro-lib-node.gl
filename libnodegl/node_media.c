@@ -139,6 +139,7 @@ static int media_init(struct ngl_node *node)
 #if defined(TARGET_IPHONE) || defined(TARGET_DARWIN)
     sxplayer_set_option(s->player, "vt_pix_fmt", "nv12");
 #endif
+    //sxplayer_set_option(s->player, "auto_hwaccel", 0);
 
     if (s->audio_tex) {
         sxplayer_set_option(s->player, "avselect", SXPLAYER_SELECT_AUDIO);

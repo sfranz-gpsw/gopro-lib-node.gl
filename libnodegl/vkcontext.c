@@ -150,6 +150,13 @@ static VkResult create_instance(struct vkcontext *s, int platform)
     const char *mandatory_extensions[] = {
         VK_KHR_SURFACE_EXTENSION_NAME,
         surface_extension_name,
+#ifdef VK_USE_PLATFORM_MACOS_MVK
+        "VK_MVK_moltenvk",
+        "VK_MVK_macos_surface",
+        "VK_EXT_metal_surface",
+        //"VK_EXT_debug_report",
+        //"VK_EXT_debug_utils",
+#endif
     };
 
     struct darray extensions;
