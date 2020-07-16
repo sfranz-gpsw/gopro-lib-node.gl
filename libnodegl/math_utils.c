@@ -32,6 +32,20 @@ float ngli_vec3_length(const float *v)
     return sqrtf(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
 }
 
+void ngli_vec3_scale(float *dst, const float *v, float s)
+{
+    dst[0] = v[0] * s;
+    dst[1] = v[1] * s;
+    dst[2] = v[2] * s;
+}
+
+void ngli_vec3_add(float *dst, const float *v1, const float *v2)
+{
+    dst[0] = v1[0] + v2[0];
+    dst[1] = v1[1] + v2[1];
+    dst[2] = v1[2] + v2[2];
+}
+
 void ngli_vec3_sub(float *dst, const float *v1, const float *v2)
 {
     dst[0] = v1[0] - v2[0];

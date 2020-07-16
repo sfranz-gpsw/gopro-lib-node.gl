@@ -643,6 +643,15 @@ def mountain(cfg, ndim=3, nb_layers=7,
     return blend
 
 
+@scene(demo_str=scene.Text(), padding=scene.Range(range=[0, 100]), scale=scene.Range(range=[0, 2], unit_base=100))
+def text_simple(cfg, demo_str='hello', padding=2, scale=1.0):
+    q = ngl.Quad((-1,-1,0),(2,0,0),(0,2,0))
+    p = ngl.Program(vertex=cfg.get_vert('color'), fragment=cfg.get_frag('color'))
+    bg = ngl.Render(q, p)
+    bg.update_frag_resources(color=ngl.UniformVec4(value=(0.3,0.3,0.3,1.0)))
+    text = ngl.Text(demo_str, padding=padding, aspect_ratio=cfg.aspect_ratio, font_scale=scale)
+    return ngl.Group(children=(bg, text))
+
 @scene(demo_str=scene.Text(),
        time_unit=scene.Range(range=[0.01, 0.3], unit_base=100))
 def text(cfg, demo_str='Hello World!\n\nThis is a multi-line\ntext demonstration.', time_unit=0.05):
