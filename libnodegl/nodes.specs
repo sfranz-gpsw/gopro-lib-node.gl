@@ -383,7 +383,6 @@
         - [text, string]
     optional:
         - [fg_color, vec4]
-        - [bg_color, vec4]
         - [box_corner, vec3]
         - [box_width, vec3]
         - [box_height, vec3]
@@ -392,9 +391,6 @@
         - [valign, select]
         - [halign, select]
         - [aspect_ratio, rational]
-        - [min_filter, select]
-        - [mag_filter, select]
-        - [mipmap_filter, select]
 
 - Texture2D:
     optional:

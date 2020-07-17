@@ -44,5 +44,7 @@ struct rect {
 void ngli_drawutils_draw_rect(struct canvas *canvas, const struct rect *rect, uint32_t color);
 void ngli_drawutils_print(struct canvas *canvas, int x, int y, const char *str, uint32_t color);
 int ngli_drawutils_get_font_atlas(struct canvas *c_dst);
+int ngli_drawutils_get_font_atlas_dt(struct canvas *c_dst);
+void ngli_drawutils_get_atlas_uvcoords(const struct canvas *c, uint8_t chr, float *dst);
 
 #endif

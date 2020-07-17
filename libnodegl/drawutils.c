@@ -19,9 +19,13 @@
  * under the License.
  */
 
+#include <math.h>
+#include <float.h>
+
 #include "drawutils.h"
 #include "memory.h"
 #include "nodegl.h"
+#include "utils.h"
 
 #define BYTES_PER_PIXEL 4 /* RGBA */
 
@@ -140,7 +144,7 @@ void ngli_drawutils_print(struct canvas *canvas, int x, int y, const char *str, 
     }
 }
 
-#if 0
+#if 1
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -217,5 +221,183 @@ int ngli_drawutils_get_font_atlas(struct canvas *c_dst)
     //save_ppm("/tmp/atlas.ppm", c.buf, c.w, c.h);
 
     *c_dst = c;
+    return 0;
+}
+
+#define SCALE_BITS 2
+#define DF_CHAR_GLYPH_W (NGLI_FONT_W << SCALE_BITS)
+#define DF_CHAR_GLYPH_H (NGLI_FONT_H << SCALE_BITS)
+
+/*
+ * Spread is arbitrary: it represents how far an effect such as glowing could
+ * be applied, but it's also used for padding around the glyph to be that the
+ * extremities of the distance map are always black, and thus not affect
+ * neighbor glyph, typically when relying on mipmapping.
+ */
+#define DF_SPREAD (1 << (3 + SCALE_BITS)) /* spread by 8 units (1<<3) */
+#define DF_CHAR_PAD DF_SPREAD
+#define DF_CHAR_W (DF_CHAR_GLYPH_W + DF_CHAR_PAD * 2)
+#define DF_CHAR_H (DF_CHAR_GLYPH_H + DF_CHAR_PAD * 2)
+
+#define DT_1D_LANE_SIZE NGLI_MAX(DF_CHAR_W, DF_CHAR_H)
+#define INF FLT_MAX
+#define SQ(x) ((x) * (x))
+#define SRC(x) src[x * src_stride]
+#define PARABOLLA(k) ((SRC(q) + SQ(q)) - (SRC(v[k]) + SQ(v[k]))) / (2 * q - 2 * v[k]);
+
+/*
+ * Direct implementation of the DT(f) algorithm presented in "Distance
+ * Transforms of Sampled Functions" by Pedro F. Felzenszwalb and Daniel P.
+ * Huttenlocher (2012).
+ */
+static void dt_1d(float *dst, int dst_stride, const float *src, int src_stride, int n)
+{
+    int k = 0;
+    int v[DT_1D_LANE_SIZE] = {0};
+    float z[DT_1D_LANE_SIZE + 1];
+
+    z[0] = -INF;
+    z[1] =  INF;
+    for (int q = 1; q < n; q++) {
+        float s = PARABOLLA(k);
+        while (s <= z[k]) {
+            k--;
+            s = PARABOLLA(k);
+        }
+        k++;
+        v[k] = q;
+        z[k] = s;
+        z[k + 1] = INF;
+    }
+
+    k = 0;
+    for (int q = 0; q < n; q++) {
+        while (z[k + 1] < q)
+            k++;
+        dst[q * dst_stride] = SQ(q - v[k]) + SRC(v[k]);
+    }
+}
+
+static float clamp(double v, double min, double max)
+{
+    if (v < min) return min;
+    if (v > max) return max;
+    return v;
+}
+
+static void get_char_dt(uint8_t *dst, int dst_stride, uint8_t c)
+{
+    const uint8_t *bits = font8[c & 0x7f];
+    float dt_ref[DF_CHAR_W * DF_CHAR_H];
+    float dt_inv[DF_CHAR_W * DF_CHAR_H];
+    float dt_tmp[DF_CHAR_W * DF_CHAR_H];
+
+    for (int y = 0; y < DF_CHAR_H; y++) {
+        for (int x = 0; x < DF_CHAR_W; x++) {
+            int bit = 0;
+            const int inside_glyph = x >= DF_CHAR_PAD && x < DF_CHAR_GLYPH_W + DF_CHAR_PAD &&
+                                     y >= DF_CHAR_PAD && y < DF_CHAR_GLYPH_H + DF_CHAR_PAD;
+            if (inside_glyph) {
+                const int glyph_x = ((x - DF_CHAR_PAD) >> SCALE_BITS);
+                const int glyph_y = ((y - DF_CHAR_PAD) >> SCALE_BITS);
+                bit = bits[glyph_y] & (1 << glyph_x);
+            }
+
+            /* Set distance to 0 for the character, and infinite for the rest */
+            dt_ref[y * DF_CHAR_W + x] = bit ? 0 : INF;
+
+            /* Inverse of the above to be used for getting signed distances */
+            dt_inv[y * DF_CHAR_W + x] = bit ? INF : 0;
+        }
+    }
+
+    /* Vertical pass followed by Horizontal pass */
+    for (int x = 0; x < DF_CHAR_W; x++)
+        dt_1d(dt_tmp + x, DF_CHAR_W, dt_ref + x, DF_CHAR_W, DF_CHAR_H);
+    for (int y = 0; y < DF_CHAR_H; y++)
+        dt_1d(dt_ref + y*DF_CHAR_W, 1, dt_tmp + y*DF_CHAR_W, 1, DF_CHAR_W);
+
+    /* Same thing with the inverse distances */
+    for (int x = 0; x < DF_CHAR_W; x++)
+        dt_1d(dt_tmp + x, DF_CHAR_W, dt_inv + x, DF_CHAR_W, DF_CHAR_H);
+    for (int y = 0; y < DF_CHAR_H; y++)
+        dt_1d(dt_inv + y*DF_CHAR_W, 1, dt_tmp + y*DF_CHAR_W, 1, DF_CHAR_W);
+
+    /* Subtract inverse Dt from the ref to get the signed distance field (SDF).
+     * The square root computations and normalization are also slipped in at
+     * this step. */
+    const float scale = -1.f / DF_SPREAD;
+    for (int i = 0; i < NGLI_ARRAY_NB(dt_ref); i++)
+        dt_ref[i] = clamp((sqrtf(dt_ref[i]) - sqrtf(dt_inv[i])) * scale, -1.f, 1.f);
+
+    // Rescale from [-1;1] to [0;255] and write to the destination
+    // XXX: clarify far-inside, far-outside
+    const float *src = dt_ref;
+    for (int y = 0; y < DF_CHAR_H; y++) {
+        for (int x = 0; x < DF_CHAR_W; x++) {
+            const float scaled_v = (*src++ + 1.f) * .5f;
+            const long int v = lrintf(scaled_v * 255);
+            dst[x] = NGLI_MIN(NGLI_MAX(v, 0), 255);
+        }
+        dst += dst_stride;
+    }
+}
+
+static unsigned next_pow2(unsigned v)
+{
+    v--;
+    v |= v >> 1;
+    v |= v >> 2;
+    v |= v >> 4;
+    v |= v >> 8;
+    v |= v >> 16;
+    return v + 1;
+}
+
+#define ATLAS_COLS 16
+#define ATLAS_ROWS  8
+#define ATLAS_W (ATLAS_COLS * DF_CHAR_W)
+#define ATLAS_H (ATLAS_ROWS * DF_CHAR_H)
+
+void ngli_drawutils_get_atlas_uvcoords(const struct canvas *c, uint8_t chr, float *dst)
+{
+    //ngli_assert(c->w == c->h);
+    const float scale_w = 1.f / c->w;
+    const float scale_h = 1.f / c->h;
+    const int col = chr % ATLAS_COLS;
+    const int row = chr / ATLAS_COLS; // from the top of the buffer
+    const float cx =              (col * DF_CHAR_W + DF_CHAR_PAD) * scale_w;
+    const float cy = (c->h - (row + 1) * DF_CHAR_H + DF_CHAR_PAD) * scale_h;
+    const float cw = DF_CHAR_GLYPH_W * scale_w;
+    const float ch = DF_CHAR_GLYPH_H * scale_h;
+    const float chr_uvs[] = {
+        cx,      1.f - cy,
+        cx + cw, 1.f - cy,
+        cx + cw, 1.f - cy - ch,
+        cx,      1.f - cy - ch,
+    };
+    memcpy(dst, chr_uvs, sizeof(chr_uvs));
+}
+
+int ngli_drawutils_get_font_atlas_dt(struct canvas *c_dst)
+{
+    const int s = next_pow2(NGLI_MAX(ATLAS_W, ATLAS_H));
+    struct canvas c = {.w = s, .h = s};
+    c.buf = ngli_calloc(c.w * c.h, 1);
+    if (!c.buf)
+        return NGL_ERROR_MEMORY;
+
+    uint8_t chr = 0;
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 16; x++) {
+            uint8_t *p = c.buf + (y * c.w * DF_CHAR_H + x * DF_CHAR_W);
+            get_char_dt(p, c.w, chr++);
+        }
+    }
+
+    save_ppm("/tmp/atlas_dt.ppm", c.buf, c.w, c.h);
+
+    *c_dst = c;
+
     return 0;
 }

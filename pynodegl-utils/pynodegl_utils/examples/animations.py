@@ -49,7 +49,6 @@ def _get_easing_node(cfg, easing, curve_zoom, color_program, nb_points=128):
     text = ngl.Text(text=easing,
                     fg_color=color,
                     padding=3,
-                    bg_color=(0, 0, 0, 1),
                     box_corner=(-width / 2., height / 2. - text_height, 0),
                     box_width=(width, 0, 0),
                     box_height=(0, text_height, 0),

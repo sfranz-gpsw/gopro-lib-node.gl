@@ -133,7 +133,6 @@ def _get_render_with_legend(cfg, fields, area, title, block_definition, color_de
         box_width=(aw, 0, 0),
         box_height=(0, title_h, 0),
         fg_color=(0, 0, 0, 1),
-        bg_color=(1, 1, 1, 1),
         aspect_ratio=cfg.aspect_ratio,
     )
 

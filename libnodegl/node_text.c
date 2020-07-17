@@ -45,7 +45,6 @@ struct pipeline_desc {
 struct text_priv {
     char *text;
     float fg_color[4];
-    float bg_color[4];
     float box_corner[3];
     float box_width[3];
     float box_height[3];
@@ -53,9 +52,8 @@ struct text_priv {
     double font_scale;
     int valign, halign;
     int aspect_ratio[2];
-    int min_filter;
-    int mag_filter;
-    int mipmap_filter;
+    double glow;
+    float glow_color[4];
 
     struct texture *texture;
     struct canvas canvas;
@@ -100,8 +98,6 @@ static const struct node_param text_params[] = {
                      .desc=NGLI_DOCSTRING("text string to rasterize")},
     {"fg_color",     PARAM_TYPE_VEC4, OFFSET(fg_color), {.vec={1.0, 1.0, 1.0, 1.0}},
                      .desc=NGLI_DOCSTRING("foreground text color")},
-    {"bg_color",     PARAM_TYPE_VEC4, OFFSET(bg_color), {.vec={0.0, 0.0, 0.0, 0.8}},
-                     .desc=NGLI_DOCSTRING("background text color")},
     {"box_corner",   PARAM_TYPE_VEC3, OFFSET(box_corner), {.vec={-1.0, -1.0, 0.0}},
                      .desc=NGLI_DOCSTRING("origin coordinates of `box_width` and `box_height` vectors")},
     {"box_width",    PARAM_TYPE_VEC3, OFFSET(box_width), {.vec={2.0, 0.0, 0.0}},
@@ -120,15 +116,10 @@ static const struct node_param text_params[] = {
                      .desc=NGLI_DOCSTRING("horizontal alignment of the text in the box")},
     {"aspect_ratio", PARAM_TYPE_RATIONAL, OFFSET(aspect_ratio),
                      .desc=NGLI_DOCSTRING("box aspect ratio")},
-    {"min_filter",   PARAM_TYPE_SELECT, OFFSET(min_filter), {.i64=NGLI_FILTER_LINEAR},
-                     .choices=&ngli_filter_choices,
-                     .desc=NGLI_DOCSTRING("rasterized text texture minifying function")},
-    {"mag_filter",   PARAM_TYPE_SELECT, OFFSET(mag_filter), {.i64=NGLI_FILTER_NEAREST},
-                     .choices=&ngli_filter_choices,
-                     .desc=NGLI_DOCSTRING("rasterized text texture magnification function")},
-    {"mipmap_filter", PARAM_TYPE_SELECT, OFFSET(mipmap_filter), {.i64=NGLI_MIPMAP_FILTER_LINEAR},
-                      .choices=&ngli_mipmap_filter_choices,
-                      .desc=NGLI_DOCSTRING("rasterized text texture minifying mipmap function")},
+    {"glow",         PARAM_TYPE_DBL, OFFSET(glow), {.i64=0.0},
+                     .desc=NGLI_DOCSTRING("glowing effect")},
+    {"glow_color",   PARAM_TYPE_VEC4, OFFSET(glow_color), {.vec={1.0, 1.0, 1.0, 1.0}},
+                     .desc=NGLI_DOCSTRING("glowing color")},
     {NULL}
 };
 
@@ -143,7 +134,9 @@ static const char * const fragment_data =
     "void main()"                                                           "\n"
     "{"                                                                     "\n"
     "    float v = ngl_tex2d(tex, var_tex_coord).r;"                        "\n"
-    "    ngl_out_color = mix(bg_color, fg_color, v);"                       "\n"
+    "    float dist = v - 0.5; // [0;1] -> [-0.5;0.5]"                      "\n"
+    "    float alpha = dist / fwidth(dist) + 0.5;"                          "\n"
+    "    ngl_out_color = vec4(fg_color.rgb, fg_color.a * alpha);"           "\n"
     "}";
 
 static const struct pgcraft_iovar vert_out_vars[] = {
@@ -182,8 +175,6 @@ static int print(struct text_priv *s)
 {
     int ret = 0;
     const char *str = s->text;
-    const float cw = 1 / 16.f; // normalized character width in the atlas
-    const float ch = 1 / 8.f;  // normalized character height in the atlas
 
     int text_cols, text_rows, text_nbchr;
     get_char_box_dim(str, &text_cols, &text_rows, &text_nbchr);
@@ -252,8 +243,8 @@ static int print(struct text_priv *s)
                        s->halign == HALIGN_RIGHT  ? 1.f :
                        0.f);
     const float spy = (s->valign == VALIGN_CENTER ? .5f :
-                       s->valign == VALIGN_BOTTOM ? 1.f :
-                       0.f);
+                       s->valign == VALIGN_BOTTOM ? 0.f :
+                       1.f);
 
     ngli_vec3_scale(align_padw, align_padw, spx);
     ngli_vec3_scale(align_padh, align_padh, spy);
@@ -291,17 +282,7 @@ static int print(struct text_priv *s)
         memcpy(vertices + 4 * 3 * n, chr_vertices, sizeof(chr_vertices));
 
         /* focus uvcoords on the character in the atlas texture */
-        const int chr_pos_x = c % 16;
-        const int chr_pos_y = 7 - c / 16;
-        const float cx = chr_pos_x * cw;
-        const float cy = chr_pos_y * ch;
-        const float chr_uvs[] = {
-            cx,      1.f - cy,
-            cx + cw, 1.f - cy,
-            cx + cw, 1.f - cy - ch,
-            cx,      1.f - cy - ch,
-        };
-        memcpy(uvcoords + 4 * 2 * n, chr_uvs, sizeof(chr_uvs));
+        ngli_drawutils_get_atlas_uvcoords(&s->canvas, c, uvcoords + 4 * 2 * n);
 
         /* quad for each character is made of 2 triangles */
         const short chr_indices[] = { n*4 + 0, n*4 + 1, n*4 + 2, n*4 + 0, n*4 + 2, n*4 + 3 };
@@ -360,11 +341,11 @@ static int text_init(struct ngl_node *node)
     if (!s->indices)
         return NGL_ERROR_MEMORY;
 
-    int ret = print(s);
+    int ret = ngli_drawutils_get_font_atlas_dt(&s->canvas);
     if (ret < 0)
         return ret;
 
-    ret = ngli_drawutils_get_font_atlas(&s->canvas);
+    ret = print(s);
     if (ret < 0)
         return ret;
 
@@ -372,8 +353,9 @@ static int text_init(struct ngl_node *node)
     tex_params.width = s->canvas.w;
     tex_params.height = s->canvas.h;
     tex_params.format = NGLI_FORMAT_R8_UNORM;
-    tex_params.min_filter = s->min_filter;
-    tex_params.mag_filter = s->mag_filter;
+    tex_params.min_filter = NGLI_FILTER_LINEAR;
+    tex_params.mag_filter = NGLI_FILTER_LINEAR;
+    tex_params.mipmap_filter = NGLI_MIPMAP_FILTER_LINEAR;
     s->texture = ngli_texture_create(gctx);
     if (!s->texture)
         return NGL_ERROR_MEMORY;
@@ -390,6 +372,7 @@ static int text_init(struct ngl_node *node)
     return 0;
 }
 
+
 static int text_prepare(struct ngl_node *node)
 {
     struct ngl_ctx *ctx = node->ctx;
@@ -399,7 +382,6 @@ static int text_prepare(struct ngl_node *node)
     const struct pgcraft_uniform uniforms[] = {
         {.name = "modelview_matrix",  .type = NGLI_TYPE_MAT4, .stage = NGLI_PROGRAM_SHADER_VERT, .data = NULL},
         {.name = "projection_matrix", .type = NGLI_TYPE_MAT4, .stage = NGLI_PROGRAM_SHADER_VERT, .data = NULL},
-        {.name = "bg_color",          .type = NGLI_TYPE_VEC4, .stage = NGLI_PROGRAM_SHADER_FRAG, .data = s->bg_color},
         {.name = "fg_color",          .type = NGLI_TYPE_VEC4, .stage = NGLI_PROGRAM_SHADER_FRAG, .data = s->fg_color},
     };
 
