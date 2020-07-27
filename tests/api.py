@@ -138,6 +138,7 @@ def api_hud(width=234, height=123):
     assert ctx.configure(offscreen=1, width=width, height=height, backend=_backend) == 0
     render = _get_scene()
     scene = ngl.HUD(render)
+    scene = render
     assert ctx.set_scene(scene) == 0
     for i in range(60 * 3):
         assert ctx.draw(i / 60.) == 0
