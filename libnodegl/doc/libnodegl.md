@@ -582,7 +582,6 @@ Parameter | Ctor. | Live-chg. | Type | Description | Default
 `aspect_ratio` |  |  | [`rational`](#parameter-types) | box aspect ratio | 
 `min_filter` |  |  | [`filter`](#filter-choices) | rasterized text texture minifying function | `linear`
 `mag_filter` |  |  | [`filter`](#filter-choices) | rasterized text texture magnification function | `nearest`
-`mipmap_filter` |  |  | [`mipmap_filter`](#mipmap_filter-choices) | rasterized text texture minifying mipmap function | `linear`
 
 
 **Source**: [node_text.c](/libnodegl/node_text.c)
@@ -1456,14 +1455,6 @@ Constant | Description
 `nearest` | nearest filtering
 `linear` | linear filtering
 
-## mipmap_filter choices
-
-Constant | Description
--------- | -----------
-`none` | no mipmap generation
-`nearest` | nearest filtering
-`linear` | linear filtering
-
 ## format choices
 
 Constant | Description
@@ -1516,6 +1507,14 @@ Constant | Description
 `d24_unorm_s8_uint` | 32-bit packed format that has 24-bit unsigned normalized depth component + 8-bit unsigned integer stencil component
 `d32_sfloat_s8_uint` | 64-bit packed format that has 32-bit signed float depth component + 8-bit unsigned integer stencil component + 24-bit of unused data
 `s8_uint` | 8-bit unsigned integer stencil component
+
+## mipmap_filter choices
+
+Constant | Description
+-------- | -----------
+`none` | no mipmap generation
+`nearest` | nearest filtering
+`linear` | linear filtering
 
 ## wrap choices
 
