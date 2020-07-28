@@ -392,8 +392,6 @@
         - [valign, select]
         - [halign, select]
         - [aspect_ratio, rational]
-        - [min_filter, select]
-        - [mag_filter, select]
 
 - Texture2D:
     optional:
