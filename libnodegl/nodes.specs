@@ -379,9 +379,8 @@
         - [anim, Node]
 
 - Text:
-    constructors:
-        - [text, string]
     optional:
+        - [text, string]
         - [fg_color, vec4]
         - [bg_color, vec4]
         - [box_corner, vec3]
