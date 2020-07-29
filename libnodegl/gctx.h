@@ -102,6 +102,7 @@ struct gctx {
     int features;
     struct limits limits;
     struct pgcache pgcache;
+    struct texture *text_atlas;
 };
 
 struct gctx *ngli_gctx_create(struct ngl_ctx *ctx);

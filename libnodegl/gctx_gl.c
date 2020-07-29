@@ -477,6 +477,7 @@ static void gl_destroy(struct gctx *s)
 {
     struct gctx_gl *s_priv = (struct gctx_gl *)s;
     ngli_pgcache_reset(&s->pgcache);
+    ngli_texture_freep(&s->text_atlas); // allocated by the first node text
     capture_reset(s);
     offscreen_rendertarget_reset(s);
 #if defined(HAVE_VAAPI)

@@ -26,6 +26,7 @@
 #include "nodes.h"
 #include "darray.h"
 #include "drawutils.h"
+#include "gctx.h"
 #include "log.h"
 #include "math_utils.h"
 #include "pgcache.h"
@@ -59,7 +60,6 @@ struct text_priv {
     int valign, halign;
     int aspect_ratio[2];
 
-    struct texture *texture;
     struct buffer *vertices;
     struct buffer *uvcoords;
     struct buffer *indices;
@@ -370,11 +370,10 @@ static int init_bounding_box_geometry(struct ngl_node *node)
     return 0;
 }
 
-static int atlas_create(struct ngl_node *node)
+static int atlas_create(struct gctx *gctx)
 {
-    struct ngl_ctx *ctx = node->ctx;
-    struct gctx *gctx = ctx->gctx;
-    struct text_priv *s = node->priv_data;
+    if (gctx->text_atlas)
+        return 0;
 
     struct canvas canvas = {0};
     int ret = ngli_drawutils_get_font_atlas(&canvas);
@@ -388,17 +387,18 @@ static int atlas_create(struct ngl_node *node)
     tex_params.min_filter = NGLI_FILTER_LINEAR;
     tex_params.mag_filter = NGLI_FILTER_NEAREST;
     tex_params.mipmap_filter = NGLI_MIPMAP_FILTER_LINEAR;
-    s->texture = ngli_texture_create(gctx);
-    if (!s->texture) {
+
+    gctx->text_atlas = ngli_texture_create(gctx); // freed by gctx
+    if (!gctx->text_atlas) {
         ret = NGL_ERROR_MEMORY;
         goto end;
     }
 
-    ret = ngli_texture_init(s->texture, &tex_params);
+    ret = ngli_texture_init(gctx->text_atlas, &tex_params);
     if (ret < 0)
         goto end;
 
-    ret = ngli_texture_upload(s->texture, canvas.buf, 0);
+    ret = ngli_texture_upload(gctx->text_atlas, canvas.buf, 0);
     if (ret < 0)
         goto end;
 
@@ -409,9 +409,11 @@ end:
 
 static int text_init(struct ngl_node *node)
 {
+    struct ngl_ctx *ctx = node->ctx;
+    struct gctx *gctx = ctx->gctx;
     struct text_priv *s = node->priv_data;
 
-    int ret = atlas_create(node);
+    int ret = atlas_create(gctx);
     if (ret < 0)
         return ret;
 
@@ -516,6 +518,7 @@ static int bg_prepare(struct ngl_node *node, struct pipeline_subdesc *desc)
 static int fg_prepare(struct ngl_node *node, struct pipeline_subdesc *desc)
 {
     struct ngl_ctx *ctx = node->ctx;
+    struct gctx *gctx = ctx->gctx;
     struct text_priv *s = node->priv_data;
 
     const struct pgcraft_uniform uniforms[] = {
@@ -529,7 +532,7 @@ static int fg_prepare(struct ngl_node *node, struct pipeline_subdesc *desc)
             .name     = "tex",
             .type     = NGLI_PGCRAFT_SHADER_TEX_TYPE_TEXTURE2D,
             .stage    = NGLI_PROGRAM_SHADER_FRAG,
-            .texture  = s->texture,
+            .texture  = gctx->text_atlas,
         },
     };
 
@@ -654,7 +657,6 @@ static void text_uninit(struct ngl_node *node)
         ngli_pgcraft_freep(&desc->fg.crafter);
     }
     ngli_darray_reset(&s->pipeline_descs);
-    ngli_texture_freep(&s->texture);
     ngli_buffer_freep(&s->vertices);
     ngli_buffer_freep(&s->uvcoords);
     ngli_buffer_freep(&s->indices);
