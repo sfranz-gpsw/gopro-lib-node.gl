@@ -119,6 +119,7 @@ struct pipeline {
 
 struct pipeline *ngli_pipeline_create(struct gctx *gctx);
 int ngli_pipeline_init(struct pipeline *s, const struct pipeline_params *params);
+int ngli_pipeline_update_attribute(struct pipeline *s, int index, struct buffer *buffer);
 int ngli_pipeline_update_uniform(struct pipeline *s, int index, const void *value);
 int ngli_pipeline_update_texture(struct pipeline *s, int index, struct texture *texture);
 void ngli_pipeline_exec(struct pipeline *s);
