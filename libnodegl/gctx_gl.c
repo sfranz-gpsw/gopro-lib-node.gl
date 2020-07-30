@@ -641,7 +641,8 @@ const struct gctx_class ngli_gctx_gl = {
     .pipeline_update_attribute = ngli_pipeline_gl_update_attribute,
     .pipeline_update_uniform = ngli_pipeline_gl_update_uniform,
     .pipeline_update_texture = ngli_pipeline_gl_update_texture,
-    .pipeline_exec           = ngli_pipeline_gl_exec,
+    .pipeline_draw           = ngli_pipeline_gl_draw,
+    .pipeline_dispatch       = ngli_pipeline_gl_dispatch,
     .pipeline_freep          = ngli_pipeline_gl_freep,
 
     .program_create = ngli_program_gl_create,
@@ -704,7 +705,8 @@ const struct gctx_class ngli_gctx_gles = {
     .pipeline_update_attribute = ngli_pipeline_gl_update_attribute,
     .pipeline_update_uniform = ngli_pipeline_gl_update_uniform,
     .pipeline_update_texture = ngli_pipeline_gl_update_texture,
-    .pipeline_exec           = ngli_pipeline_gl_exec,
+    .pipeline_draw           = ngli_pipeline_gl_draw,
+    .pipeline_dispatch       = ngli_pipeline_gl_dispatch,
     .pipeline_freep          = ngli_pipeline_gl_freep,
 
     .program_create = ngli_program_gl_create,

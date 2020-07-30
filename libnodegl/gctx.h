@@ -73,7 +73,8 @@ struct gctx_class {
     int (*pipeline_update_attribute)(struct pipeline *s, int index, struct buffer *buffer);
     int (*pipeline_update_uniform)(struct pipeline *s, int index, const void *value);
     int (*pipeline_update_texture)(struct pipeline *s, int index, struct texture *texture);
-    void (*pipeline_exec)(struct pipeline *s);
+    void (*pipeline_draw)(struct pipeline *s, const struct draw_params *params);
+    void (*pipeline_dispatch)(struct pipeline *s, const struct dispatch_params *params);
     void (*pipeline_freep)(struct pipeline **sp);
 
     struct program *(*program_create)(struct gctx *ctx);

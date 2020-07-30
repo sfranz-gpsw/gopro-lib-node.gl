@@ -495,9 +495,6 @@ static int bg_prepare(struct ngl_node *node, struct pipeline_subdesc *desc)
         .type          = NGLI_PIPELINE_TYPE_GRAPHICS,
         .graphics      = {
             .topology       = NGLI_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-            .indices        = s->bg_indices,
-            .indices_format = NGLI_FORMAT_R16_UNORM,
-            .nb_indices     = s->nb_bg_indices,
             .state          = state,
             .rt_desc        = *ctx->rendertarget_desc,
         }
@@ -573,9 +570,6 @@ static int fg_prepare(struct ngl_node *node, struct pipeline_subdesc *desc)
         .type          = NGLI_PIPELINE_TYPE_GRAPHICS,
         .graphics      = {
             .topology       = NGLI_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-            .indices        = s->indices,
-            .indices_format = NGLI_FORMAT_R16_UNORM,
-            .nb_indices     = s->nb_indices,
             .state          = state,
             .rt_desc        = *ctx->rendertarget_desc,
         }
@@ -634,13 +628,24 @@ static void text_draw(struct ngl_node *node)
     struct pipeline_subdesc *bg_desc = &desc->bg;
     ngli_pipeline_update_uniform(bg_desc->pipeline, bg_desc->modelview_matrix_index, modelview_matrix);
     ngli_pipeline_update_uniform(bg_desc->pipeline, bg_desc->projection_matrix_index, projection_matrix);
-    ngli_pipeline_exec(bg_desc->pipeline);
+
+    struct draw_params bg_params = {
+        .indices        = s->bg_indices,
+        .indices_format = NGLI_FORMAT_R16_UNORM,
+        .nb_indices     = s->nb_bg_indices,
+    };
+    ngli_pipeline_draw(bg_desc->pipeline, &bg_params);
 
     if (s->nb_indices) {
         struct pipeline_subdesc *fg_desc = &desc->fg;
         ngli_pipeline_update_uniform(fg_desc->pipeline, fg_desc->modelview_matrix_index, modelview_matrix);
         ngli_pipeline_update_uniform(fg_desc->pipeline, fg_desc->projection_matrix_index, projection_matrix);
-        ngli_pipeline_exec(fg_desc->pipeline);
+        struct draw_params fg_params = {
+            .indices        = s->indices,
+            .indices_format = NGLI_FORMAT_R16_UNORM,
+            .nb_indices     = s->nb_indices,
+        };
+        ngli_pipeline_draw(fg_desc->pipeline, &fg_params);
     }
 }
 

@@ -1332,7 +1332,6 @@ static int hud_init(struct ngl_node *node)
         .type          = NGLI_PIPELINE_TYPE_GRAPHICS,
         .graphics      = {
             .topology    = NGLI_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
-            .nb_vertices = 4,
             .state       = graphicstate,
             .rt_desc     = *ctx->rendertarget_desc,
         }
@@ -1412,7 +1411,10 @@ static void hud_draw(struct ngl_node *node)
     const float *projection_matrix = ngli_darray_tail(&ctx->projection_matrix_stack);
     ngli_pipeline_update_uniform(s->pipeline, s->modelview_matrix_index, modelview_matrix);
     ngli_pipeline_update_uniform(s->pipeline, s->projection_matrix_index, projection_matrix);
-    ngli_pipeline_exec(s->pipeline);
+    struct draw_params params = {
+        .nb_vertices = 4,
+    };
+    ngli_pipeline_draw(s->pipeline, &params);
 }
 
 static void hud_uninit(struct ngl_node *node)
