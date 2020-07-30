@@ -319,7 +319,6 @@ static int text_prepare(struct ngl_node *node)
         .type          = NGLI_PIPELINE_TYPE_GRAPHICS,
         .graphics      = {
             .topology    = NGLI_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN,
-            .nb_vertices = 4,
             .state       = ctx->graphicstate,
             .rt_desc     = *ctx->rendertarget_desc,
         }
@@ -381,7 +380,10 @@ static void text_draw(struct ngl_node *node)
     ngli_pipeline_update_uniform(desc->pipeline, desc->modelview_matrix_index, modelview_matrix);
     ngli_pipeline_update_uniform(desc->pipeline, desc->projection_matrix_index, projection_matrix);
 
-    ngli_pipeline_exec(desc->pipeline);
+    struct draw_params params = {
+        .nb_vertices = 4,
+    };
+    ngli_pipeline_draw(desc->pipeline, &params);
 }
 
 static void text_uninit(struct ngl_node *node)

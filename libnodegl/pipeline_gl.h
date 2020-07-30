@@ -31,7 +31,6 @@ struct glcontext;
 struct pipeline_gl {
     struct pipeline parent;
 
-    void (*exec)(const struct pipeline *s, struct glcontext *gl);
     uint64_t used_texture_units;
     GLuint vao_id;
 };
@@ -41,7 +40,8 @@ int ngli_pipeline_gl_init(struct pipeline *s, const struct pipeline_params *para
 int ngli_pipeline_gl_update_attribute(struct pipeline *s, int index, struct buffer *buffer);
 int ngli_pipeline_gl_update_uniform(struct pipeline *s, int index, const void *value);
 int ngli_pipeline_gl_update_texture(struct pipeline *s, int index, struct texture *texture);
-void ngli_pipeline_gl_exec(struct pipeline *s);
+void ngli_pipeline_gl_draw(struct pipeline *s, const struct draw_params *params);
+void ngli_pipeline_gl_dispatch(struct pipeline *s, const struct dispatch_params *params);
 void ngli_pipeline_gl_freep(struct pipeline **sp);
 
 #endif

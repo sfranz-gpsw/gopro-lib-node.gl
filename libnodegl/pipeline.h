@@ -65,13 +65,6 @@ struct pipeline_attribute {
 
 struct pipeline_graphics {
     int topology;
-    union {
-        int nb_vertices;
-        int nb_indices;
-    };
-    int indices_format;
-    int nb_instances;
-    struct buffer *indices;
     struct graphicstate state;
     struct rendertarget_desc rt_desc;
 };
@@ -118,12 +111,30 @@ struct pipeline {
     int nb_unbound_attributes;
 };
 
+struct draw_params {
+    union {
+        int nb_vertices;
+        int nb_indices;
+    };
+    int indices_format;
+    struct buffer *indices;
+    int nb_instances;
+};
+
+struct dispatch_params {
+    int nb_group_x;
+    int nb_group_y;
+    int nb_group_z;
+};
+
 struct pipeline *ngli_pipeline_create(struct gctx *gctx);
 int ngli_pipeline_init(struct pipeline *s, const struct pipeline_params *params);
 int ngli_pipeline_update_attribute(struct pipeline *s, int index, struct buffer *buffer);
 int ngli_pipeline_update_uniform(struct pipeline *s, int index, const void *value);
 int ngli_pipeline_update_texture(struct pipeline *s, int index, struct texture *texture);
-void ngli_pipeline_exec(struct pipeline *s);
+void ngli_pipeline_draw(struct pipeline *s, const struct draw_params *params);
+void ngli_pipeline_dispatch(struct pipeline *s, const struct dispatch_params *params);
+
 void ngli_pipeline_freep(struct pipeline **sp);
 
 #endif

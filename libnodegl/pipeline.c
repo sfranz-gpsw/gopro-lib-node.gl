@@ -48,9 +48,14 @@ int ngli_pipeline_update_texture(struct pipeline *s, int index, struct texture *
     return s->gctx->class->pipeline_update_texture(s, index, texture);
 }
 
-void ngli_pipeline_exec(struct pipeline *s)
+void ngli_pipeline_draw(struct pipeline *s, const struct draw_params *params)
 {
-    s->gctx->class->pipeline_exec(s);
+    return s->gctx->class->pipeline_draw(s, params);
+}
+
+void ngli_pipeline_dispatch(struct pipeline *s, const struct dispatch_params *params)
+{
+    return s->gctx->class->pipeline_dispatch(s, params);
 }
 
 void ngli_pipeline_freep(struct pipeline **sp)

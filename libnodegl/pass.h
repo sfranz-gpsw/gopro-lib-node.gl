@@ -79,6 +79,8 @@ struct pass {
     struct darray crafter_textures;
     struct darray crafter_blocks;
     struct darray pipeline_descs;
+    struct draw_params draw_params;
+    struct dispatch_params dispatch_params;
 };
 
 int ngli_pass_init(struct pass *s, struct ngl_ctx *ctx, const struct pass_params *params);
