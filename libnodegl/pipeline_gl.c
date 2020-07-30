@@ -332,8 +332,10 @@ static void set_vertex_attribs(const struct pipeline *s, struct glcontext *gl)
         const GLint stride = attribute->stride;
 
         ngli_glEnableVertexAttribArray(gl, location);
-        ngli_glBindBuffer(gl, GL_ARRAY_BUFFER, buffer_gl->id);
-        ngli_glVertexAttribPointer(gl, location, size, GL_FLOAT, GL_FALSE, stride, (void*)(uintptr_t)(attribute->offset));
+        if (buffer_gl) {
+            ngli_glBindBuffer(gl, GL_ARRAY_BUFFER, buffer_gl->id);
+            ngli_glVertexAttribPointer(gl, location, size, GL_FLOAT, GL_FALSE, stride, (void*)(uintptr_t)(attribute->offset));
+        }
         if ((gl->features & NGLI_FEATURE_INSTANCED_ARRAY) && attribute->rate > 0)
             ngli_glVertexAttribDivisor(gl, location, attribute->rate);
     }
@@ -364,6 +366,9 @@ static int build_attribute_descs(struct pipeline *s, const struct pipeline_param
             LOG(ERROR, "context does not support instanced arrays");
             return NGL_ERROR_UNSUPPORTED;
         }
+
+        if (!attribute->buffer)
+            s->nb_unbound_attributes++;
 
         struct attribute_desc desc = {
             .attribute = *attribute,
@@ -515,6 +520,8 @@ int ngli_pipeline_gl_update_attribute(struct pipeline *s, int index, struct buff
     struct attribute_desc *descs = ngli_darray_data(&s->attribute_descs);
     struct attribute_desc *desc = &descs[index];
     struct pipeline_attribute *attribute = &desc->attribute;
+    if (!attribute->buffer)
+        s->nb_unbound_attributes--;
     attribute->buffer = buffer;
 
     if (gl->features & NGLI_FEATURE_VERTEX_ARRAY_OBJECT) {
@@ -579,6 +586,11 @@ void ngli_pipeline_gl_draw(struct pipeline *s, const struct draw_params *params)
 
     if (params->nb_instances && !(gl->features & NGLI_FEATURE_DRAW_INSTANCED)) {
         LOG(ERROR, "context does not support instanced draws");
+        return;
+    }
+
+    if (s->nb_unbound_attributes) {
+        LOG(ERROR, "pipeline has unbound vertex attributes");
         return;
     }
 

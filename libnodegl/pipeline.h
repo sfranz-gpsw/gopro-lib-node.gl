@@ -108,6 +108,7 @@ struct pipeline {
     struct darray texture_descs;
     struct darray buffer_descs;
     struct darray attribute_descs;
+    int nb_unbound_attributes;
 };
 
 struct draw_params {
