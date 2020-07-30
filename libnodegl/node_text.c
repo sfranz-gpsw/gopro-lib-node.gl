@@ -356,7 +356,6 @@ static int update_character_geometries(struct ngl_node *node)
                 ngli_pipeline_update_attribute(desc->pipeline, 0, s->vertices);
                 ngli_pipeline_update_attribute(desc->pipeline, 1, s->uvcoords);
             }
-            ngli_pipeline_update_indices(desc->pipeline, s->indices, nb_indices);
         }
     }
 
