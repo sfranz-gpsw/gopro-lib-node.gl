@@ -111,7 +111,7 @@ static int set_live_changed(struct ngl_node *node)
 
 #define OFFSET(x) offsetof(struct text_priv, x)
 static const struct node_param text_params[] = {
-    {"text",         PARAM_TYPE_STR, OFFSET(text), {.str="FIXME"},
+    {"text",         PARAM_TYPE_STR, OFFSET(text), {.str=""},
                      .flags=PARAM_FLAG_ALLOW_LIVE_CHANGE,
                      .update_func=set_live_changed,
                      .desc=NGLI_DOCSTRING("text string to rasterize")},
@@ -327,8 +327,6 @@ static int update_character_geometries(struct ngl_node *node)
 
     if (nb_indices != s->nb_indices) {
         const int need_realloc = nb_indices > s->nb_indices;
-
-        LOG(ERROR, "update indices %d -> %d", s->nb_indices, nb_indices);
 
         if (need_realloc) {
             ngli_buffer_freep(&s->vertices);
