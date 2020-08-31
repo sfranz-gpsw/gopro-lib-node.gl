@@ -330,6 +330,11 @@ static void gl_destroy(struct gctx *s)
     ngli_glcontext_freep(&s_priv->glcontext);
 }
 
+static int gl_transform_cull_mode(struct gctx *s, int cull_mode)
+{
+    return cull_mode;
+}
+
 static void gl_transform_projection_matrix(struct gctx *s, float *dst)
 {
     const struct ngl_config *config = &s->config;
@@ -493,6 +498,7 @@ const struct gctx_class ngli_gctx_gl = {
     .post_draw    = gl_post_draw,
     .destroy      = gl_destroy,
 
+    .transform_cull_mode              = gl_transform_cull_mode,
     .transform_projection_matrix      = gl_transform_projection_matrix,
     .get_rendertarget_uvcoord_matrix  = gl_get_rendertarget_uvcoord_matrix,
 
