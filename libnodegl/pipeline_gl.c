@@ -554,6 +554,19 @@ int ngli_pipeline_gl_update_texture(struct pipeline *s, int index, struct textur
     return 0;
 }
 
+int ngli_pipeline_gl_update_buffer(struct pipeline *s, int index, struct buffer *buffer)
+{
+    if (index == -1)
+        return NGL_ERROR_NOT_FOUND;
+
+    ngli_assert(index >= 0 && index < ngli_darray_count(&s->texture_descs));
+    struct buffer_desc *descs = ngli_darray_data(&s->buffer_descs);
+    struct pipeline_buffer *pipeline_buffer = &descs[index].buffer;
+    pipeline_buffer->buffer = buffer;
+
+    return 0;
+}
+
 void ngli_pipeline_gl_draw(struct pipeline *s, int nb_vertices, int nb_instances)
 {
     struct gctx *gctx = s->gctx;
