@@ -176,7 +176,7 @@ static VkResult create_instance(struct vkcontext *s, int platform)
     int has_debug_extension = 0;
     const char *debug_extension = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
     for (uint32_t i = 0; i < s->nb_extensions; i++) {
-        if (!strcmp(debug_extension, debug_extension)) {
+        if (!strcmp(s->extensions[i].extensionName, debug_extension)) {
             if (!ngli_darray_push(&extensions, &debug_extension)) {
                 res = VK_ERROR_OUT_OF_HOST_MEMORY;
                 goto done;
@@ -188,7 +188,7 @@ static VkResult create_instance(struct vkcontext *s, int platform)
 
     const char *debug_layer = "VK_LAYER_KHRONOS_validation";
     for (uint32_t i = 0; i < s->nb_layers; i++) {
-        if (!strcmp(debug_layer, debug_layer)) {
+        if (!strcmp(s->layers[i].layerName, debug_layer)) {
             if (!ngli_darray_push(&layers, &debug_layer)) {
                 res = VK_ERROR_OUT_OF_HOST_MEMORY;
                 goto done;
@@ -694,7 +694,8 @@ void ngli_vkcontext_freep(struct vkcontext **sp)
         vkDestroyDevice(s->device, NULL);
     }
 
-    vkDestroySurfaceKHR(s->instance, s->surface, NULL);
+    if (s->surface)
+        vkDestroySurfaceKHR(s->instance, s->surface, NULL);
 
     if (s->debug_callback) {
         VK_LOAD_FUN(s->instance, DestroyDebugUtilsMessengerEXT);
