@@ -41,11 +41,8 @@
 #include "nodegl.h"
 #include "vkcontext.h"
 
-#if defined(TARGET_DARWIN) || defined(TARGET_IPHONE)
-#define ENABLE_DEBUG 0 /* FIXME */
-#else
+// FIXME: rely on DEBUG_VK
 #define ENABLE_DEBUG 1
-#endif
 
 #if ENABLE_DEBUG
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
@@ -186,6 +183,7 @@ static VkResult create_instance(struct vkcontext *s, int platform)
         }
     }
 
+    int has_validation_layer = 0;
     const char *debug_layer = "VK_LAYER_KHRONOS_validation";
     for (uint32_t i = 0; i < s->nb_layers; i++) {
         if (!strcmp(s->layers[i].layerName, debug_layer)) {
@@ -193,8 +191,13 @@ static VkResult create_instance(struct vkcontext *s, int platform)
                 res = VK_ERROR_OUT_OF_HOST_MEMORY;
                 goto done;
             }
+            has_validation_layer = 1;
+            break;
         }
     }
+
+    if (!has_validation_layer)
+        LOG(WARNING, "missing validation layer: %s", debug_layer);
 #endif
 
     VkApplicationInfo app_info = {
