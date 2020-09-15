@@ -60,6 +60,11 @@ cdef extern from "nodegl.h":
     cdef int NGL_BACKEND_OPENGL
     cdef int NGL_BACKEND_OPENGLES
 
+    cdef struct ngl_backend:
+        int id
+        const char *name
+        int version
+
     cdef struct ngl_ctx
 
     cdef struct ngl_config:
@@ -79,6 +84,7 @@ cdef extern from "nodegl.h":
         uint8_t *capture_buffer
 
     ngl_ctx *ngl_create()
+    int ngl_probe_backends(const ngl_config *user_config, int *nb_backendsp, ngl_backend **backendsp)
     int ngl_configure(ngl_ctx *s, ngl_config *config)
     int ngl_resize(ngl_ctx *s, int width, int height, const int *viewport);
     int ngl_set_scene(ngl_ctx *s, ngl_node *scene)
@@ -177,6 +183,30 @@ cdef class Context:
         self.ctx = ngl_create()
         if self.ctx is NULL:
             raise MemoryError()
+
+    @staticmethod
+    def probe_backends(**kwargs):
+        cdef ngl_config config
+        cdef ngl_config *configp = NULL;
+        if kwargs:
+            configp = &config
+            Context._init_ngl_config_from_dict(configp, kwargs)
+        cdef int nb_backends = 0
+        cdef ngl_backend *backend = NULL
+        cdef ngl_backend *backends = NULL
+        cdef int ret = ngl_probe_backends(configp, &nb_backends, &backends)
+        if ret < 0:
+            raise Exception("Error probing backends")
+        backend_set = list()
+        for i in range(nb_backends):
+            backend = &backends[i]
+            backend_set.append(dict(
+                id=backend.id,
+                name=backend.name,
+                version=backend.version
+            ))
+        free(backends)
+        return backend_set
 
     @staticmethod
     cdef void _init_ngl_config_from_dict(ngl_config *config, kwargs):
