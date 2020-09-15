@@ -27,6 +27,12 @@
 #include <SDL.h>
 #include <nodegl.h>
 
+struct player_clock {
+    int running;
+    int64_t ts;
+    int64_t offset;
+};
+
 /*
  * Warning: clear color and samples will NOT trigger a reconfigure, an explicit
  * reconfigure signal is required so to have them honored. The rationale is to
@@ -53,9 +59,8 @@ struct player {
 
     struct ngl_ctx *ngl;
     struct ngl_config ngl_config;
-    int64_t clock_off;
+    struct player_clock clock;
     int64_t frame_ts;
-    int paused;
     int64_t lasthover;
     int mouse_down;
     int fullscreen;

@@ -40,6 +40,52 @@ static struct player *g_player;
 #define O_BINARY 0
 #endif
 
+static void player_clock_init(struct player_clock *clock)
+{
+    clock->running = 0;
+    clock->ts = 0;
+    clock->offset = 0;
+}
+
+static int64_t player_clock_get(struct player_clock *clock)
+{
+    if (!clock->running)
+        return clock->ts;
+    return clock->ts + gettime_relative() - clock->offset;
+}
+
+static void player_clock_set(struct player_clock *clock, int64_t ts)
+{
+    clock->ts = ts;
+    clock->offset = gettime_relative();
+}
+
+static void player_clock_start(struct player_clock *clock)
+{
+    if (clock->running)
+        return;
+    clock->running = 1;
+    clock->offset = gettime_relative();
+}
+
+static void player_clock_stop(struct player_clock *clock)
+{
+    if (!clock->running)
+        return;
+    clock->ts = player_clock_get(clock);
+    clock->running = 0;
+}
+
+static void player_clock_toggle(struct player_clock *clock)
+{
+    clock->running ? player_clock_stop(clock) : player_clock_start(clock);
+}
+
+static void player_clock_reset(struct player_clock *clock)
+{
+    clock->offset = gettime_relative();
+}
+
 static int save_ppm(const char *filename, uint8_t *data, int width, int height)
 {
     int ret = 0;
@@ -85,6 +131,7 @@ end:
 static int screenshot(void)
 {
     struct player *p = g_player;
+    struct player_clock *clock = &p->clock;
     struct ngl_config *config = &p->ngl_config;
     struct ngl_config backup = *config;
 
@@ -118,7 +165,7 @@ end:
     ret = ngl_configure(p->ngl, config);
     if (ret < 0)
         fprintf(stderr, "Could not configure node.gl for onscreen rendering\n");
-    p->clock_off = gettime_relative() - p->frame_ts;
+    player_clock_reset(clock);
 
     free(capture_buffer);
     return ret;
@@ -157,41 +204,10 @@ static void update_text(void)
     p->text_last_duration = duration;
 }
 
-static void update_time(int64_t seek_at)
-{
-    struct player *p = g_player;
-
-    if (seek_at >= 0) {
-        p->clock_off = gettime_relative() - seek_at;
-        p->frame_ts = seek_at;
-        return;
-    }
-
-    if (!p->paused && !p->mouse_down) {
-        const int64_t now = gettime_relative();
-        if (p->clock_off < 0 || now - p->clock_off > p->duration)
-            p->clock_off = now;
-
-        p->frame_ts = now - p->clock_off;
-    }
-
-    if (p->pgbar_opacity_node && p->lasthover >= 0) {
-        const int64_t t64_diff = gettime_relative() - p->lasthover;
-        const double opacity = clipd(1.5 - t64_diff / 1000000.0, 0, 1);
-        ngl_node_param_set(p->pgbar_opacity_node, "value", opacity);
-
-        const float text_bg[4] = {1.0, 1.0, 1.0, opacity};
-        const float text_fg[4] = {0.0, 0.0, 0.0, opacity};
-        ngl_node_param_set(p->pgbar_text_node, "bg_color", text_bg);
-        ngl_node_param_set(p->pgbar_text_node, "fg_color", text_fg);
-
-        update_text();
-    }
-}
-
 static int key_callback(SDL_Window *window, SDL_KeyboardEvent *event)
 {
     struct player *p = g_player;
+    struct player_clock *clock = &p->clock;
 
     const SDL_Keycode key = event->keysym.sym;
     switch (key) {
@@ -199,8 +215,7 @@ static int key_callback(SDL_Window *window, SDL_KeyboardEvent *event)
     case SDLK_q:
         return 1;
     case SDLK_SPACE:
-        p->paused ^= 1;
-        p->clock_off = gettime_relative() - p->frame_ts;
+        player_clock_toggle(clock);
         break;
     case SDLK_f:
         p->fullscreen ^= 1;
@@ -213,11 +228,12 @@ static int key_callback(SDL_Window *window, SDL_KeyboardEvent *event)
         kill_scene();
         break;
     case SDLK_LEFT:
-        update_time(clipi64(p->frame_ts - 10 * 1000000, 0, p->duration));
+        player_clock_set(clock, clipi64(player_clock_get(clock) - 10 * 1000000, 0, p->duration));
         break;
-    case SDLK_RIGHT:
-        update_time(clipi64(p->frame_ts + 10 * 1000000, 0, p->duration));
+    case SDLK_RIGHT: {
+        player_clock_set(clock, clipi64(player_clock_get(clock) + 10 * 1000000, 0, p->duration));
         break;
+    }
     default:
         break;
     }
@@ -238,25 +254,29 @@ static void size_callback(SDL_Window *window, int width, int height)
 static void seek_event(int x)
 {
     struct player *p = g_player;
+    struct player_clock *clock = &p->clock;
     const int *vp = p->ngl_config.viewport;
     const int pos = clipi(x - vp[0], 0, vp[2]) * 3/2;
     const int64_t seek_at64 = p->duration * pos / vp[2];
     p->lasthover = gettime_relative();
-    update_time(seek_at64);
+    player_clock_set(clock, seek_at64);
 }
 
 static void mouse_buttondown_callback(SDL_Window *window, SDL_MouseButtonEvent *event)
 {
     struct player *p = g_player;
+    struct player_clock *clock = &p->clock;
     p->mouse_down = 1;
+    player_clock_stop(clock);
     seek_event(event->x);
 }
 
 static void mouse_buttonup_callback(SDL_Window *window, SDL_MouseButtonEvent *event)
 {
     struct player *p = g_player;
+    struct player_clock *clock = &p->clock;
     p->mouse_down = 0;
-    p->clock_off = gettime_relative() - p->frame_ts;
+    player_clock_start(clock);
 }
 
 static void mouse_pos_callback(SDL_Window *window, SDL_MouseMotionEvent *event)
@@ -403,7 +423,6 @@ int player_init(struct player *p, const char *win_title, struct ngl_node *scene,
         return -1;
     }
 
-    p->clock_off = -1;
     p->lasthover = -1;
     p->duration_f = duration;
     p->duration = duration * 1000000;
@@ -532,10 +551,34 @@ static const handle_func handle_map[] = {
 void player_main_loop(void)
 {
     struct player *p = g_player;
+    struct player_clock *clock = &p->clock;
+
+    player_clock_init(clock);
 
     int run = 1;
+    int first_frame = 1;
     while (run) {
-        update_time(-1);
+        if (first_frame) {
+            p->frame_ts = 0;
+            player_clock_start(clock);
+            first_frame = 0;
+        } else {
+            p->frame_ts = player_clock_get(clock);
+        }
+
+        if (p->pgbar_opacity_node && p->lasthover >= 0) {
+            const int64_t t64_diff = gettime_relative() - p->lasthover;
+            const double opacity = clipd(1.5 - t64_diff / 1000000.0, 0, 1);
+            ngl_node_param_set(p->pgbar_opacity_node, "value", opacity);
+
+            const float text_bg[4] = {1.0, 1.0, 1.0, opacity};
+            const float text_fg[4] = {0.0, 0.0, 0.0, opacity};
+            ngl_node_param_set(p->pgbar_text_node, "bg_color", text_bg);
+            ngl_node_param_set(p->pgbar_text_node, "fg_color", text_fg);
+
+            update_text();
+        }
+
         ngl_draw(p->ngl, p->frame_ts / 1000000.0);
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
