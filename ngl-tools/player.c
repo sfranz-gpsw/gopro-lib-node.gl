@@ -150,7 +150,7 @@ static int screenshot(void)
         fprintf(stderr, "Could not configure node.gl for offscreen capture\n");
         goto end;
     }
-    ngl_draw(p->ngl, p->frame_ts / 1000000.0);
+    ngl_draw(p->ngl, p->frame_time);
 
     char filename[32];
     snprintf(filename, sizeof(filename), "ngl-%" PRId64 ".ppm", gettime());
@@ -188,7 +188,7 @@ static void update_text(void)
     if (!p->pgbar_text_node)
         return;
 
-    const int frame_ts = p->frame_ts / 1000000;
+    const int frame_ts = p->frame_time;
     const int duration = p->duration / 1000000;
     if (frame_ts == p->text_last_frame_ts && duration == p->text_last_duration)
         return;
@@ -230,8 +230,19 @@ static int key_callback(SDL_Window *window, SDL_KeyboardEvent *event)
     case SDLK_LEFT:
         player_clock_set(clock, clipi64(player_clock_get(clock) - 10 * 1000000, 0, p->duration));
         break;
-    case SDLK_RIGHT: {
+    case SDLK_RIGHT:
         player_clock_set(clock, clipi64(player_clock_get(clock) + 10 * 1000000, 0, p->duration));
+        break;
+    case SDLK_o: {
+        const int64_t ts = (p->frame_index - 1) * p->framerate[1] * 1000000 / p->framerate[0];
+        player_clock_stop(clock);
+        player_clock_set(clock, ts);
+        break;
+    }
+    case SDLK_p: {
+        const int64_t ts = (p->frame_index + 1) * p->framerate[1] * 1000000 / p->framerate[0];
+        player_clock_stop(clock);
+        player_clock_set(clock, ts);
         break;
     }
     default:
@@ -409,7 +420,7 @@ static int set_scene(struct ngl_node *scene)
 }
 
 int player_init(struct player *p, const char *win_title, struct ngl_node *scene,
-                const struct ngl_config *cfg, double duration, int enable_ui)
+                const struct ngl_config *cfg, double duration, int *framerate, int enable_ui)
 {
     memset(p, 0, sizeof(*p));
 
@@ -429,6 +440,12 @@ int player_init(struct player *p, const char *win_title, struct ngl_node *scene,
     p->duration_f = duration;
     p->duration = duration * 1000000;
     p->enable_ui = enable_ui;
+
+    if (!framerate[0] || !framerate[1]) {
+        fprintf(stderr, "Invalid framerate %d/%d\n", framerate[0], framerate[1]);
+        return -1;
+    }
+    memcpy(p->framerate, framerate, sizeof(p->framerate));
 
     p->ngl_config = *cfg;
 
@@ -528,7 +545,12 @@ static int handle_aspect_ratio(const void *data)
 static int handle_framerate(const void *data)
 {
     const int *rate = data;
-    fprintf(stderr, "WARNING: unhandled framerate %d/%d\n", rate[0], rate[1]);
+    struct player *p = g_player;
+    if (!rate[0] || !rate[1]) {
+        fprintf(stderr, "Invalid framerate %d/%d\n", rate[0], rate[1]);
+        return -1;
+    }
+    memcpy(p->framerate, rate, sizeof(p->framerate));
     return 0;
 }
 
@@ -560,12 +582,17 @@ void player_main_loop(void)
     int run = 1;
     int first_frame = 1;
     while (run) {
+        int64_t running_time;
         if (first_frame) {
-            p->frame_ts = 0;
+            running_time = 0;
+            p->frame_index = 0;
+            p->frame_time = 0;
             player_clock_start(clock);
             first_frame = 0;
         } else {
-            p->frame_ts = player_clock_get(clock);
+            running_time = player_clock_get(clock);
+            p->frame_index = llrint((running_time * p->framerate[0]) / (double)(p->framerate[1] * 1000000));
+            p->frame_time = (p->frame_index * p->framerate[1]) / (double)p->framerate[0];
         }
 
         if (p->pgbar_opacity_node && p->lasthover >= 0) {
@@ -581,10 +608,10 @@ void player_main_loop(void)
             update_text();
         }
 
-        ngl_draw(p->ngl, p->frame_ts / 1000000.0);
+        ngl_draw(p->ngl, p->frame_time);
 
         if (p->reset_clock) {
-            player_clock_set(clock, p->frame_ts);
+            player_clock_set(clock, running_time);
             p->reset_clock = 0;
         }
 
