@@ -260,6 +260,7 @@ static void seek_event(int x)
     const int64_t seek_at64 = p->duration * pos / vp[2];
     p->lasthover = gettime_relative();
     player_clock_set(clock, seek_at64);
+    p->reset_clock = 1;
 }
 
 static void mouse_buttondown_callback(SDL_Window *window, SDL_MouseButtonEvent *event)
@@ -423,6 +424,7 @@ int player_init(struct player *p, const char *win_title, struct ngl_node *scene,
         return -1;
     }
 
+    p->reset_clock = 1;
     p->lasthover = -1;
     p->duration_f = duration;
     p->duration = duration * 1000000;
@@ -580,6 +582,12 @@ void player_main_loop(void)
         }
 
         ngl_draw(p->ngl, p->frame_ts / 1000000.0);
+
+        if (p->reset_clock) {
+            player_clock_set(clock, p->frame_ts);
+            p->reset_clock = 0;
+        }
+
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             switch (event.type) {

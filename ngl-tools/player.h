@@ -60,6 +60,7 @@ struct player {
     struct ngl_ctx *ngl;
     struct ngl_config ngl_config;
     struct player_clock clock;
+    int reset_clock;
     int64_t frame_ts;
     int64_t lasthover;
     int mouse_down;
