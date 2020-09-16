@@ -9,3 +9,4 @@ sxplayer*
 *.gcno
 ngl-cov/
 cmake-build-debug
+pynodegl/*.pyd
