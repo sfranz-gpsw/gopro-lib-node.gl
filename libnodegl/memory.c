@@ -80,7 +80,11 @@ void *ngli_calloc(size_t n, size_t size)
 
 void *ngli_malloc_aligned(size_t size)
 {
-    return malloc((size + NGLI_ALIGN_VAL - 1) / NGLI_ALIGN_VAL * NGLI_ALIGN_VAL);
+#ifdef WIN32
+    return _aligned_malloc(size, NGLI_ALIGN_VAL);
+#else
+    return aligned_alloc(NGLI_ALIGN_VAL, size);
+#endif
 }
 
 void *ngli_realloc(void *ptr, size_t size)

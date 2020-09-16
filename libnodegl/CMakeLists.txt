@@ -26,7 +26,7 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 set (NODEGL_CFLAGS ${NODEGL_CFLAGS} -DHAVE_GLPLATFORM_WGL -DTARGET_WINDOWS)
 endif()
 set(NODEGL_BUILD_TYPE SHARED)
-
+set (CMAKE_C_STANDARD 11)
 add_library(nodegl ${NODEGL_BUILD_TYPE} ${NODEGL_SRC_FILES})
 target_compile_options(nodegl PUBLIC ${NODEGL_CFLAGS})
 target_link_libraries(nodegl PUBLIC 
