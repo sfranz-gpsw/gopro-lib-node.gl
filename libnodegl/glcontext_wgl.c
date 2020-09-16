@@ -22,11 +22,9 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <windows.h>
-
+#include "glcontext.h"
 #include <GL/glcorearb.h>
 #include <GL/wglext.h>
-
-#include "glcontext.h"
 #include "nodegl.h"
 #include "log.h"
 
