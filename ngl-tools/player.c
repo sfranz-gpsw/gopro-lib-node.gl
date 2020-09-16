@@ -591,6 +591,10 @@ void player_main_loop(void)
             first_frame = 0;
         } else {
             running_time = player_clock_get(clock);
+            if (running_time > p->duration) {
+                running_time = 0;
+                p->reset_clock = 1;
+            }
             p->frame_index = llrint((running_time * p->framerate[0]) / (double)(p->framerate[1] * 1000000));
             p->frame_time = (p->frame_index * p->framerate[1]) / (double)p->framerate[0];
         }
