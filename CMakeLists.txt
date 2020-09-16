@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project (gopro-nodegl)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set (SXPLAYER_LIBS sxplayer avformat avfilter avcodec avutil pthread)
+set (BUILD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cmake-build-debug)
 set (EXTERNAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
@@ -27,6 +27,11 @@ set (GLFW_DIR ${EXTERNAL_DIR}/win64/glfw-3.3.2.bin.WIN64)
 set (GLFW_INCLUDE_DIR ${GLFW_DIR}/include)
 set (GLFW_LIB_DIR ${GLFW_DIR}/lib-vc2019)
 set (GLFW_LIBS glfw3.lib OpenGL32.lib)
+
+set (SXPLAYER_DIR ${EXTERNAL_DIR}/sxplayer-9.5.1)
+set (SXPLAYER_INCLUDE_DIR ${SXPLAYER_DIR})
+set (SXPLAYER_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cmake-build-debug/external/sxplayer-9.5.1/Debug)
+set (SXPLAYER_LIBS sxplayer avformat avfilter avcodec avutil pthreadVC2)
 
 endif()
 

@@ -22,8 +22,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef WIN32
 #include <unistd.h>
-
+#endif
 #include "log.h"
 
 static void default_callback(void *arg, int level, const char *filename, int ln,

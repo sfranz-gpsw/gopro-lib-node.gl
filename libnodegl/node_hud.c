@@ -27,7 +27,9 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifndef WIN32
 #include <unistd.h>
+#endif
 
 #include "hmap.h"
 #include "memory.h"
@@ -1170,7 +1172,7 @@ static int widgets_csv_header(struct ngl_node *node)
     ngli_bstr_print(s->csv_line, "\n");
 
     const int len = ngli_bstr_len(s->csv_line);
-    ssize_t n = write(s->fd_export, ngli_bstr_strptr(s->csv_line), len);
+    int n = write(s->fd_export, ngli_bstr_strptr(s->csv_line), len);
     if (n != len) {
         LOG(ERROR, "unable to write CSV header");
         return NGL_ERROR_IO;

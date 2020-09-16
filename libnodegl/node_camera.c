@@ -23,7 +23,9 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#ifndef WIN32
 #include <unistd.h>
+#endif
 
 #include "gctx.h"
 #include "log.h"

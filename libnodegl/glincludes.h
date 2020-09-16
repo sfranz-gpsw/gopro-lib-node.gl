@@ -53,9 +53,11 @@
 #endif
 
 #if _WIN32
-# include <GL/gl.h>
-# include <GL/glcorearb.h>
-# include <GL/glext.h>
+#include <windows.h>
+#include <GL/glew.h>
+#include <GL/gl.h>
+//#include <GL/glcorearb.h>
+//#include <GL/glext.h>
 # define NGL_OGL3_COMPAT_INCLUDES 1
 #endif
 

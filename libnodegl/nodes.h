@@ -67,6 +67,7 @@
 #include "rendertarget.h"
 #include "rnode.h"
 #include "texture.h"
+#include "utils.h"
 
 struct node_class;
 

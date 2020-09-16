@@ -24,7 +24,9 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef WIN32
 #include <unistd.h>
+#endif
 
 #include "buffer.h"
 #include "log.h"
@@ -155,7 +157,7 @@ static int buffer_init_from_filename(struct ngl_node *node)
     if (!s->data)
         return NGL_ERROR_MEMORY;
 
-    ssize_t n = read(s->fd, s->data, s->data_size);
+    int n = read(s->fd, s->data, s->data_size);
     if (n < 0) {
         LOG(ERROR, "could not read '%s': %zd", s->filename, n);
         return NGL_ERROR_IO;
