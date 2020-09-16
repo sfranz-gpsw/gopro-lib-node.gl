@@ -28,6 +28,7 @@
 
 #include "memory.h"
 #include "utils.h"
+#include "log.h"
 
 #ifdef DEBUG_MEM
 static int failure_requested(void)
@@ -86,8 +87,13 @@ void *ngli_malloc_aligned(size_t size)
 #ifdef TARGET_MINGW_W64
     ptr = _aligned_malloc(size, NGLI_ALIGN_VAL);
 #else
+#ifdef WIN32
+    LOG(ERROR, "TODO");
+    return NULL;
+#else
     if (posix_memalign(&ptr, NGLI_ALIGN_VAL, size))
         ptr = NULL;
+#endif
 #endif
     return ptr;
 }
