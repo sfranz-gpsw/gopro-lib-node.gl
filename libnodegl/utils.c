@@ -27,13 +27,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef WIN32
-#include <sys/time.h>
-#endif
 
 #include "log.h"
 #include "memory.h"
 #include "utils.h"
+
 
 char *ngli_strdup(const char *s)
 {
@@ -49,29 +47,16 @@ char *ngli_strdup(const char *s)
     return r;
 }
 
-int64_t ngli_gettime(void)
-{
-#ifndef WIN32
-    struct timeval tv;
-
-    gettimeofday(&tv, NULL);
-    return 1000000 * (int64_t)tv.tv_sec + tv.tv_usec;
-#else
-    LOG(ERROR, "TODO");
-    return 0;
-#endif
-}
-
 int64_t ngli_gettime_relative(void)
 {
-#ifndef WIN32
+#if 0
     struct timespec ts;
-
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return 1000000 * (int64_t)ts.tv_sec + ts.tv_nsec / 1000;
 #else
-    LOG(ERROR, "TODO");
-    return 0;
+    struct timespec ts;
+    timespec_get(&ts, TIME_UTC);
+    return 1000000 * (int64_t)ts.tv_sec + ts.tv_nsec / 1000;
 #endif
 }
 

@@ -80,22 +80,7 @@ void *ngli_calloc(size_t n, size_t size)
 
 void *ngli_malloc_aligned(size_t size)
 {
-    if (failure_requested())
-        return NULL;
-
-    void *ptr;
-#ifdef TARGET_MINGW_W64
-    ptr = _aligned_malloc(size, NGLI_ALIGN_VAL);
-#else
-#ifdef WIN32
-    LOG(ERROR, "TODO");
-    return NULL;
-#else
-    if (posix_memalign(&ptr, NGLI_ALIGN_VAL, size))
-        ptr = NULL;
-#endif
-#endif
-    return ptr;
+    return malloc((size + NGLI_ALIGN_VAL - 1) / NGLI_ALIGN_VAL * NGLI_ALIGN_VAL);
 }
 
 void *ngli_realloc(void *ptr, size_t size)
