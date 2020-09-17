@@ -23,7 +23,11 @@ include ../common.mak
 
 ifeq ($(V),)
 Q   := @
-OUT := > /dev/null
+	ifneq ($(TARGET_OS),Windows)
+		OUT := > /dev/null
+	else
+		OUT :=
+	endif
 else
 Q   :=
 OUT :=
@@ -75,7 +79,11 @@ include transform.mak
 
 $(REF_TESTS):
 	@echo $@
+ifneq ($(TARGET_OS),Windows)
 	$(Q)ngl-test $(MODULE).py $(FUNC_NAME) refs/$(FUNC_NAME).ref $(OUT)
+else
+	cmd.exe /C "..\\nodegl-env\\Scripts\\activate.bat && $(Q)ngl-test $(MODULE).py $(FUNC_NAME) refs/$(FUNC_NAME).ref $(OUT)"
+endif
 
 $(SIMPLE_TESTS):
 	@echo $@
