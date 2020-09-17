@@ -10,3 +10,4 @@ sxplayer*
 ngl-cov/
 cmake-build-debug
 pynodegl/*.pyd
+pynodegl/*.dll

@@ -44,20 +44,20 @@ class LibNodeGLConfig:
                 'OpenGL32', 'gdi32', 'user32'
             ]
             self.data_root_dir = op.join(os.getcwd(),'..', 'nodegl-env', 'share')
-            return
-        import subprocess
-        
-        if subprocess.call([pkg_config_bin, '--exists', self.PKG_LIB_NAME]) != 0:
-            raise Exception(f'{self.PKG_LIB_NAME} is required to build pynodegl')
-        
-        self.version       = subprocess.check_output([pkg_config_bin, '--modversion', self.PKG_LIB_NAME]).strip().decode()
-        self.data_root_dir = subprocess.check_output([pkg_config_bin, '--variable=datarootdir', self.PKG_LIB_NAME]).strip().decode()
-        pkgcfg_libs_cflags = subprocess.check_output([pkg_config_bin, '--libs', '--cflags', self.PKG_LIB_NAME]).decode()
-        
-        flags = pkgcfg_libs_cflags.split()
-        self.include_dirs = [f[2:] for f in flags if f.startswith('-I')]
-        self.library_dirs = [f[2:] for f in flags if f.startswith('-L')]
-        self.libraries    = [f[2:] for f in flags if f.startswith('-l')]
+        else:
+            import subprocess
+            
+            if subprocess.call([pkg_config_bin, '--exists', self.PKG_LIB_NAME]) != 0:
+                raise Exception(f'{self.PKG_LIB_NAME} is required to build pynodegl')
+            
+            self.version       = subprocess.check_output([pkg_config_bin, '--modversion', self.PKG_LIB_NAME]).strip().decode()
+            self.data_root_dir = subprocess.check_output([pkg_config_bin, '--variable=datarootdir', self.PKG_LIB_NAME]).strip().decode()
+            pkgcfg_libs_cflags = subprocess.check_output([pkg_config_bin, '--libs', '--cflags', self.PKG_LIB_NAME]).decode()
+            
+            flags = pkgcfg_libs_cflags.split()
+            self.include_dirs = [f[2:] for f in flags if f.startswith('-I')]
+            self.library_dirs = [f[2:] for f in flags if f.startswith('-L')]
+            self.libraries    = [f[2:] for f in flags if f.startswith('-l')]
 
 
 _LIB_CFG = LibNodeGLConfig()
