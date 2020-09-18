@@ -43,13 +43,14 @@
 
 // FIXME: rely on DEBUG_VK
 #define ENABLE_DEBUG 1
-
+#define FILTER_DEBUG_LEVEL VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
 #if ENABLE_DEBUG
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
                                                      VkDebugUtilsMessageTypeFlagsEXT type,
                                                      const VkDebugUtilsMessengerCallbackDataEXT *callback_data,
                                                      void *user_data)
 {
+    if (severity < FILTER_DEBUG_LEVEL) return VK_FALSE;
     int level = NGL_LOG_INFO;
     switch (severity) {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:   level = NGL_LOG_ERROR;    break;
@@ -67,7 +68,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverity
     default:
         break;
     }
-
     ngli_log_print(level, __FILE__, __LINE__, "debug_callback", "%s: %s", msg_type, callback_data->pMessage);
     return VK_FALSE;
 }
@@ -84,6 +84,7 @@ static const char *platform_ext_names[] = {
 
 static VkResult create_instance(struct vkcontext *s, int platform)
 {
+    LOG(INFO, "creating vulkan instance");
     s->api_version = VK_API_VERSION_1_0;
 
     VK_LOAD_FUN(NULL, EnumerateInstanceVersion);
