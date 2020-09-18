@@ -49,7 +49,7 @@ set (GL_INCLUDE_DIR ${EXTERNAL_DIR}/win64/gl/include)
 set (PYTHON_DIR C:/Users/jmoguillansky/AppData/Local/Programs/Python/Python38)
 set (PYTHON_INCLUDE_DIR ${PYTHON_DIR}/include)
 set (PYTHON_LIB_DIR ${PYTHON_DIR}/libs)
-set (PYTHON_LIBS python38_d)
+set (PYTHON_LIBS python38)
 endif()
 
 add_subdirectory(external/sxplayer-9.5.1)

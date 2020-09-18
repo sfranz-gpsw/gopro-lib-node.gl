@@ -30,10 +30,7 @@ int main(int argc, char** argv) {
         std::mbstowcs(wargv[j], argv[j], len);
         wargv[j][len] = 0;
     }
-    const char* filename = argv[1];
     Py_Initialize();
     Py_Main(argc, wargv);
-    FILE* fp = _Py_fopen(filename, "r");
-    PyRun_SimpleFile(fp, filename);
     Py_Finalize();
 }

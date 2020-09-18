@@ -1,1 +1,2 @@
-python_d.exe setup.py build_ext --compiler=msvc --inplace --debug
+cmd.exe /C b1.bat
+#python.exe setup.py build_ext --compiler=msvc --inplace
