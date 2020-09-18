@@ -27,7 +27,7 @@ import inspect
 import json
 import subprocess
 import pynodegl as ngl
-from pynodegl_utils import controls
+#from pynodegl_utils import controls
 
 
 def scene(**widgets_specs):
@@ -71,14 +71,26 @@ def scene(**widgets_specs):
     return real_decorator
 
 
-scene.Range = controls.Range
-scene.Vector = controls.Vector
-scene.Color = controls.Color
-scene.Bool = controls.Bool
-scene.File = controls.File
-scene.List = controls.List
-scene.Text = controls.Text
+#scene.Range = controls.Range
+#scene.Vector = controls.Vector
+#scene.Color = controls.Color
+#scene.Bool = controls.Bool
+#scene.File = controls.File
+#scene.List = controls.List
+#scene.Text = controls.Text
 
+class StubControl(): 
+    def __init__(self, **p):
+        pass
+    def set_default(self, p):
+        pass             
+scene.Range = StubControl      
+scene.Vector = StubControl
+scene.Color = StubControl
+scene.Bool = StubControl
+scene.File = StubControl
+scene.List = StubControl
+scene.Text = StubControl
 
 class Media:
 

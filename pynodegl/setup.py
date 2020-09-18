@@ -32,7 +32,7 @@ class LibNodeGLConfig:
     def __init__(self, pkg_config_bin='pkg-config'):
         if os.name == 'nt':
             self.version = '0.0'
-            self.include_dirs = []
+            self.include_dirs = [ op.join(os.getcwd(),'..', 'nodegl-env', 'Include') ]
             self.library_dirs = [ op.join(os.getcwd(),'..', 'nodegl-env', 'Lib') ]
             self.libraries = [
                 'nodegl', 

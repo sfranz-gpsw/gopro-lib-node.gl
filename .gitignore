@@ -11,3 +11,6 @@ ngl-cov/
 cmake-build-debug
 pynodegl/*.pyd
 pynodegl/*.dll
+pynodegl/*.pdb
+pynodegl-utils/build
+pynodegl-utils/dist/*.egg

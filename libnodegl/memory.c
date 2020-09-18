@@ -81,7 +81,7 @@ void *ngli_calloc(size_t n, size_t size)
 void *ngli_malloc_aligned(size_t size)
 {
 #ifdef WIN32
-    return _aligned_malloc(size, NGLI_ALIGN_VAL);
+    return  _aligned_malloc(size, NGLI_ALIGN_VAL);
 #else
     return aligned_alloc(NGLI_ALIGN_VAL, size);
 #endif
@@ -107,7 +107,7 @@ void ngli_freep(void *ptr)
 
 void ngli_free_aligned(void *ptr)
 {
-#ifdef TARGET_MINGW_W64
+#ifdef WIN32
     _aligned_free(ptr);
 #else
     free(ptr);
