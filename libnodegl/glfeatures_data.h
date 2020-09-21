@@ -277,5 +277,13 @@ static const struct glfeature {
         .flag           = NGLI_FEATURE_SHADING_LANGUAGE_420PACK,
         .version        = 420,
         .extensions     = (const char*[]){"GL_ARB_shading_language_420pack", NULL},
+    }, {
+        .name           = "map_buffer",
+        .flag           = NGLI_FEATURE_MAP_BUFFER,
+        .version        = 300,
+        .es_version     = 300,
+        .funcs_offsets  = (const size_t[]){OFFSET(MapBufferRange),
+                                           OFFSET(UnmapBuffer),
+                                           -1}
     }
 };
