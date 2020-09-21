@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 project (sxplayer)
 
 file (GLOB_RECURSE SXPLAYER_SRC_FILES *.c *.h)
@@ -11,10 +11,10 @@ set(SXPLAYER_BUILD_TYPE STATIC)
 
 add_library(sxplayer ${SXPLAYER_BUILD_TYPE} ${SXPLAYER_SRC_FILES})
 target_include_directories(sxplayer PUBLIC 
-	${PTHREADS_INCLUDE_DIR} 
-	${FFMPEG_INCLUDE_DIR} 
-	${GLEW_INCLUDE_DIR} 
-	${GLFW_INCLUDE_DIR}
+	${PTHREADS_INCLUDE_DIRS} 
+	${FFMPEG_INCLUDE_DIRS} 
+	${GLEW_INCLUDE_DIRS} 
+	${GLFW_INCLUDE_DIRS}
 )
 target_compile_definitions(sxplayer PUBLIC 
 	${PTHREADS_CFLAGS}
@@ -23,14 +23,14 @@ target_compile_definitions(sxplayer PUBLIC
 	${GLFW_CFLAGS}
 )
 target_link_libraries(sxplayer PUBLIC 
-	${PTHREADS_LIBS}
-	${FFMPEG_LIBS}
-	${GLEW_LIBS}
-	${GLFW_LIBS}
+	${PTHREADS_LIBRARIES}
+	${FFMPEG_LIBRARIES}
+	${GLEW_LIBRARIES}
+	${GLFW_LIBRARIES}
 )
 target_link_directories(sxplayer PUBLIC 
-	${PTHREADS_LIB_DIR}
-	${FFMPEG_LIB_DIR}
-	${GLEW_LIB_DIR}
-	${GLFW_LIB_DIR}
+	${PTHREADS_LIBRARY_DIRS}
+	${FFMPEG_LIBRARY_DIRS}
+	${GLEW_LIBRARY_DIRS}
+	${GLFW_LIBRARY_DIRS}
 )

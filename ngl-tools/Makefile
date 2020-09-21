@@ -46,7 +46,7 @@ HAS_PYTHON := $(if $(shell pkg-config --exists python$(PYTHON_MAJOR) && echo 1),
 
 TOOLS = player render
 ifeq ($(HAS_PYTHON),yes)
-PYTHON_CFLAGS := $(shell python$(PYTHON_MAJOR)-config --cflags)
+PYTHON_CFLAGS := $(shell python$(PYTHON_MAJOR)-config --cflags) -fPIC
 #
 # After the 2-to-3 migration fiasco, the Python team did a lot of retrospective
 # on why it failed. Lesson learned: now instead of bumping major, they do major
