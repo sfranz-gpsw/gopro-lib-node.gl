@@ -1,4 +1,5 @@
 rm /tmp/LOG_GL
+source nodegl-env/bin/activate
 cd tests
-TARGET_OS=Windows BACKEND=gl WSLENV=BACKEND/w make -j16 -k > /tmp/LOG_GL 2>&1
+BACKEND=gl make -j16 -k > /tmp/LOG_GL 2>&1
 cd -
