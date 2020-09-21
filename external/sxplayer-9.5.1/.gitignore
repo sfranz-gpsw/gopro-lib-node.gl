@@ -1,0 +1,9 @@
+*.o
+*.d
+libsxplayer.a
+libsxplayer.pc
+libsxplayer.so
+libsxplayer.symexport
+sxplayer
+sxplayer.hpp
+test-prog

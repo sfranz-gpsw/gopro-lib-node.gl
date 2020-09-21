@@ -4,7 +4,7 @@
 nodegl-env/
 MoltenVK*
 shaderc*
-sxplayer*
+/sxplayer*
 *.gcda
 *.gcno
 ngl-cov/

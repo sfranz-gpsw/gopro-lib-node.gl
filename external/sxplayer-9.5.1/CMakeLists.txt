@@ -1,0 +1,36 @@
+cmake_minimum_required(VERSION 3.10)
+project (sxplayer)
+
+file (GLOB_RECURSE SXPLAYER_SRC_FILES *.c *.h)
+if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+list (FILTER SXPLAYER_SRC_FILES EXCLUDE REGEX "decoder_vt.c")
+endif()
+list (FILTER SXPLAYER_SRC_FILES EXCLUDE REGEX "test-prog.c")
+
+set(SXPLAYER_BUILD_TYPE STATIC)
+
+add_library(sxplayer ${SXPLAYER_BUILD_TYPE} ${SXPLAYER_SRC_FILES})
+target_include_directories(sxplayer PUBLIC 
+	${PTHREADS_INCLUDE_DIR} 
+	${FFMPEG_INCLUDE_DIR} 
+	${GLEW_INCLUDE_DIR} 
+	${GLFW_INCLUDE_DIR}
+)
+target_compile_definitions(sxplayer PUBLIC 
+	${PTHREADS_CFLAGS}
+	${FFMPEG_CFLAGS}
+	${GLEW_CFLAGS}
+	${GLFW_CFLAGS}
+)
+target_link_libraries(sxplayer PUBLIC 
+	${PTHREADS_LIBS}
+	${FFMPEG_LIBS}
+	${GLEW_LIBS}
+	${GLFW_LIBS}
+)
+target_link_directories(sxplayer PUBLIC 
+	${PTHREADS_LIB_DIR}
+	${FFMPEG_LIB_DIR}
+	${GLEW_LIB_DIR}
+	${GLFW_LIB_DIR}
+)
