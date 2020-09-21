@@ -14,3 +14,4 @@ cd win64 && unzip $TMP_DIR/glfw-3.3.2.bin.WIN64.zip; cd -
 cd win64 && unzip -d pthreads-w32-2-9-1-release $TMP_DIR/pthreads-w32-2-9-1-release.zip; cd -
 mkdir -p win64/gl/include && cp -rf $TMP_DIR/gl/include/* win64/gl/include/.
 cd win64 && unzip -d glew-2.1.0-win32 $TMP_DIR/glew-2.1.0-win32.zip; cd -
+cd win64 && tar xzf ../archive/ffmpeg-20200831-4a11a6f-win64-dev.tgz; cd -
