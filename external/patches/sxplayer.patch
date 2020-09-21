@@ -1,7 +1,7 @@
-diff -ruN sxplayer-9.5.1/CMakeLists.txt sxplayer-9.5.1.new/CMakeLists.txt
---- sxplayer-9.5.1/CMakeLists.txt	1969-12-31 16:00:00.000000000 -0800
-+++ sxplayer-9.5.1.new/CMakeLists.txt	2020-09-16 11:40:42.935321400 -0700
-@@ -0,0 +1,36 @@
+diff -ruN tmp/sxplayer-9.5.1/CMakeLists.txt sxplayer-9.5.1/CMakeLists.txt
+--- tmp/sxplayer-9.5.1/CMakeLists.txt	1969-12-31 16:00:00.000000000 -0800
++++ sxplayer-9.5.1/CMakeLists.txt	2020-09-21 12:58:43.396933959 -0700
+@@ -0,0 +1,37 @@
 +cmake_minimum_required(VERSION 3.14)
 +project (sxplayer)
 +
@@ -11,30 +11,31 @@ diff -ruN sxplayer-9.5.1/CMakeLists.txt sxplayer-9.5.1.new/CMakeLists.txt
 +endif()
 +list (FILTER SXPLAYER_SRC_FILES EXCLUDE REGEX "test-prog.c")
 +
++if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 +set(SXPLAYER_BUILD_TYPE STATIC)
++else()
++set(SXPLAYER_BUILD_TYPE SHARED)
++endif()
 +
 +add_library(sxplayer ${SXPLAYER_BUILD_TYPE} ${SXPLAYER_SRC_FILES})
 +target_include_directories(sxplayer PUBLIC 
-+	${PTHREADS_INCLUDE_DIR} 
-+	${FFMPEG_INCLUDE_DIR} 
-+	${GLEW_INCLUDE_DIR} 
-+	${GLFW_INCLUDE_DIR}
++        ${PTHREADS_INCLUDE_DIRS}
++        ${FFMPEG_INCLUDE_DIRS}
++        ${GLEW_INCLUDE_DIRS}
++        ${GLFW_INCLUDE_DIRS}
 +)
-+target_compile_definitions(sxplayer PUBLIC 
-+	${PTHREADS_CFLAGS}
-+	${FFMPEG_CFLAGS}
-+	${GLEW_CFLAGS}
-+	${GLFW_CFLAGS}
++set_target_properties(sxplayer PROPERTIES COMPILE_FLAGS
++    "${PTHREADS_CFLAGS} ${FFMPEG_CFLAGS} ${GLEW_CFLAGS} ${GLFW_CFLAGS}"
 +)
 +target_link_libraries(sxplayer PUBLIC 
-+	${PTHREADS_LIBS}
-+	${FFMPEG_LIBS}
-+	${GLEW_LIBS}
-+	${GLFW_LIBS}
++        ${PTHREADS_LIBRARIES}
++        ${FFMPEG_LIBRARIES}
++        ${GLEW_LIBRARIES}
++        ${GLFW_LIBRARIES}
 +)
 +target_link_directories(sxplayer PUBLIC 
-+	${PTHREADS_LIB_DIR}
-+	${FFMPEG_LIB_DIR}
-+	${GLEW_LIB_DIR}
-+	${GLFW_LIB_DIR}
++        ${PTHREADS_LIBRARY_DIRS}
++        ${FFMPEG_LIBRARY_DIRS}
++        ${GLEW_LIBRARY_DIRS}
++        ${GLFW_LIBRARY_DIRS}
 +)

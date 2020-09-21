@@ -1,1 +1,1 @@
-diff -ruN sxplayer-9.5.1 sxplayer-9.5.1.new/ > patches/sxplayer.patch
+diff -ruN tmp/sxplayer-9.5.1 sxplayer-9.5.1/ > patches/sxplayer.patch

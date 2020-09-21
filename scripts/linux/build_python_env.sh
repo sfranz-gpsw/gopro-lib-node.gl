@@ -1,20 +1,20 @@
-set -x
+#set -x
 python3 -m venv nodegl-env
 
 install -C -d nodegl-env/share
 install -C -d nodegl-env/share/nodegl
 install -C -d nodegl-env/lib/pkgconfig
 
-install -C -m 644 cmake-build-debug/external/sxplayer-9.5.1/libsxplayer.a nodegl-env/lib/
+install -C -m 644 cmake-build-debug/external/sxplayer-9.5.1/libsxplayer.so nodegl-env/lib/
 CWD=$PWD && cd external/sxplayer-9.5.1 && \
 sed -e "s#PREFIX#$CWD/nodegl-env#;s#DEP_LIBS##;s#DEP_PRIVATE_LIBS#-lavformat -lavfilter -lavcodec -lavutil  -lm -pthread#" \
     libsxplayer.pc.tpl > libsxplayer.pc
 cd -
-install -C -m 644 libsxplayer.pc nodegl-env/lib/pkgconfig
+install -C -m 644 external/sxplayer-9.5.1/libsxplayer.pc nodegl-env/lib/pkgconfig
 
 install -C -m 644 libnodegl/nodegl.h nodegl-env/include/
 install -C -m 644 libnodegl/nodes.specs nodegl-env/share/nodegl/
-install -C -m 644 cmake-build-debug/libnodegl/libnodegl.a nodegl-env/lib/nodegl.lib
+install -C -m 644 cmake-build-debug/libnodegl/libnodegl.so nodegl-env/lib/.
 
 CWD=$PWD cd libnodegl && \
 sed -e "s#PREFIX#$CWD/nodegl-env#" \

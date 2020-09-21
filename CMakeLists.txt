@@ -53,9 +53,22 @@ set (PYTHON_LIBRARIES python38)
 
 else ()
 find_package (PkgConfig REQUIRED)
-pkg_check_modules(PYTHON REQUIRED python3)
-endif()
 
+pkg_check_modules(FFMPEG REQUIRED libavcodec libavdevice libavformat libavfilter libavutil)
+pkg_check_modules(GLEW REQUIRED glew)
+pkg_check_modules(GLFW REQUIRED glfw3)
+pkg_check_modules(VULKANSDK REQUIRED vulkan)
+pkg_check_modules(SHADERC REQUIRED shaderc_combined)
+set (GL_PACKAGES gl egl)
+pkg_check_modules(GL REQUIRED ${GL_PACKAGES})
+pkg_check_modules(PYTHON REQUIRED python3)
+
+set (SXPLAYER_DIR ${EXTERNAL_DIR}/sxplayer-9.5.1)
+set (SXPLAYER_INCLUDE_DIRS ${SXPLAYER_DIR})
+set (SXPLAYER_LIBRARY_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/cmake-build-debug/external/sxplayer-9.5.1)
+set (SXPLAYER_LIBRARIES sxplayer avformat avfilter avcodec avutil pthread)
+
+endif()
 
 add_subdirectory(external/sxplayer-9.5.1)
 add_subdirectory(libnodegl)
@@ -70,6 +83,3 @@ endforeach()
 endfunction()
 
 #DUMP_VARS()
-
-
-
