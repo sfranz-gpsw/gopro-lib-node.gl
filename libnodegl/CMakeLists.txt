@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project (nodegl)
 
-file (GLOB_RECURSE NODEGL_SRC_FILES *.c *.h)
+file (GLOB_RECURSE NODEGL_SRC_FILES *.c *.cpp *.h)
 
 if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Android")
 list (FILTER NODEGL_SRC_FILES EXCLUDE REGEX "android_.*$")
@@ -30,7 +30,7 @@ set(NODEGL_BUILD_TYPE STATIC)
 endif()
 set (CMAKE_C_STANDARD 11)
 add_library(nodegl ${NODEGL_BUILD_TYPE} ${NODEGL_SRC_FILES})
-target_compile_options(nodegl PUBLIC ${NODEGL_CFLAGS})
+target_compile_options(nodegl PUBLIC ${NODEGL_CFLAGS} ${NGFX_CFLAGS})
 target_link_libraries(nodegl PUBLIC 
         ${SXPLAYER_LIBRARIES}
         ${VULKANSDK_LIBRARIES}
@@ -41,7 +41,8 @@ target_link_directories(nodegl PUBLIC
         ${VULKANSDK_LIBRARY_DIRS}
 )
 target_include_directories(nodegl PUBLIC 
-	${SXPLAYER_INCLUDE_DIR}
-	${VULKANSDK_INCLUDE_DIR}
-	${GL_INCLUDE_DIR}
+        ${SXPLAYER_INCLUDE_DIRS}
+        ${VULKANSDK_INCLUDE_DIRS}
+        ${GL_INCLUDE_DIRS}
+        ${NGFX_INCLUDE_DIRS}
 )
