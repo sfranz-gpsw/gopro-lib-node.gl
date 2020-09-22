@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.6.2, 2020-09-22T11:09:12. -->
+<!-- Written by QtCreator 4.6.2, 2020-09-22T11:18:33. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -347,7 +347,7 @@
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.UserWorkingDirectory.default">/home/jmoguillansky/Documents/2020/Git/gopro-lib-node.gl/cmake-build-debug/pyshell</value>
     <value type="int" key="PE.EnvironmentAspect.Base">1</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes">
-     <value type="QString">BACKEND=vk</value>
+     <value type="QString">BACKEND=ngfx</value>
      <value type="QString">PYTHONPATH=../pynodegl:../pynodegl-utils</value>
     </valuelist>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">pyshell</value>
