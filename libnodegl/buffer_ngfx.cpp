@@ -18,17 +18,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+#include "memory.h"
 #include "buffer_ngfx.h"
 #include "gctx_ngfx.h"
+#include "graphics/Buffer.h"
 #include "log.h"
+using namespace ngfx;
 
 struct buffer *ngli_buffer_ngfx_create(struct gctx *gctx)
-{ TODO();
-    return NULL;
+{
+    buffer_ngfx *s = (buffer_ngfx*)ngli_calloc(1, sizeof(*s));
+    if (!s)
+        return NULL;
+    s->parent.gctx = gctx;
+    return (struct buffer *)s;
 }
 
 int ngli_buffer_ngfx_init(struct buffer *s, int size, int usage)
 { TODO();
+
     return 0;
 }
 

@@ -421,7 +421,7 @@ void ngli_node_detach_ctx(struct ngl_node *node, struct ngl_ctx *ctx)
 int ngli_node_prepare(struct ngl_node *node)
 {
     if (node->class->prepare) {
-        TRACE("PREPARE %s @ %p", node->label, node);
+        /*TRACE*/ LOG(WARNING, "PREPARE %s @ %p", node->label, node);
         int ret = node->class->prepare(node);
         if (ret < 0) {
             LOG(ERROR, "preparing node %s failed: %s", node->label, NGLI_RET_STR(ret));

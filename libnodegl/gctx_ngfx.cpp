@@ -28,14 +28,7 @@
 #include "texture_ngfx.h"
 #include "memory.h"
 #include "log.h"
-#include <memory>
-#include "NGLApplication.h"
 using namespace std;
-
-struct gctx_ngfx {
-    struct gctx parent;
-    std::shared_ptr<NGL::NGLApplication> app;
-};
 
 static struct gctx *ngfx_create(const struct ngl_config *config)
 {
@@ -46,6 +39,8 @@ static struct gctx *ngfx_create(const struct ngl_config *config)
 
 static int ngfx_init(struct gctx *s)
 {
+    TODO("initialize default_rendertarget_desc");
+
     return 0;
 }
 
@@ -99,8 +94,9 @@ static struct rendertarget *ngfx_get_rendertarget(struct gctx *s)
 }
 
 static const struct rendertarget_desc *ngfx_get_default_rendertarget_desc(struct gctx *s)
-{ TODO();
-   return NULL;
+{
+    struct gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
+    return &s_priv->default_rendertarget_desc;
 }
 
 static void ngfx_set_viewport(struct gctx *s, const int *viewport)

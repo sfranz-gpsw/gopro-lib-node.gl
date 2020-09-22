@@ -23,5 +23,13 @@
 #define GCTX_NGFX_H
 
 #include "gctx.h"
+#include "NGLApplication.h"
+#include <memory>
+
+struct gctx_ngfx {
+    struct gctx parent;
+    std::shared_ptr<NGL::NGLApplication> app;
+    struct rendertarget_desc default_rendertarget_desc;
+};
 
 #endif

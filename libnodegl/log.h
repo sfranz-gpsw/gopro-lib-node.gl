@@ -28,7 +28,6 @@ extern "C" {
 #include "utils.h"
 
 #define LOG(log_level, ...) ngli_log_print(NGL_LOG_##log_level, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
-
 #ifdef LOGTRACE
 # define TRACE(...) LOG(VERBOSE, __VA_ARGS__)
 #else
@@ -42,7 +41,7 @@ void ngli_log_print(int log_level, const char *filename,
 
 char *ngli_log_ret_str(char *buf, size_t buf_size, int ret);
 
-#define TODO(fmt, ...) LOG(WARNING, "TODO" fmt, ##__VA_ARGS__)
+#define TODO(fmt, ...) LOG(WARNING, "TODO " fmt, ##__VA_ARGS__)
 #ifdef __cplusplus
 }
 #endif

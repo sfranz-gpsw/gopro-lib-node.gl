@@ -22,7 +22,10 @@
 #include "pipeline_ngfx.h"
 #include "log.h"
 
-struct pipeline *ngli_pipeline_ngfx_create(struct gctx *gctx) { TODO(); return NULL; }
+struct pipeline *ngli_pipeline_ngfx_create(struct gctx *gctx) {
+    TODO();
+    return NULL;
+}
 int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_params *params) { TODO(); return 0; }
 int ngli_pipeline_ngfx_bind_resources(struct pipeline *s, const struct pipeline_desc_params *desc_params,
                                       const struct pipeline_resource_params *data_params) { TODO(); return 0; }

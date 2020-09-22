@@ -19,11 +19,18 @@
  * under the License.
  */
 
+#include "memory.h"
 #include "program_ngfx.h"
 #include <stdlib.h>
 #include "log.h"
 
-struct program *ngli_program_ngfx_create(struct gctx *gctx) { TODO(); return NULL; }
+struct program *ngli_program_ngfx_create(struct gctx *gctx) {
+    program_ngfx *s = (program_ngfx*)ngli_calloc(1, sizeof(*s));
+    if (!s)
+        return NULL;
+    s->parent.gctx = gctx;
+    return (struct program *)s;
+}
 int ngli_program_ngfx_init(struct program *s, const char *vertex, const char *fragment, const char *compute) { TODO(); return 0; }
 void ngli_program_ngfx_freep(struct program **sp) { TODO();}
 
