@@ -47,7 +47,7 @@
 #define EGL_PLATFORM_X11 0x31D5
 #define EGL_PLATFORM_SURFACELESS_MESA 0x31DD
 #define EGL_PLATFORM_WAYLAND 0x31D8
-
+#define ENABLE_DEBUG
 struct egl_priv {
     EGLNativeDisplayType native_display;
     int own_native_display;
@@ -61,9 +61,9 @@ struct egl_priv {
     EGLDisplay (*GetPlatformDisplay)(EGLenum platform, void *native_display, const EGLint *attrib_list);
     EGLAPIENTRY EGLImageKHR (*CreateImageKHR)(EGLDisplay, EGLContext, EGLenum, EGLClientBuffer, const EGLint *);
     EGLAPIENTRY EGLBoolean (*DestroyImageKHR)(EGLDisplay, EGLImageKHR);
-#if defined(TARGET_ANDROID)     
+#if defined(TARGET_ANDROID)
     EGLAPIENTRY EGLClientBuffer (*GetNativeClientBufferANDROID)(const struct AHardwareBuffer *);
-#endif    
+#endif
     int has_platform_x11_ext;
     int has_platform_mesa_surfaceless_ext;
     int has_platform_wayland_ext;
@@ -318,6 +318,9 @@ try_again:;
                 EGL_CONTEXT_MAJOR_VERSION_KHR, gl_versions[i].major,
                 EGL_CONTEXT_MINOR_VERSION_KHR, gl_versions[i].minor,
                 EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR, EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR,
+#ifdef ENABLE_DEBUG
+                EGL_CONTEXT_FLAGS_KHR, EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR,
+#endif
                 EGL_NONE
             };
 

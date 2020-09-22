@@ -459,7 +459,7 @@ int ngli_pass_prepare(struct pass *s)
     pipeline_graphics.state = rnode->graphicstate;
     pipeline_graphics.rt_desc = rnode->rendertarget_desc;
 
-    struct pipeline_params pipeline_params = {
+    struct pipeline_desc_params pipeline_desc_params = {
         .type          = s->pipeline_type,
         .graphics      = pipeline_graphics,
     };
@@ -492,7 +492,8 @@ int ngli_pass_prepare(struct pass *s)
     if (!desc->crafter)
         return NGL_ERROR_MEMORY;
 
-    int ret = ngli_pgcraft_craft(desc->crafter, &pipeline_params, &crafter_params);
+    struct pipeline_resource_params pipeline_resource_params;
+    int ret = ngli_pgcraft_craft(desc->crafter, &pipeline_desc_params, &pipeline_resource_params, &crafter_params);
     if (ret < 0)
         return ret;
 
@@ -500,7 +501,11 @@ int ngli_pass_prepare(struct pass *s)
     if (!desc->pipeline)
         return NGL_ERROR_MEMORY;
 
-    ret = ngli_pipeline_init(desc->pipeline, &pipeline_params);
+    ret = ngli_pipeline_init(desc->pipeline, &pipeline_desc_params);
+    if (ret < 0)
+        return ret;
+
+    ret = ngli_pipeline_bind_resources(desc->pipeline, &pipeline_desc_params, &pipeline_resource_params);
     if (ret < 0)
         return ret;
 

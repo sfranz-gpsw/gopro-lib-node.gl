@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 GoPro Inc.
+ * Copyright 2020 GoPro Inc.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -19,27 +19,16 @@
  * under the License.
  */
 
-#ifndef LOG_H
-#define LOG_H
+#ifndef SWAPCHAIN_H
+#define SWAPCHAIN_H
+#include <stdint.h>
 
-#include "nodegl.h"
-#include "utils.h"
+struct gctx;
 
-#define LOG(log_level, ...) ngli_log_print(NGL_LOG_##log_level, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+int ngli_swapchain_create(struct gctx *s);
 
-#ifdef LOGTRACE
-# define TRACE(...) LOG(VERBOSE, __VA_ARGS__)
-#else
-# define TRACE(...) do { if (0) LOG(VERBOSE, __VA_ARGS__); } while (0)
+void ngli_swapchain_destroy(struct gctx *s);
+
+int ngli_swapchain_acquire_image(struct gctx *s, uint32_t *image_index);
+
 #endif
-
-void ngli_log_print(int log_level, const char *filename,
-                    int ln, const char *fn, const char *fmt, ...) ngli_printf_format(5, 6);
-
-#define NGLI_RET_STR(ret) ngli_log_ret_str((char[128]){0}, 128, ret)
-
-char *ngli_log_ret_str(char *buf, size_t buf_size, int ret);
-
-#define TODO(fmt, ...) LOG(WARNING, "TODO" fmt, ##__VA_ARGS__)
-
-#endif /* LOG_H */

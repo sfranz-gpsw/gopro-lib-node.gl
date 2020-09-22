@@ -43,6 +43,8 @@
 #include "vaapi.h"
 #endif
 
+#define ENABLE_DEBUG
+
 static void capture_default(struct gctx *s)
 {
     struct gctx_gl *s_priv = (struct gctx_gl *)s;
@@ -219,6 +221,20 @@ static struct gctx *gl_create(const struct ngl_config *config)
     return (struct gctx *)s;
 }
 
+static void debug_message_callback( GLenum source,
+                 GLenum type,
+                 GLuint id,
+                 GLenum severity,
+                 GLsizei length,
+                 const GLchar* message,
+                 const void* userParam )
+{
+    if (severity == GL_DEBUG_SEVERITY_NOTIFICATION) return;
+    fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+           ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
+            type, severity, message );
+}
+
 static int gl_init(struct gctx *s)
 {
     int ret;
@@ -228,6 +244,11 @@ static int gl_init(struct gctx *s)
     s_priv->glcontext = ngli_glcontext_new(config);
     if (!s_priv->glcontext)
         return NGL_ERROR_MEMORY;
+
+#ifdef ENABLE_DEBUG
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageCallback(debug_message_callback, NULL);
+#endif
 
     struct glcontext *gl = s_priv->glcontext;
     s->features = gl->features;
@@ -545,6 +566,7 @@ const struct gctx_class ngli_gctx_gl = {
 
     .pipeline_create         = ngli_pipeline_gl_create,
     .pipeline_init           = ngli_pipeline_gl_init,
+    .pipeline_bind_resources = ngli_pipeline_gl_bind_resources,
     .pipeline_update_attribute = ngli_pipeline_gl_update_attribute,
     .pipeline_update_uniform = ngli_pipeline_gl_update_uniform,
     .pipeline_update_texture = ngli_pipeline_gl_update_texture,
@@ -633,6 +655,10 @@ const struct gctx_class ngli_gctx_gles = {
     .rendertarget_resolve     = ngli_rendertarget_gl_resolve,
     .rendertarget_read_pixels = ngli_rendertarget_gl_read_pixels,
     .rendertarget_freep       = ngli_rendertarget_gl_freep,
+
+    .swapchain_create         = NULL,
+    .swapchain_destroy        = NULL,
+    .swapchain_acquire_image  = NULL,
 
     .texture_create           = ngli_texture_gl_create,
     .texture_init             = ngli_texture_gl_init,

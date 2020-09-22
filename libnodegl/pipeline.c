@@ -25,47 +25,53 @@
 
 struct pipeline *ngli_pipeline_create(struct gctx *gctx)
 {
-    return gctx->class->pipeline_create(gctx);
+    return gctx->clazz->pipeline_create(gctx);
 }
 
-int ngli_pipeline_init(struct pipeline *s, const struct pipeline_params *params)
+int ngli_pipeline_init(struct pipeline *s, const struct pipeline_desc_params *params)
 {
-    return s->gctx->class->pipeline_init(s, params);
+    return s->gctx->clazz->pipeline_init(s, params);
+}
+
+int ngli_pipeline_bind_resources(struct pipeline *s, const struct pipeline_desc_params *desc_params,
+                                 const struct pipeline_resource_params *data_params)
+{
+    return s->gctx->clazz->pipeline_bind_resources(s, desc_params, data_params);
 }
 
 int ngli_pipeline_update_attribute(struct pipeline *s, int index, struct buffer *buffer)
 {
-    return s->gctx->class->pipeline_update_attribute(s, index, buffer);
+    return s->gctx->clazz->pipeline_update_attribute(s, index, buffer);
 }
 
 int ngli_pipeline_update_uniform(struct pipeline *s, int index, const void *value)
 {
-    return s->gctx->class->pipeline_update_uniform(s, index, value);
+    return s->gctx->clazz->pipeline_update_uniform(s, index, value);
 }
 
 int ngli_pipeline_update_texture(struct pipeline *s, int index, struct texture *texture)
 {
-    return s->gctx->class->pipeline_update_texture(s, index, texture);
+    return s->gctx->clazz->pipeline_update_texture(s, index, texture);
 }
 
 void ngli_pipeline_draw(struct pipeline *s, int nb_vertices, int nb_instances)
 {
-    return s->gctx->class->pipeline_draw(s, nb_vertices, nb_instances);
+    return s->gctx->clazz->pipeline_draw(s, nb_vertices, nb_instances);
 }
 
 void ngli_pipeline_draw_indexed(struct pipeline *s, struct buffer *indices, int indices_format, int nb_indices, int nb_instances)
 {
-    return s->gctx->class->pipeline_draw_indexed(s, indices, indices_format, nb_indices, nb_instances);
+    return s->gctx->clazz->pipeline_draw_indexed(s, indices, indices_format, nb_indices, nb_instances);
 }
 
 void ngli_pipeline_dispatch(struct pipeline *s, int nb_group_x, int nb_group_y, int nb_group_z)
 {
-    return s->gctx->class->pipeline_dispatch(s, nb_group_x, nb_group_y, nb_group_z);
+    return s->gctx->clazz->pipeline_dispatch(s, nb_group_x, nb_group_y, nb_group_z);
 }
 
 void ngli_pipeline_freep(struct pipeline **sp)
 {
     if (!*sp)
         return;
-    (*sp)->gctx->class->pipeline_freep(sp);
+    (*sp)->gctx->clazz->pipeline_freep(sp);
 }

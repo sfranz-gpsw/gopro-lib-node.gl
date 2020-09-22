@@ -24,27 +24,27 @@
 
 struct rendertarget *ngli_rendertarget_create(struct gctx *gctx)
 {
-    return gctx->class->rendertarget_create(gctx);
+    return gctx->clazz->rendertarget_create(gctx);
 }
 
 int ngli_rendertarget_init(struct rendertarget *s, const struct rendertarget_params *params)
 {
-    return s->gctx->class->rendertarget_init(s, params);
+    return s->gctx->clazz->rendertarget_init(s, params);
 }
 
 void ngli_rendertarget_resolve(struct rendertarget *s)
 {
-    s->gctx->class->rendertarget_resolve(s);
+    s->gctx->clazz->rendertarget_resolve(s);
 }
 
 void ngli_rendertarget_read_pixels(struct rendertarget *s, uint8_t *data)
 {
-    s->gctx->class->rendertarget_read_pixels(s, data);
+    s->gctx->clazz->rendertarget_read_pixels(s, data);
 }
 
 void ngli_rendertarget_freep(struct rendertarget **sp)
 {
     if (!*sp)
         return;
-    (*sp)->gctx->class->rendertarget_freep(sp);
+    (*sp)->gctx->clazz->rendertarget_freep(sp);
 }

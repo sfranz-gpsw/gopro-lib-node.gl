@@ -27,11 +27,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 
 #include "log.h"
 #include "memory.h"
 #include "utils.h"
-
 
 char *ngli_strdup(const char *s)
 {

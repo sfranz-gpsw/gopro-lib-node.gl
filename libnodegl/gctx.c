@@ -30,6 +30,7 @@
 extern const struct gctx_class ngli_gctx_gl;
 extern const struct gctx_class ngli_gctx_gles;
 extern const struct gctx_class ngli_gctx_vk;
+extern const struct gctx_class ngli_gctx_ngfx;
 
 static const struct gctx_class *backend_map[] = {
 #ifdef BACKEND_GL
@@ -38,6 +39,9 @@ static const struct gctx_class *backend_map[] = {
 #endif
 #ifdef BACKEND_VK
     [NGL_BACKEND_VULKAN] = &ngli_gctx_vk,
+#endif
+#ifdef BACKEND_NGFX
+    [NGL_BACKEND_NGFX] = &ngli_gctx_ngfx
 #endif
 };
 
@@ -54,24 +58,24 @@ struct gctx *ngli_gctx_create(const struct ngl_config *config)
     if (!s)
         return NULL;
     s->config = *config;
-    s->class = class;
+    s->clazz = class;
     return s;
 }
 
 int ngli_gctx_init(struct gctx *s)
 {
-    return s->class->init(s);
+    return s->clazz->init(s);
 }
 
 int ngli_gctx_resize(struct gctx *s, int width, int height, const int *viewport)
 {
-    const struct gctx_class *class = s->class;
+    const struct gctx_class *class = s->clazz;
     return class->resize(s, width, height, viewport);
 }
 
 int ngli_gctx_draw(struct gctx *s, struct ngl_node *scene, double t)
 {
-    const struct gctx_class *class = s->class;
+    const struct gctx_class *class = s->clazz;
 
     int ret = class->pre_draw(s, t);
     if (ret < 0)
@@ -92,7 +96,7 @@ end:;
 
 void ngli_gctx_wait_idle(struct gctx *s)
 {
-    s->class->wait_idle(s);
+    s->clazz->wait_idle(s);
 }
 
 void ngli_gctx_freep(struct gctx **sp)
@@ -101,7 +105,7 @@ void ngli_gctx_freep(struct gctx **sp)
         return;
 
     struct gctx *s = *sp;
-    const struct gctx_class *class = s->class;
+    const struct gctx_class *class = s->clazz;
     if (class)
         class->destroy(s);
 
@@ -110,90 +114,90 @@ void ngli_gctx_freep(struct gctx **sp)
 
 int ngli_gctx_transform_cull_mode(struct gctx *s, int cull_mode)
 {
-    return s->class->transform_cull_mode(s, cull_mode);
+    return s->clazz->transform_cull_mode(s, cull_mode);
 }
 
 void ngli_gctx_transform_projection_matrix(struct gctx *s, float *dst)
 {
-    s->class->transform_projection_matrix(s, dst);
+    s->clazz->transform_projection_matrix(s, dst);
 }
 
 void ngli_gctx_get_rendertarget_uvcoord_matrix(struct gctx *s, float *dst)
 {
-    s->class->get_rendertarget_uvcoord_matrix(s, dst);
+    s->clazz->get_rendertarget_uvcoord_matrix(s, dst);
 }
 
 void ngli_gctx_set_rendertarget(struct gctx *s, struct rendertarget *rt)
 {
-    s->class->set_rendertarget(s, rt);
+    s->clazz->set_rendertarget(s, rt);
 }
 
 struct rendertarget *ngli_gctx_get_rendertarget(struct gctx *s)
 {
-    return s->class->get_rendertarget(s);
+    return s->clazz->get_rendertarget(s);
 }
 
 const struct rendertarget_desc *ngli_gctx_get_default_rendertarget_desc(struct gctx *s)
 {
-    return s->class->get_default_rendertarget_desc(s);
+    return s->clazz->get_default_rendertarget_desc(s);
 }
 
 void ngli_gctx_set_viewport(struct gctx *s, const int *viewport)
 {
-    s->class->set_viewport(s, viewport);
+    s->clazz->set_viewport(s, viewport);
 }
 
 void ngli_gctx_get_viewport(struct gctx *s, int *viewport)
 {
-    s->class->get_viewport(s, viewport);
+    s->clazz->get_viewport(s, viewport);
 }
 
 void ngli_gctx_set_scissor(struct gctx *s, const int *scissor)
 {
-    s->class->set_scissor(s, scissor);
+    s->clazz->set_scissor(s, scissor);
 }
 
 void ngli_gctx_get_scissor(struct gctx *s, int *scissor)
 {
-    s->class->get_scissor(s, scissor);
+    s->clazz->get_scissor(s, scissor);
 }
 
 void ngli_gctx_set_clear_color(struct gctx *s, const float *color)
 {
-    s->class->set_clear_color(s, color);
+    s->clazz->set_clear_color(s, color);
 }
 
 void ngli_gctx_get_clear_color(struct gctx *s, float *color)
 {
-    s->class->get_clear_color(s, color);
+    s->clazz->get_clear_color(s, color);
 }
 
 void ngli_gctx_clear_color(struct gctx *s)
 {
-    s->class->clear_color(s);
+    s->clazz->clear_color(s);
 }
 
 void ngli_gctx_clear_depth_stencil(struct gctx *s)
 {
-    s->class->clear_depth_stencil(s);
+    s->clazz->clear_depth_stencil(s);
 }
 
 void ngli_gctx_invalidate_depth_stencil(struct gctx *s)
 {
-    s->class->invalidate_depth_stencil(s);
+    s->clazz->invalidate_depth_stencil(s);
 }
 
 int ngli_gctx_get_preferred_depth_format(struct gctx *s)
 {
-    return s->class->get_preferred_depth_format(s);
+    return s->clazz->get_preferred_depth_format(s);
 }
 
 int ngli_gctx_get_preferred_depth_stencil_format(struct gctx *s)
 {
-    return s->class->get_preferred_depth_stencil_format(s);
+    return s->clazz->get_preferred_depth_stencil_format(s);
 }
 
 void ngli_gctx_flush(struct gctx *s)
 {
-    s->class->flush(s);
+    s->clazz->flush(s);
 }

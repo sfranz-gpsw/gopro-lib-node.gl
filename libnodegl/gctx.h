@@ -65,6 +65,9 @@ struct gctx_class {
     struct buffer *(*buffer_create)(struct gctx *ctx);
     int (*buffer_init)(struct buffer *s, int size, int usage);
     int (*buffer_upload)(struct buffer *s, const void *data, int size);
+    int (*buffer_download)(struct buffer* s, void* data, uint32_t size, uint32_t offset);
+    int (*buffer_map)(struct buffer *s, int size, uint32_t offset, void** data);
+    void (*buffer_unmap)(struct buffer* s);
     void (*buffer_freep)(struct buffer **sp);
 
     struct gtimer *(*gtimer_create)(struct gctx *ctx);
@@ -75,7 +78,9 @@ struct gctx_class {
     void (*gtimer_freep)(struct gtimer **sp);
 
     struct pipeline *(*pipeline_create)(struct gctx *ctx);
-    int (*pipeline_init)(struct pipeline *s, const struct pipeline_params *params);
+    int (*pipeline_init)(struct pipeline *s, const struct pipeline_desc_params *params);
+    int (*pipeline_bind_resources)(struct pipeline *s, const struct pipeline_desc_params *desc_params,
+                                  const struct pipeline_resource_params *data_params);
     int (*pipeline_update_attribute)(struct pipeline *s, int index, struct buffer *buffer);
     int (*pipeline_update_uniform)(struct pipeline *s, int index, const void *value);
     int (*pipeline_update_texture)(struct pipeline *s, int index, struct texture *texture);
@@ -94,6 +99,10 @@ struct gctx_class {
     void (*rendertarget_read_pixels)(struct rendertarget *s, uint8_t *data);
     void (*rendertarget_freep)(struct rendertarget **sp);
 
+    int (*swapchain_create)(struct gctx *gctx);
+    void (*swapchain_destroy)(struct gctx *gctx);
+    int (*swapchain_acquire_image)(struct gctx *gctx, uint32_t *image_index);
+
     struct texture *(*texture_create)(struct gctx* ctx);
     int (*texture_init)(struct texture *s, const struct texture_params *params);
     int (*texture_has_mipmap)(const struct texture *s);
@@ -105,7 +114,7 @@ struct gctx_class {
 
 struct gctx {
     struct ngl_config config;
-    const struct gctx_class *class;
+    const struct gctx_class *clazz;
     int version;
     int features;
     struct limits limits;
