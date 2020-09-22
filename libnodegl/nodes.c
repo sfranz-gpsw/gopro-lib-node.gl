@@ -501,7 +501,7 @@ static int node_prefetch(struct ngl_node *node)
         return 0;
 
     if (node->class->prefetch) {
-        TRACE("PREFETCH %s @ %p", node->label, node);
+        /*TRACE*/ LOG(WARNING, "PREFETCH %s @ %p", node->label, node);
         int ret = node->class->prefetch(node);
         if (ret < 0) {
             LOG(ERROR, "prefetching node %s failed: %s", node->label, NGLI_RET_STR(ret));
