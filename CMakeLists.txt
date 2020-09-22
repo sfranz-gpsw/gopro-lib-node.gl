@@ -70,6 +70,11 @@ set (SXPLAYER_LIBRARIES sxplayer avformat avfilter avcodec avutil pthread)
 
 endif()
 
+option (GRAPHICS_BACKEND_METAL "build metal backend" OFF)
+option (GRAPHICS_BACKEND_DIRECT3D12 "build directx12 backend" OFF)
+option (GRAPHICS_BACKEND_VULKAN "build vulkan backend" OFF)
+
+add_subdirectory(ngfx)
 add_subdirectory(external/sxplayer-9.5.1)
 add_subdirectory(libnodegl)
 add_subdirectory(pyshell)
