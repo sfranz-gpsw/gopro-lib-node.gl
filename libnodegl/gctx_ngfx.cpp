@@ -156,7 +156,7 @@ static int ngfx_get_preferred_depth_stencil_format(struct gctx *s)
     return 0;
 }
 
-const struct gctx_class ngli_gctx_ngfx = {
+extern "C" const struct gctx_class ngli_gctx_ngfx = {
     .name         = "NGFX",
     .create       = ngfx_create,
     .init         = ngfx_init,
