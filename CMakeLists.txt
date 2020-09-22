@@ -73,6 +73,7 @@ endif()
 set (NGFX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ngfx)
 set (NGFX_INCLUDE_DIRS ${NGFX_DIR} ${NGFX_DIR}/src)
 set (NGFX_CFLAGS -DGLM_ENABLE_EXPERIMENTAL)
+set (NGFX_LIBRARIES ngfx)
 
 option (GRAPHICS_BACKEND_METAL "build metal backend" OFF)
 option (GRAPHICS_BACKEND_DIRECT3D12 "build directx12 backend" OFF)

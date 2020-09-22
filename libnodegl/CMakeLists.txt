@@ -36,6 +36,7 @@ target_link_libraries(nodegl PUBLIC
         ${VULKANSDK_LIBRARIES}
         ${SHADERC_LIBRARIES}
         ${GL_LIBRARIES}
+        ${NGFX_LIBRARIES}
 )
 target_link_directories(nodegl PUBLIC 
         ${VULKANSDK_LIBRARY_DIRS}
