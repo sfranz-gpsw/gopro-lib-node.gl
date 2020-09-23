@@ -23,9 +23,11 @@
 #define BUFFER_NGFX_H
 
 #include "buffer.h"
+#include "graphics/Buffer.h"
 
 struct buffer_ngfx {
     struct buffer parent;
+    ngfx::Buffer* buffer = nullptr;
 };
 
 struct gctx;

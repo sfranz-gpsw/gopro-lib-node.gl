@@ -36,15 +36,21 @@ struct buffer *ngli_buffer_ngfx_create(struct gctx *gctx)
 
 int ngli_buffer_ngfx_init(struct buffer *s, int size, int usage)
 {
+    struct gctx_ngfx *p_gctx_ngfx = (struct gctx_ngfx *)s->gctx;
+    struct buffer_ngfx *s_priv = (struct buffer_ngfx *)s;
     s->size = size;
     s->usage = usage;
-    TODO("Buffer::create");
+    TODO("move buffer stride parameter to Graphics::bindBuffer param");
+    TODO("pass usage flags (e.g. vertex buffer, index buffer, uniform buffer, etc)");
+    s_priv->buffer = Buffer::create(p_gctx_ngfx->graphicsContext, NULL, size, 0,
+                   BUFFER_USAGE_VERTEX_BUFFER_BIT | BUFFER_USAGE_INDEX_BUFFER_BIT | BUFFER_USAGE_UNIFORM_BUFFER_BIT | BUFFER_USAGE_STORAGE_BUFFER_BIT);
     return 0;
 }
 
 int ngli_buffer_ngfx_upload(struct buffer *s, const void *data, int size)
 {
-    TODO("Buffer::upload");
+    struct buffer_ngfx *s_priv = (struct buffer_ngfx *)s;
+    s_priv->buffer->upload(data, size);
     return 0;
 }
 

@@ -30,18 +30,18 @@
 #include "log.h"
 #include "math_utils.h"
 using namespace std;
+using namespace ngfx;
 
 static struct gctx *ngfx_create(const struct ngl_config *config)
 {
     gctx_ngfx* ctx = new gctx_ngfx;
-    ctx->app = make_shared<NGL::NGLApplication>();
+    ctx->graphicsContext = GraphicsContext::create("NGLApplication", true);
     return (struct gctx *)ctx;
 }
 
 static int ngfx_init(struct gctx *s)
 {
     TODO("initialize default_rendertarget_desc");
-
     return 0;
 }
 
@@ -76,7 +76,7 @@ static int ngfx_transform_cull_mode(struct gctx *s, int cull_mode)
 
 static void ngfx_transform_projection_matrix(struct gctx *s, float *dst)
 {
-    TODO("#ifdef GRAPHICS_BACKEND_VULKAN");
+#ifdef GRAPHICS_BACKEND_VULKAN
     static const NGLI_ALIGNED_MAT(matrix) = {
         1.0f, 0.0f, 0.0f, 0.0f,
         0.0f,-1.0f, 0.0f, 0.0f,
@@ -84,6 +84,7 @@ static void ngfx_transform_projection_matrix(struct gctx *s, float *dst)
         0.0f, 0.0f, 0.5f, 1.0f,
     };
     ngli_mat4_mul(dst, matrix, dst);
+#endif
 }
 
 static void ngfx_get_rendertarget_uvcoord_matrix(struct gctx *s, float *dst)
