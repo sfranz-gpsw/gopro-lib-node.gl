@@ -1149,7 +1149,7 @@ static void setup_glsl_info_vk(struct pgcraft *s)
 
 static void setup_glsl_info_ngfx(struct pgcraft *s)
 {
-    TODO();
+    setup_glsl_info_vk(s);
 }
 
 static void setup_glsl_info(struct pgcraft *s)

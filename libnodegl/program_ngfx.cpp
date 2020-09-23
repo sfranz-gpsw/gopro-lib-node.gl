@@ -31,6 +31,11 @@ struct program *ngli_program_ngfx_create(struct gctx *gctx) {
     s->parent.gctx = gctx;
     return (struct program *)s;
 }
-int ngli_program_ngfx_init(struct program *s, const char *vertex, const char *fragment, const char *compute) { TODO(); return 0; }
-void ngli_program_ngfx_freep(struct program **sp) { TODO();}
+int ngli_program_ngfx_init(struct program *s, const char *vertex, const char *fragment, const char *compute) {
+    TODO("VertexShaderModule::create / FragmentShaderModule::create / ComputeShaderModule::create");
+    return 0;
+}
+void ngli_program_ngfx_freep(struct program **sp) {
+    TODO("delete pipeline");
+}
 

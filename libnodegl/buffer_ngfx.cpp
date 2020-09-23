@@ -35,29 +35,35 @@ struct buffer *ngli_buffer_ngfx_create(struct gctx *gctx)
 }
 
 int ngli_buffer_ngfx_init(struct buffer *s, int size, int usage)
-{ TODO();
-
+{
+    s->size = size;
+    s->usage = usage;
+    TODO("Buffer::create");
     return 0;
 }
 
 int ngli_buffer_ngfx_upload(struct buffer *s, const void *data, int size)
-{ TODO();
+{
+    TODO("Buffer::upload");
     return 0;
 }
 
-int ngli_buffer_ngfx_download(struct buffer* s, void* data, uint32_t size, uint32_t offset) { TODO();
+int ngli_buffer_ngfx_download(struct buffer* s, void* data, uint32_t size, uint32_t offset)
+{
+    TODO("Buffer download");
     return 0;
 }
 
 int ngli_buffer_ngfx_map(struct buffer *s, int size, uint32_t offset, void** data)
-{ TODO();
+{
+    TODO("Buffer::map");
     return 0;
 }
 
-void ngli_buffer_ngfx_unmap(struct buffer* s) { TODO();
-
+void ngli_buffer_ngfx_unmap(struct buffer* s) {
+    TODO("Buffer::unmap");
 }
 
-void ngli_buffer_ngfx_freep(struct buffer **sp) { TODO();
-
+void ngli_buffer_ngfx_freep(struct buffer **sp) {
+    TODO("delete buffer");
 }

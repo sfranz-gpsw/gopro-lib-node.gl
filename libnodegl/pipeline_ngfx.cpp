@@ -22,18 +22,34 @@
 #include "pipeline_ngfx.h"
 #include "log.h"
 #include "memory.h"
+#include "graphics/Graphics.h"
+#include "compute/ComputePipeline.h"
+#include "graphics/GraphicsPipeline.h"
+using namespace ngfx;
 
-struct pipeline *ngli_pipeline_ngfx_create(struct gctx *gctx) {
+struct pipeline *ngli_pipeline_ngfx_create(struct gctx *gctx)
+{
     struct pipeline_ngfx *s = (pipeline_ngfx*)ngli_calloc(1, sizeof(*s));
     if (!s)
         return NULL;
     s->parent.gctx = gctx;
     return (struct pipeline *)s;
 }
-int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_params *params) { TODO(); return 0; }
+int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_params *params)
+{
+    TODO("ComputePipeline::create / GraphicsPipeline::create");
+    return 0;
+}
 int ngli_pipeline_ngfx_bind_resources(struct pipeline *s, const struct pipeline_desc_params *desc_params,
-                                      const struct pipeline_resource_params *data_params) { TODO(); return 0; }
-int ngli_pipeline_ngfx_update_attribute(struct pipeline *s, int index, struct buffer *buffer) { TODO(); return 0; }
+                                      const struct pipeline_resource_params *data_params)
+{
+    TODO("Graphics::bindVertexBuffer, Graphics::bindUniformBuffer, Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
+    return 0;
+}
+int ngli_pipeline_ngfx_update_attribute(struct pipeline *s, int index, struct buffer *buffer) {
+    TODO();
+    return 0;
+}
 int ngli_pipeline_ngfx_update_uniform(struct pipeline *s, int index, const void *value) { TODO(); return 0; }
 int ngli_pipeline_ngfx_update_texture(struct pipeline *s, int index, struct texture *texture) { TODO(); return 0; }
 void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instances) { TODO(); }
