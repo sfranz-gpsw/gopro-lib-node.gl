@@ -1,0 +1,31 @@
+#version 450
+#define LOCAL_SIZE 4
+#define NB_PARTICLES 128
+
+layout(local_size_x = LOCAL_SIZE, local_size_y = LOCAL_SIZE, local_size_z = 1) in;
+
+layout (std430, set = 0, binding = 0) buffer ipositions_buffer {
+    vec3 ipositions[NB_PARTICLES];
+    vec2 ivelocities[NB_PARTICLES];
+};
+
+layout (std430, set = 1, binding = 0) buffer opositions_buffer {
+    vec3 opositions[NB_PARTICLES];
+};
+
+layout (std140, set = 2, binding = 0) uniform UBO_0 {
+	float time;
+	float duration;
+}; 
+
+void main(void)
+{
+    uint i = gl_WorkGroupID.x * gl_WorkGroupSize.x * gl_WorkGroupSize.y + gl_LocalInvocationIndex;
+    vec3 iposition = ipositions[i];
+    vec2 ivelocity = ivelocities[i];
+    vec3 position;
+    position.x = iposition.x + time * ivelocity.x;
+    position.y = iposition.y + 0.1 * sin(time * duration * ivelocity.y);
+    position.z = 0.0;
+    opositions[i] = position;
+}

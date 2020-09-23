@@ -1,0 +1,31 @@
+#version 450
+#define LOCAL_SIZE 4
+#define H_SIZE 64
+layout(local_size_x = LOCAL_SIZE, local_size_y = LOCAL_SIZE, local_size_z = 1) in;
+
+layout(location = 0, set = 0, binding = 0, rgba32f) readonly mediump uniform image2D source_sampler;
+
+layout (std430, set = 1, binding = 0) buffer histogram {
+    uint histr[H_SIZE];
+    uint histg[H_SIZE];
+    uint histb[H_SIZE];
+    uint max_r, max_g, max_b;
+};
+
+void main()
+{
+    uint x = gl_GlobalInvocationID.x;
+    uint y = gl_GlobalInvocationID.y;
+
+    ivec2 size = imageSize(source_sampler);
+    if (x < uint(size.x) && y < uint(size.y)) {
+        vec4 color = imageLoad(source_sampler, ivec2(x, y));
+        uvec4 ucolor = uvec4(color * (float(H_SIZE) - 1.0));
+        uint r = atomicAdd(histr[ucolor.r], 1U);
+        uint g = atomicAdd(histg[ucolor.g], 1U);
+        uint b = atomicAdd(histb[ucolor.b], 1U);
+        atomicMax(max_r, r);
+        atomicMax(max_g, g);
+        atomicMax(max_b, b);
+    }
+}

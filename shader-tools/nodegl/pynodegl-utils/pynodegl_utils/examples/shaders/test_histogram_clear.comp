@@ -1,0 +1,23 @@
+#version 450
+#define LOCAL_SIZE 4
+#define H_SIZE 64
+
+layout(local_size_x = LOCAL_SIZE, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, set = 0, binding = 0) buffer histogram {
+    uint histr[H_SIZE];
+    uint histg[H_SIZE];
+    uint histb[H_SIZE];
+    uint max_r, max_g, max_b;
+};
+
+void main()
+{
+    uint i = gl_GlobalInvocationID.x;
+    atomicAnd(histr[i], 0U);
+    atomicAnd(histg[i], 0U);
+    atomicAnd(histb[i], 0U);
+    atomicAnd(max_r, 0U);
+    atomicAnd(max_g, 0U);
+    atomicAnd(max_b, 0U);
+}

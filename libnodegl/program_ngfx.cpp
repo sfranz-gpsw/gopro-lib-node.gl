@@ -23,6 +23,9 @@
 #include "program_ngfx.h"
 #include <stdlib.h>
 #include "log.h"
+#include "graphics/ShaderModule.h"
+#include "gctx_ngfx.h"
+using namespace ngfx;
 
 struct program *ngli_program_ngfx_create(struct gctx *gctx) {
     program_ngfx *s = (program_ngfx*)ngli_calloc(1, sizeof(*s));
@@ -32,6 +35,10 @@ struct program *ngli_program_ngfx_create(struct gctx *gctx) {
     return (struct program *)s;
 }
 int ngli_program_ngfx_init(struct program *s, const char *vertex, const char *fragment, const char *compute) {
+    gctx_ngfx *p_gctx_ngfx = (struct gctx_ngfx *)s->gctx;
+    //if (vertex) VertexShaderModule::create(p_gctx_ngfx->graphicsContext->device, vertex);
+    //if (fragment) FragmentShaderModule::create(p_gctx_ngfx->graphicsContext->device, fragment);
+    //if (compute) ComputeShaderModule::create(p_gctx_ngfx->graphicsContext->device, compute);
     TODO("VertexShaderModule::create / FragmentShaderModule::create / ComputeShaderModule::create");
     return 0;
 }
