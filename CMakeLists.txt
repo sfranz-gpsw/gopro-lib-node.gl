@@ -84,12 +84,25 @@ add_subdirectory(external/sxplayer-9.5.1)
 add_subdirectory(libnodegl)
 add_subdirectory(pyshell)
 
-function (DUMP_VARS)
-get_cmake_property(_variableNames VARIABLES)
-list (SORT _variableNames)
-foreach (_variableName ${_variableNames})
-    message(STATUS "${_variableName}=${${_variableName}}")
-endforeach()
+function (define_custom_command name cmd working_dir)
+add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/${name}.task
+  COMMAND ${cmd}
+  COMMAND touch "${CMAKE_BINARY_DIR}/${name}.task"
+  WORKING_DIRECTORY ${working_dir}
+  COMMENT "${name}"
+  VERBATIM
+)
 endfunction()
 
-#DUMP_VARS()
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    define_custom_command(build_python_env
+        ${CMAKE_CURRENT_SOURCE_DIR}/scripts/linux/build_python_env.sh
+        ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    define_custom_command(build_python_env
+        ${CMAKE_CURRENT_SOURCE_DIR}/scripts/win64/build_python_env.sh
+        ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
+
+add_custom_target(build_python_env DEPENDS ${CMAKE_BINARY_DIR}/build_python_env.task)

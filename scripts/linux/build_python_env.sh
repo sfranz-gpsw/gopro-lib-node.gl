@@ -1,3 +1,4 @@
+#!/bin/bash
 #set -x
 python3 -m venv nodegl-env
 
