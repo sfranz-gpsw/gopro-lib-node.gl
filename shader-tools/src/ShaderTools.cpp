@@ -20,10 +20,12 @@
  */
 
 #include "ShaderTools.h"
+#include "FileUtil.h"
 #include <filesystem>
 #include <regex>
 #include <fstream>
 using namespace std;
+using namespace ngfx;
 namespace fs = std::filesystem;
 
 #ifdef _WIN32
@@ -35,6 +37,12 @@ namespace fs = std::filesystem;
     #define GLSLANG_VALIDATOR string("glslangValidator")
     #define SPIRV_CROSS string("spirv-cross")
 #endif
+
+#define CHECK_TIMESTAMPS(srcFileName, targetFileName) \
+    time_t srcTimeStamp = getmtime(srcFileName); \
+    time_t targetTimeStamp = getmtime(targetFileName); \
+    if (srcTimeStamp <= targetTimeStamp) \
+        return 0
 
 ShaderTools::ShaderTools() {
     verbose = (string(getenv("V"))=="1");
@@ -72,7 +80,7 @@ string ShaderTools::preprocess(const string& dataPath, const string& inFile) {
             string includeFilename = matchIncludeGroups[1];
             string includeFilePath;
             findIncludeFile(includeFilename, includePaths, includeFilePath);
-            contents += readFile(includeFilePath);
+            contents += FileUtil::readFile(includeFilePath);
         }
         else {
             contents += line;
@@ -92,11 +100,7 @@ int ShaderTools::compileShaderGLSL(string filename, const string& defines, const
     filename = fs::path(filename).filename();
     string inFileName = fs::path(parentPath + "/" + filename);
     string outFileName = fs::path(outDir + "/" + filename + ".spv");
-    outFiles.push_back(outFileName);
-    time_t srcTimeStamp = getmtime(inFileName);
-    time_t targetTimeStamp = getmtime(outFileName);
-    if (srcTimeStamp <= targetTimeStamp)
-        return 0;
+    CHECK_TIMESTAMPS(inFileName, outFileName);
 
     ofstream outFile(fs::path(outDir + "/" + filename));
     string contents = preprocess(parentPath, inFileName);
@@ -111,17 +115,54 @@ int ShaderTools::compileShaderGLSL(string filename, const string& defines, const
     else {
         fprintf(stderr, "ERROR: cannot compile file: %s\n", filename.c_str());
     }
+    outFiles.push_back(outFileName);
+    return result;
+}
+
+int ShaderTools::compileShaderMTL(const string& file, const string& defines, string outDir, vector<string> &outFiles) {
+    string strippedFilename = FileUtil::splitExt(fs::path(file).filename())[0];
+    string inFileName = fs::path(outDir +"/" + strippedFilename + ".metal");
+    string outFileName = fs::path(outDir + "/" + strippedFilename + ".metallib");
+    CHECK_TIMESTAMPS(inFileName, outFileName);
+
+    string debugFlags = "-gline-tables-only -MO";
+    int result = cmd(
+          "xcrun -sdk macosx metal {debugFlags} -c {inFileName} -o {outDir}/{filename}.air && "
+          "xcrun -sdk macosx metallib {outDir}/{filename}.air -o {outFileName}"
+    );
+    if (result == 0)
+        printf("compiled file: %s\n", file.c_str());
+    else
+        fprintf(stderr, "ERROR: cannot compile file: %s\n", file.c_str());
+    outFiles.push_back(outFileName);
+    return result;
+}
+
+int ShaderTools::compileShaderHLSL(const string& file, const string& defines, string outDir, vector<string>& outFiles) {
+    string strippedFilename = FileUtil::splitExt(fs::path(file).filename())[0];
+    string inFileName = outDir+"/"+strippedFilename +".hlsl";
+    string outFileName = outDir +"/" +strippedFilename +".dxc";
+    CHECK_TIMESTAMPS(inFileName, outFileName);
+
+    string shaderModel = "";
+    if (strstr(inFileName.c_str(), ".vert")) shaderModel = "vs_5_0";
+    else if (strstr(inFileName.c_str(), ".frag")) shaderModel = "ps_5_0";
+    else if (strstr(inFileName.c_str(), ".comp")) shaderModel = "cs_5_0";
+    int result = cmd("dxc.exe /T "+shaderModel+" /Fo "+outFileName+" "+inFileName);
+    if (result == 0)
+        printf("compiled file: %s\n", file.c_str());
+    else
+        fprintf(stderr, "ERROR: cannot compile file: %s\n", file.c_str());
+    outFiles.push_back(outFileName);
     return result;
 }
 
 int ShaderTools::convertShader(const string& file, const string& extraArgs, string outDir, string fmt, vector<string>& outFiles) {
-    string strippedFilename = splitExt(fs::path(file).filename())[0];
+    string strippedFilename = FileUtil::splitExt(fs::path(file).filename())[0];
     string inFileName = fs::path(outDir + "/" + strippedFilename + ".spv");
     string outFileName = fs::path(outDir + "/" + strippedFilename + (fmt == "msl" ? ".metal" : ".hlsl"));
     outFiles.push_back(outFileName);
-    auto srcTimeStamp = getmtime(inFileName);
-    auto targetTimeStamp = getmtime(outFileName);
-    if (srcTimeStamp <= targetTimeStamp) return 0;
+    CHECK_TIMESTAMPS(inFileName, outFileName);
 
     string args = (fmt == "msl" ? "--msl" : "--hlsl --shader-model 60") + extraArgs;
     int result = cmd(SPIRV_CROSS + " " + args + " " + inFileName + " " + "--output" + " " + outFileName);
@@ -132,56 +173,12 @@ int ShaderTools::convertShader(const string& file, const string& extraArgs, stri
     return result;
 }
 
-int ShaderTools::compileShaderMTL(const string& file, const string& defines, string outDir, vector<string> &outFiles) {
-    string strippedFilename = splitExt(fs::path(file).filename())[0];
-    string inFileName = fs::path(outDir +"/" + strippedFilename + ".metal");
-    string outFileName = fs::path(outDir + "/" + strippedFilename + ".metallib");
-    outFiles.push_back(outFileName);
-    auto srcTimeStamp = getmtime(inFileName);
-    auto targetTimeStamp = getmtime(outFileName);
-    if (srcTimeStamp <= targetTimeStamp)
-        return 0;
-    string debugFlags = "-gline-tables-only -MO";
-    int result = cmd(
-          "xcrun -sdk macosx metal {debugFlags} -c {inFileName} -o {outDir}/{filename}.air && "
-          "xcrun -sdk macosx metallib {outDir}/{filename}.air -o {outFileName}"
-    );
-    if (result == 0)
-        printf("compiled file: %s\n", file.c_str());
-    else
-        fprintf(stderr, "ERROR: cannot compile file: %s\n", file.c_str());
-    return result;
-}
-
-int ShaderTools::compileShaderHLSL(const string& file, const string& defines, string outDir, vector<string>& outFiles) {
-    string strippedFilename = splitExt(fs::path(file).filename())[0];
-    string inFileName = outDir+"/"+strippedFilename +".hlsl";
-    string outFileName = outDir +"/" +strippedFilename +".dxc";
-    outFiles.push_back(outFileName);
-    auto srcTimeStamp = getmtime(inFileName);
-    auto targetTimeStamp = getmtime(outFileName);
-    if (srcTimeStamp <= targetTimeStamp)
-        return 0;
-    string shaderModel = "";
-    if (strstr(inFileName.c_str(), ".vert")) shaderModel = "vs_5_0";
-    else if (strstr(inFileName.c_str(), ".frag")) shaderModel = "ps_5_0";
-    else if (strstr(inFileName.c_str(), ".comp")) shaderModel = "cs_5_0";
-    int result = cmd("dxc.exe /T "+shaderModel+" /Fo "+outFileName+" "+inFileName);
-    if (result == 0)
-        printf("compiled file: %s\n", file.c_str());
-    else
-        fprintf(stderr, "ERROR: cannot compile file: %s\n", file.c_str());
-    return result;
-}
-
 int ShaderTools::genShaderReflectionGLSL(const string& file, string outDir) {
-    string filename = splitExt(fs::path(file).filename())[0];
+    string filename = FileUtil::splitExt(fs::path(file).filename())[0];
     string inFileName = outDir + "/" + filename + ".spv";
     string outFileName = outDir + "/" + filename + ".spv.reflect";
-    auto srcTimeStamp = getmtime(inFileName);
-    auto targetTimeStamp = getmtime(outFileName);
-    if (srcTimeStamp <= targetTimeStamp)
-        return 0;
+    CHECK_TIMESTAMPS(inFileName, outFileName);
+
     int result = cmd(SPIRV_CROSS+" "+inFileName+" --reflect --output "+outFileName);
 
     inFileName = outDir + "/" + filename + ".spv.reflect";
@@ -203,6 +200,7 @@ int ShaderTools::genShaderReflectionGLSL(const string& file, string outDir) {
     return result;
 }
 
+#if 0
 def findMetalReflectData(metalReflectData, name):
     for data in metalReflectData:
         if data[1] == name: return data
@@ -288,10 +286,7 @@ def genShaderReflectionMSL(file, outDir):
     filename = os.path.splitext(os.path.basename(file))[0]
     inFileName = f"{outDir}/{filename}.spv.reflect"
     outFileName = f"{outDir}/{filename}.metal.reflect"
-    srcTimeStamp = getmtime(inFileName)
-    targetTimeStamp = getmtime(outFileName)
-    if srcTimeStamp <= targetTimeStamp:
-        return 0
+    CHECK_TIMESTAMPS(inFileName, outFileName);
 
     inFile = open(f"{inFileName}", 'r')
     reflectData = json.loads(inFile.read())
@@ -320,10 +315,7 @@ def genShaderReflectionHLSL(file, outDir):
     filename = os.path.splitext(os.path.basename(file))[0]
     inFileName = f"{outDir}/{filename}.spv.reflect"
     outFileName = f"{outDir}/{filename}.hlsl.reflect"
-    srcTimeStamp = getmtime(inFileName)
-    targetTimeStamp = getmtime(outFileName)
-    if srcTimeStamp <= targetTimeStamp:
-        return 0
+    CHECK_TIMESTAMPS(inFileName, outFileName);
 
     inFile = open(f"{inFileName}", 'r')
     reflectData = json.loads(inFile.read())
@@ -447,10 +439,8 @@ def generateShaderMapGLSL(file, outDir, outFiles):
 
     inFileName = f"{outDir}/{filename}.spv.reflect"
     outFileName = f"{outDir}/{filename}.spv.map"
-    srcTimeStamp = getmtime(inFileName)
-    targetTimeStamp = getmtime(outFileName)
-    if srcTimeStamp <= targetTimeStamp:
-        return 0
+    CHECK_TIMESTAMPS(inFileName, outFileName);
+
     inFile = open(f"{inFileName}", 'r')
     outFile = open(f"{outFileName}", 'w')
 
@@ -471,9 +461,8 @@ def generateShaderMapMSL(file, outDir, outFiles):
     inFileName = f"{outDir}/{filename}.metal.reflect"
     outFileName = f"{outDir}/{filename}.metal.map"
     srcTimeStamp = getmtime(inFileName)
-    targetTimeStamp = getmtime(outFileName)
-    if srcTimeStamp <= targetTimeStamp:
-        return 0
+    CHECK_TIMESTAMPS(inFileName, outFileName);
+
     inFile = open(f"{inFileName}", 'r')
     outFile = open(f"{outFileName}", 'w')
 
@@ -494,9 +483,8 @@ def generateShaderMapHLSL(file, outDir, outFiles):
     inFileName = f"{outDir}/{filename}.hlsl.reflect"
     outFileName = f"{outDir}/{filename}.hlsl.map"
     srcTimeStamp = getmtime(inFileName)
-    targetTimeStamp = getmtime(outFileName)
-    if srcTimeStamp <= targetTimeStamp:
-        return 0
+    CHECK_TIMESTAMPS(inFileName, outFileName);
+
     inFile = open(f"{inFileName}", 'r')
     outFile = open(f"{outFileName}", 'w')
 
@@ -508,6 +496,7 @@ def generateShaderMapHLSL(file, outDir, outFiles):
     outFile.close()
     outFiles.append(outFileName)
     return 0
+#endif
 
 vector<string> ShaderTools::convertShaders(const vector<string> &files, string outDir, string fmt) {
     vector<string> outFiles;
@@ -517,17 +506,17 @@ vector<string> ShaderTools::convertShaders(const vector<string> &files, string o
 
 vector<string> ShaderTools::compileShaders(const vector<string>& files, const string& defines, string outDir, string fmt) {
     vector<string> outFiles;
-    for (file in files) {
-        if (fmt == "glsl") compileShadersGLSL(files, defines, outDir);
-        else if (fmt == "msl") compileShadersMSL(files, defines, outDir);
-        else if (fmt == "hlsl") compileShadersHLSL(files, defines, outDir);
+    for (const string& file: files) {
+        if (fmt == "glsl") compileShaderGLSL(file, defines, outDir, outFiles);
+        else if (fmt == "msl") compileShaderMTL(file, defines, outDir, outFiles);
+        else if (fmt == "hlsl") compileShaderHLSL(file, defines, outDir, outFiles);
     }
     return outFiles;
 }
 
 void ShaderTools::applyPatches(const vector<string> &patchFiles, string outDir) {
     for (const string& patchFile: patchFiles) {
-        string filename = splitExt(fs::path(patchFile))[0];
+        string filename = FileUtil::splitExt(fs::path(patchFile))[0];
         printf("filename: %s\n", filename.c_str());
         string outFile = fs::path(outDir+"/"+filename);
         if (fs::exists(outFile)) {
