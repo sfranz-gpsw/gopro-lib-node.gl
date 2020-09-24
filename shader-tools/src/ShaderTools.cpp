@@ -161,7 +161,6 @@ int ShaderTools::convertShader(const string& file, const string& extraArgs, stri
     string strippedFilename = FileUtil::splitExt(fs::path(file).filename())[0];
     string inFileName = fs::path(outDir + "/" + strippedFilename + ".spv");
     string outFileName = fs::path(outDir + "/" + strippedFilename + (fmt == "msl" ? ".metal" : ".hlsl"));
-    outFiles.push_back(outFileName);
     CHECK_TIMESTAMPS(inFileName, outFileName);
 
     string args = (fmt == "msl" ? "--msl" : "--hlsl --shader-model 60") + extraArgs;
@@ -170,6 +169,7 @@ int ShaderTools::convertShader(const string& file, const string& extraArgs, stri
         printf("converted file: %s to %s\n", inFileName.c_str(), outFileName.c_str());
     else
         fprintf(stderr, "ERROR: cannot convert file: %s\n", file.c_str());
+    outFiles.push_back(outFileName);
     return result;
 }
 
@@ -184,11 +184,11 @@ int ShaderTools::genShaderReflectionGLSL(const string& file, string outDir) {
     inFileName = outDir + "/" + filename + ".spv.reflect";
     outFileName = inFileName;
 
-    string reflectData = json.loads(readFile(inFileName));
+    auto reflectData = json::parse(FileUtil::readFile(inFileName));
 
     ofstream outFile(outFileName);
-    contents = json.dumps(reflectData, sort_keys=True, indent=4, separators=(',', ': '));
-    outFile.write(contents);
+    string contents = reflectData.dump(4);
+    outFile<<contents;
     outFile.close();
 
     if (result == 0)
@@ -200,22 +200,23 @@ int ShaderTools::genShaderReflectionGLSL(const string& file, string outDir) {
     return result;
 }
 
-#if 0
-def findMetalReflectData(metalReflectData, name):
-    for data in metalReflectData:
-        if data[1] == name: return data
-        elif name in data[0]: return data
-    return None
+json ShaderTools::findMetalReflectData(const json& metalReflectData, const string& name) {
+    for (const json& data: metalReflectData) {
+        if (data[1] == name) return data;
+        else if (strstr(data[0].get<string>().c_str(), name.c_str())) return data;
+    }
+    return {};
+}
 
-def patchShaderReflectionDataMSL(file, reflectData, ext):
-    metalFile = open(f"{file}", 'r')
-    metalContents = metalFile.read()
-    metalReflectData = {}
-    if ext == '.vert':
-        metalReflectData['attributes'] = re.findall(r'([^\s]*)[\s]*([^\s]*)[\s]*\[\[attribute\(([0-9]+)\)\]\]', metalContents)
-    metalReflectData['buffers'] = re.findall(r'([^\s]*)[\s]*([^\s]*)[\s]*\[\[buffer\(([0-9]+)\)\]\]', metalContents)
-    metalReflectData['textures'] = re.findall(r'([^\s]*)[\s]*([^\s]*)[\s]*\[\[texture\(([0-9]+)\)\]\]', metalContents)
-    metalFile.close()
+json ShaderTools::patchShaderReflectionDataMSL(const string& file, const json& reflectData, const string& ext) {
+    ifstream metalFile(file);
+    string metalContents = FileUtil::readFile(metalFile);
+    json metalReflectData = {};
+    if ext == ".vert":
+        metalReflectData['attributes'] = re.findall(r'([^\s]*)[\s]*([^\s]*)[\s]*\[\[attribute\(([0-9]+)\)\]\]', metalContents);
+    metalReflectData['buffers'] = re.findall(r'([^\s]*)[\s]*([^\s]*)[\s]*\[\[buffer\(([0-9]+)\)\]\]', metalContents);
+    metalReflectData['textures'] = re.findall(r'([^\s]*)[\s]*([^\s]*)[\s]*\[\[texture\(([0-9]+)\)\]\]', metalContents);
+    metalFile.close();
 
     textures, ubos, ssbos, images, types = getDictEntries(reflectData, ['textures', 'ubos','ssbos','images','types'])
     numDescriptors = len(textures) + len(images) + len(ubos) + len(ssbos)
@@ -431,48 +432,49 @@ def parseReflectionData(reflectData, ext):
         contents += processBufferInfos(bufferInfo)
     return contents
 
-def generateShaderMapGLSL(file, outDir, outFiles):
-    genShaderReflectionGLSL(file, outDir)
-    dataPath = os.path.dirname(file)
-    filename = os.path.basename(file)
-    ext = os.path.splitext(filename)[1]
+void ShaderTools::generateShaderMapGLSL(const string& file, string outDir, vector<string>& outFiles) {
+    genShaderReflectionGLSL(file, outDir);
+    string dataPath = fs::path(file).parent_path();
+    string filename = fs::path(file).filename();
+    string ext = FileUtil::splitExt(filename)[1];
 
-    inFileName = f"{outDir}/{filename}.spv.reflect"
-    outFileName = f"{outDir}/{filename}.spv.map"
+    inFileName = f"{outDir}/{filename}.spv.reflect";
+    outFileName = f"{outDir}/{filename}.spv.map";
     CHECK_TIMESTAMPS(inFileName, outFileName);
 
-    inFile = open(f"{inFileName}", 'r')
-    outFile = open(f"{outFileName}", 'w')
+    inFile = open(f"{inFileName}", 'r');
+    outFile = open(f"{outFileName}", 'w');
 
-    reflectData = json.loads(inFile.read())
-    contents = parseReflectionData(reflectData, ext)
+    reflectData = json.loads(inFile.read());
+    contents = parseReflectionData(reflectData, ext);
 
-    outFile.write(contents)
-    outFile.close()
-    outFiles.append(outFileName)
-    return 0
+    outFile.write(contents);
+    outFile.close();
+    outFiles.append(outFileName);
+    return 0;
+}
 
-def generateShaderMapMSL(file, outDir, outFiles):
-    genShaderReflectionMSL(file, outDir)
-    dataPath = os.path.dirname(file)
-    filename = os.path.splitext(os.path.basename(file))[0]
-    ext = os.path.splitext(filename)[1]
+void ShaderTools::generateShaderMapMSL(const string& file, string outDir, vector<string>& outFiles) {
+    genShaderReflectionMSL(file, outDir);
+    dataPath = os.path.dirname(file);
+    filename = os.path.splitext(os.path.basename(file))[0];
+    ext = os.path.splitext(filename)[1];
 
-    inFileName = f"{outDir}/{filename}.metal.reflect"
-    outFileName = f"{outDir}/{filename}.metal.map"
-    srcTimeStamp = getmtime(inFileName)
+    inFileName = f"{outDir}/{filename}.metal.reflect";
+    outFileName = f"{outDir}/{filename}.metal.map";
     CHECK_TIMESTAMPS(inFileName, outFileName);
 
-    inFile = open(f"{inFileName}", 'r')
-    outFile = open(f"{outFileName}", 'w')
+    inFile = open(f"{inFileName}", 'r');
+    outFile = open(f"{outFileName}", 'w');
 
-    reflectData = json.loads(inFile.read())
-    contents = parseReflectionData(reflectData, ext)
+    reflectData = json.loads(inFile.read());
+    contents = parseReflectionData(reflectData, ext);
 
-    outFile.write(contents)
-    outFile.close()
-    outFiles.append(outFileName)
-    return 0
+    outFile.write(contents);
+    outFile.close();
+    outFiles.append(outFileName);
+    return 0;
+}
 
 def generateShaderMapHLSL(file, outDir, outFiles):
     genShaderReflectionHLSL(file, outDir)
@@ -496,7 +498,6 @@ def generateShaderMapHLSL(file, outDir, outFiles):
     outFile.close()
     outFiles.append(outFileName)
     return 0
-#endif
 
 vector<string> ShaderTools::convertShaders(const vector<string> &files, string outDir, string fmt) {
     vector<string> outFiles;

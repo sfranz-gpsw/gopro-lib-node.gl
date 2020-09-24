@@ -68,6 +68,9 @@ set (SXPLAYER_INCLUDE_DIRS ${SXPLAYER_DIR})
 set (SXPLAYER_LIBRARY_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/cmake-build-debug/external/sxplayer-9.5.1)
 set (SXPLAYER_LIBRARIES sxplayer avformat avfilter avcodec avutil pthread)
 
+set (JSON_DIR ${EXTERNAL_DIR}/json)
+set (JSON_INCLUDE_DIRS ${JSON_DIR}/include)
+
 endif()
 
 set (NGFX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ngfx)
