@@ -1,3 +1,24 @@
+/*
+ * Copyright 2016 GoPro Inc.
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 #include "ShaderTools.h"
 #include <filesystem>
 #include <regex>
@@ -5,21 +26,15 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-static string readFile(const string& path) {
-    string contents;
-    ifstream in(path, ios::ate);
-    auto size = in.tellg();
-    in.seekg(0);
-    contents.resize(size);
-    in.read(&contents[0], size);
-    in.close();
-    return contents;
-}
-
-static vector<string> splitExt(const string& filename) {
-    auto it = filename.find_last_of('.');
-    return { filename.substr(0, it), filename.substr(it + 1) };
-}
+#ifdef _WIN32
+    #define PATCH string("patch.exe")
+    #define GLSLANG_VALIDATOR string("glslangValidator.exe")
+    #define SPIRV_CROSS string("spirv-cross.exe")
+#else
+    #define PATCH string("patch")
+    #define GLSLANG_VALIDATOR string("glslangValidator")
+    #define SPIRV_CROSS string("spirv-cross")
+#endif
 
 ShaderTools::ShaderTools() {
     verbose = (string(getenv("V"))=="1");
@@ -87,19 +102,14 @@ int ShaderTools::compileShaderGLSL(string filename, const string& defines, const
     string contents = preprocess(parentPath, inFileName);
     outFile<< contents;
     outFile.close();
-#ifdef WIN32
-    string glslangValidator="glslangValidator.exe";
-#else
-    string glslangValidator = "glslangValidator";
-#endif
-    int result = cmd(glslangValidator+" " + defines + " -V "+
+    int result = cmd(GLSLANG_VALIDATOR+" " + defines + " -V "+
                      fs::path(outDir + "/" + filename).string()+
                      fs::path(" -o"+ outFileName).string());
     if (result == 0) {
         printf("compiled file: %s\n", filename.c_str());
     }
     else {
-        fprintf(stderr, "ERROR: cannot compile file: %s", filename.c_str());
+        fprintf(stderr, "ERROR: cannot compile file: %s\n", filename.c_str());
     }
     return result;
 }
@@ -114,16 +124,11 @@ int ShaderTools::convertShader(const string& file, const string& extraArgs, stri
     if (srcTimeStamp <= targetTimeStamp) return 0;
 
     string args = (fmt == "msl" ? "--msl" : "--hlsl --shader-model 60") + extraArgs;
-#ifdef _WIN32
-    string spirvCross = "spirv-cross.exe";
-#else
-    string spirvCross = "spirv-cross";
-#endif
-    int result = cmd(spirvCross + " " + args + " " + inFileName + " " + "--output" + " " + outFileName);
+    int result = cmd(SPIRV_CROSS + " " + args + " " + inFileName + " " + "--output" + " " + outFileName);
     if (result == 0)
-        printf("converted file: %s to %s", inFileName.c_str(), outFileName.c_str());
+        printf("converted file: %s to %s\n", inFileName.c_str(), outFileName.c_str());
     else
-        fprintf(stderr, "ERROR: cannot convert file: %s", file.c_str());
+        fprintf(stderr, "ERROR: cannot convert file: %s\n", file.c_str());
     return result;
 }
 
@@ -142,71 +147,61 @@ int ShaderTools::compileShaderMTL(const string& file, const string& defines, str
           "xcrun -sdk macosx metallib {outDir}/{filename}.air -o {outFileName}"
     );
     if (result == 0)
-        printf("compiled file: {file}");
+        printf("compiled file: %s\n", file.c_str());
     else
-        fprintf(stderr, "ERROR: cannot compile file: {file}");
+        fprintf(stderr, "ERROR: cannot compile file: %s\n", file.c_str());
     return result;
 }
 
-
 int ShaderTools::compileShaderHLSL(const string& file, const string& defines, string outDir, vector<string>& outFiles) {
-    string filename = splitExt(fs::path(file).filename())[0];
-    string inFileName = outDir+"/"+filename+".hlsl";
-    string outFileName = outDir +"/" +filename+".dxc";
-    outFiles.append(outFileName);
-    srcTimeStamp = getmtime(inFileName);
-    targetTimeStamp = getmtime(outFileName);
+    string strippedFilename = splitExt(fs::path(file).filename())[0];
+    string inFileName = outDir+"/"+strippedFilename +".hlsl";
+    string outFileName = outDir +"/" +strippedFilename +".dxc";
+    outFiles.push_back(outFileName);
+    auto srcTimeStamp = getmtime(inFileName);
+    auto targetTimeStamp = getmtime(outFileName);
     if (srcTimeStamp <= targetTimeStamp)
         return 0;
     string shaderModel = "";
     if (strstr(inFileName.c_str(), ".vert")) shaderModel = "vs_5_0";
     else if (strstr(inFileName.c_str(), ".frag")) shaderModel = "ps_5_0";
     else if (strstr(inFileName.c_str(), ".comp")) shaderModel = "cs_5_0";
-    result = cmd("dxc.exe /T "+shaderModel+" /Fo "+outFileName+" "+inFileName);
+    int result = cmd("dxc.exe /T "+shaderModel+" /Fo "+outFileName+" "+inFileName);
     if (result == 0)
-        printf("compiled file: %s", file.c_str());
+        printf("compiled file: %s\n", file.c_str());
     else
-        fprintf(stderr, "ERROR: cannot compile file: %s", file.c_str());
+        fprintf(stderr, "ERROR: cannot compile file: %s\n", file.c_str());
     return result;
 }
 
-def getDictEntry(dict, name):
-    return dict[name] if name in dict else []
+int ShaderTools::genShaderReflectionGLSL(const string& file, string outDir) {
+    string filename = splitExt(fs::path(file).filename())[0];
+    string inFileName = outDir + "/" + filename + ".spv";
+    string outFileName = outDir + "/" + filename + ".spv.reflect";
+    auto srcTimeStamp = getmtime(inFileName);
+    auto targetTimeStamp = getmtime(outFileName);
+    if (srcTimeStamp <= targetTimeStamp)
+        return 0;
+    int result = cmd(SPIRV_CROSS+" "+inFileName+" --reflect --output "+outFileName);
 
-def getDictEntries(dict, names):
-    entries = []
-    for name in names: entries.append(getDictEntry(dict, name))
-    return entries
+    inFileName = outDir + "/" + filename + ".spv.reflect";
+    outFileName = inFileName;
 
-def genShaderReflectionGLSL(file, outDir):
-    filename = os.path.basename(file)
-    inFileName = f"{outDir}/{filename}.spv"
-    outFileName = f"{outDir}/{filename}.spv.reflect"
-    srcTimeStamp = getmtime(inFileName)
-    targetTimeStamp = getmtime(outFileName)
-    if srcTimeStamp <= targetTimeStamp:
-        return 0
-    spirv_cross='spirv-cross.exe' if PLATFORM_WIN32 else 'spirv-cross'
-    result = cmd(f"{spirv_cross} {inFileName} --reflect --output {outFileName}")
+    string reflectData = json.loads(readFile(inFileName));
 
-    inFileName = f"{outDir}/{filename}.spv.reflect"
-    outFileName = f"{outDir}/{filename}.spv.reflect"
+    ofstream outFile(outFileName);
+    contents = json.dumps(reflectData, sort_keys=True, indent=4, separators=(',', ': '));
+    outFile.write(contents);
+    outFile.close();
 
-    inFile = open(f"{inFileName}", 'r')
-    reflectData = json.loads(inFile.read())
-    inFile.close()
+    if (result == 0)
+        printf("generated reflection map for file: %s\n", file.c_str());
+    else {
+        fprintf(stderr, "ERROR: cannot generate reflection map for file: %s", file.c_str());
+    }
 
-    outFile = open(f"{outFileName}", 'w')
-    contents = json.dumps(reflectData, sort_keys=True, indent=4, separators=(',', ': '))
-    outFile.write(contents)
-    outFile.close()
-
-    if result == 0:
-        print(f"generated reflection map for file: {file}")
-    else:
-        print(f"ERROR: cannot generate reflection map for file: {file}")
-
-    return result
+    return result;
+}
 
 def findMetalReflectData(metalReflectData, name):
     for data in metalReflectData:
@@ -514,79 +509,41 @@ def generateShaderMapHLSL(file, outDir, outFiles):
     outFiles.append(outFileName)
     return 0
 
-def compileShadersGLSL(files, defines, outDir):
-    outFiles = []
-    for file in files:
-        ret = compileShaderGLSL(file, defines, outDir, outFiles)
-    return outFiles
+vector<string> ShaderTools::convertShaders(const vector<string> &files, string outDir, string fmt) {
+    vector<string> outFiles;
+    for (const string& file: files) convertShader(file, "", outDir, fmt, outFiles);
+    return outFiles;
+}
 
-def compileShadersMSL(files, defines, outDir):
-    outFiles = []
-    for file in files:
-        ret = compileShaderMTL(file, '', outDir, outFiles)
-    return outFiles
+vector<string> ShaderTools::compileShaders(const vector<string>& files, const string& defines, string outDir, string fmt) {
+    vector<string> outFiles;
+    for (file in files) {
+        if (fmt == "glsl") compileShadersGLSL(files, defines, outDir);
+        else if (fmt == "msl") compileShadersMSL(files, defines, outDir);
+        else if (fmt == "hlsl") compileShadersHLSL(files, defines, outDir);
+    }
+    return outFiles;
+}
 
-def compileShadersHLSL(files, defines, outDir):
-    outFiles = []
-    for file in files:
-        ret = compileShaderHLSL(file, '', outDir, outFiles)
-    return outFiles
+void ShaderTools::applyPatches(const vector<string> &patchFiles, string outDir) {
+    for (const string& patchFile: patchFiles) {
+        string filename = splitExt(fs::path(patchFile))[0];
+        printf("filename: %s\n", filename.c_str());
+        string outFile = fs::path(outDir+"/"+filename);
+        if (fs::exists(outFile)) {
+            printf("applying patch: {patchFile}");
+            string cmdStr = PATCH+" -N -u "+outFile+" -i "+patchFile;
+            cmd(cmdStr);
+        }
+    }
+}
 
-def convertShaders(files, outDir, fmt):
-    outFiles = []
-    for file in files:
-        ret = convertShader(file, '', outDir, fmt, outFiles)
-    return outFiles
-
-def compileShaders(files, defines, outDir, fmt = 'glsl'):
-    if fmt == 'glsl': return compileShadersGLSL(files, defines, outDir)
-    elif fmt == 'msl': return compileShadersMSL(files, defines, outDir)
-    elif fmt == 'hlsl': return compileShadersHLSL(files, defines, outDir)
-
-def applyPatches(patchFiles, outDir):
-    patch='patch.exe' if PLATFORM_WIN32 else 'patch'
-    for patchFile in patchFiles:
-        filename = os.path.basename(patchFile)[:-6]
-        print('filename: ',filename)
-        outFile = os.path.normpath(f"{outDir}/{filename}")
-        if os.path.exists(outFile):
-            print(f"applying patch: {patchFile}")
-            cmdStr = f"{patch} -N -u {outFile} -i {patchFile}"
-            cmd(cmdStr)
-            
-def addFiles(paths, extensions):
-    files = []
-    for path in paths:
-        for ext in extensions:
-            files += glob.glob(f"{path}/*{ext}")
-    return files
-
-def filterFiles(files, fileFilter):
-	filteredFiles = []
-	for file in files:
-		if fileFilter in file:
-			filteredFiles.append(file)
-	return filteredFiles
-	
-def generateShaderMapsGLSL(files, outDir):
-    outFiles = []
-    for file in files:
-        ret = generateShaderMapGLSL(file, outDir, outFiles)
-    return outFiles
-
-def generateShaderMapsMSL(files, outDir):
-    outFiles = []
-    for file in files:
-        ret = generateShaderMapMSL(file, outDir, outFiles)
-    return outFiles
-
-def generateShaderMapsHLSL(files, outDir):
-    outFiles = []
-    for file in files:
-        ret = generateShaderMapHLSL(file, outDir, outFiles)
-    return outFiles
-
-def generateShaderMaps(files, outDir, fmt = 'glsl'):
-    if fmt == 'glsl': return generateShaderMapsGLSL(files, outDir)
-    elif fmt == 'msl': return generateShaderMapsMSL(files, outDir)
-    elif fmt == 'hlsl': return generateShaderMapsHLSL(files, outDir)
+vector<string> ShaderTools::generateShaderMaps(const vector<string>& files, string outDir, string fmt) {
+    vector<string> outFiles;
+    for (const string& file: files) {
+        if (fmt == "glsl") generateShaderMapGLSL(file, outDir, outFiles);
+        else if (fmt == "msl") generateShaderMapMSL(file, outDir, outFiles);
+        else if (fmt == "hlsl") generateShaderMapHLSL(file, outDir, outFiles);
+    }
+    return outFiles;
+}
