@@ -127,46 +127,48 @@ int ShaderTools::convertShader(const string& file, const string& extraArgs, stri
     return result;
 }
 
-def compileShaderMTL(file, defines, outDir, outFiles):
-    filename = os.path.splitext(os.path.basename(file))[0]
-    inFileName = f"{outDir}/{filename}.metal"
-    outFileName = f"{outDir}/{filename}.metallib"
-    outFiles.append(outFileName)
-    srcTimeStamp = getmtime(inFileName)
-    targetTimeStamp = getmtime(outFileName)
-    if srcTimeStamp <= targetTimeStamp:
-        return 0
-    debugFlags = '-gline-tables-only -MO'
-    result = cmd(
-          f"xcrun -sdk macosx metal {debugFlags} -c {inFileName} -o {outDir}/{filename}.air && "
-        + f"xcrun -sdk macosx metallib {outDir}/{filename}.air -o {outFileName}"
-    )
-    if result == 0:
-        print(f"compiled file: {file}")
-    else:
-        print(f"ERROR: cannot compile file: {file}")
-    return result
+int ShaderTools::compileShaderMTL(const string& file, const string& defines, string outDir, vector<string> &outFiles) {
+    string strippedFilename = splitExt(fs::path(file).filename())[0];
+    string inFileName = fs::path(outDir +"/" + strippedFilename + ".metal");
+    string outFileName = fs::path(outDir + "/" + strippedFilename + ".metallib");
+    outFiles.push_back(outFileName);
+    auto srcTimeStamp = getmtime(inFileName);
+    auto targetTimeStamp = getmtime(outFileName);
+    if (srcTimeStamp <= targetTimeStamp)
+        return 0;
+    string debugFlags = "-gline-tables-only -MO";
+    int result = cmd(
+          "xcrun -sdk macosx metal {debugFlags} -c {inFileName} -o {outDir}/{filename}.air && "
+          "xcrun -sdk macosx metallib {outDir}/{filename}.air -o {outFileName}"
+    );
+    if (result == 0)
+        printf("compiled file: {file}");
+    else
+        fprintf(stderr, "ERROR: cannot compile file: {file}");
+    return result;
+}
 
 
-def compileShaderHLSL(file, defines, outDir, outFiles):
-    filename = os.path.splitext(os.path.basename(file))[0]
-    inFileName = f"{outDir}/{filename}.hlsl"
-    outFileName = f"{outDir}/{filename}.dxc"
-    outFiles.append(outFileName)
-    srcTimeStamp = getmtime(inFileName)
-    targetTimeStamp = getmtime(outFileName)
-    if srcTimeStamp <= targetTimeStamp:
-        return 0
-    shaderModel = ''
-    if '.vert' in inFileName: shaderModel = 'vs_5_0'
-    elif '.frag' in inFileName: shaderModel = 'ps_5_0'
-    elif '.comp' in inFileName: shaderModel = 'cs_5_0'
-    result = cmd( f"dxc.exe /T {shaderModel} /Fo {outFileName} {inFileName}")
-    if result == 0:
-        print(f"compiled file: {file}")
-    else:
-        print(f"ERROR: cannot compile file: {file}")
-    return result
+int ShaderTools::compileShaderHLSL(const string& file, const string& defines, string outDir, vector<string>& outFiles) {
+    string filename = splitExt(fs::path(file).filename())[0];
+    string inFileName = outDir+"/"+filename+".hlsl";
+    string outFileName = outDir +"/" +filename+".dxc";
+    outFiles.append(outFileName);
+    srcTimeStamp = getmtime(inFileName);
+    targetTimeStamp = getmtime(outFileName);
+    if (srcTimeStamp <= targetTimeStamp)
+        return 0;
+    string shaderModel = "";
+    if (strstr(inFileName.c_str(), ".vert")) shaderModel = "vs_5_0";
+    else if (strstr(inFileName.c_str(), ".frag")) shaderModel = "ps_5_0";
+    else if (strstr(inFileName.c_str(), ".comp")) shaderModel = "cs_5_0";
+    result = cmd("dxc.exe /T "+shaderModel+" /Fo "+outFileName+" "+inFileName);
+    if (result == 0)
+        printf("compiled file: %s", file.c_str());
+    else
+        fprintf(stderr, "ERROR: cannot compile file: %s", file.c_str());
+    return result;
+}
 
 def getDictEntry(dict, name):
     return dict[name] if name in dict else []
