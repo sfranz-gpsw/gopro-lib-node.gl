@@ -83,6 +83,7 @@ add_subdirectory(ngfx)
 add_subdirectory(external/sxplayer-9.5.1)
 add_subdirectory(libnodegl)
 add_subdirectory(pyshell)
+add_subdirectory(shader-tools)
 
 function (define_custom_command name cmd working_dir)
 add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/${name}.task

@@ -1,65 +1,103 @@
-#!/usr/bin/python3
-import os
-import re
-import glob
-import json
+#include "ShaderTools.h"
+#include <filesystem>
+#include <regex>
+#include <fstream>
+using namespace std;
+namespace fs = std::filesystem;
 
-VERBOSE=(os.getenv('V')=='1')
-PLATFORM_WIN32=(os.getenv('PLATFORM')=='WIN32')
+static string readFile(const string& path) {
+    string contents;
+    ifstream in(path, ios::ate);
+    auto size = in.tellg();
+    in.seekg(0);
+    contents.resize(size);
+    in.read(&contents[0], size);
+    in.close();
+    return contents;
+}
 
-def cmd(str):
-    if VERBOSE: print(f">> {str}")
-    elif PLATFORM_WIN32: str += " > nul 2>&1"
-    else: str += " > /dev/null 2>&1"
-    return os.system(str)
+ShaderTools::ShaderTools() {
+    verbose = (string(getenv("V"))=="1");
+    defaultIncludePaths = { "ngfx/data/shaders", "nodegl/data/shaders" };
+}
 
-def findIncludeFile(includeFilename, includePaths):
-    for includePath in includePaths:
-        filename = f"{includePath}/{includeFilename}"
-        if os.path.exists(filename): return filename
-    return None
+int ShaderTools::cmd(string str) {
+    if (verbose) { printf(">> %s\n", str.c_str()); }
+    else str += " > /dev/null 2>&1";
+    return system(str.c_str());
+}
 
-def preprocess(dataPath, inFile):
-    contents = ''
-    includePaths = ['ngfx/data/shaders', 'nodegl/data/shaders', dataPath]
-    for line in inFile:
-        matchInclude = re.search('#include "([^"]*)"', line)
-        if matchInclude:
-            includeFilename = matchInclude.group(1)
-            includeFile = open(findIncludeFile(includeFilename, includePaths), 'r')
-            contents += includeFile.read()
-            includeFile.close()
-        else: contents += line
-    return contents
+bool ShaderTools::findIncludeFile(const string& includeFilename, const vector<string> &includePaths,
+        string& includeFile) {
+    for (const string& includePath : includePaths) {
+        fs::path filename = includePath  / fs::path(includeFilename);
+        if (fs::exists(filename)) {
+            includeFile = filename;
+            return true;
+        }
+    }
+    return false;
+}
 
-def getmtime(fileName):
-    if not os.path.exists(fileName): return 0
-    return os.path.getmtime(fileName)
+string ShaderTools::preprocess(const string& dataPath, const string& inFile) {
+    string contents = "";
+    vector<string> includePaths = defaultIncludePaths;
+    includePaths.push_back(dataPath);
+    istringstream sstream(inFile);
+    string line;
+    while (std::getline(sstream, line)) {
+        smatch matchIncludeGroups;
+        bool matchInclude = regex_search(line, matchIncludeGroups, regex("#include \"([^\"]*)"));
+        if (matchInclude) {
+            string includeFilename = matchIncludeGroups[1];
+            string includeFilePath;
+            findIncludeFile(includeFilename, includePaths, includeFilePath);
+            contents += readFile(includeFilePath);
+        }
+        else {
+            contents += line;
+        }
+    }
+    return contents;
+}
 
-def compileShaderGLSL(file, defines, outDir, outFiles):
-    inPath = os.path.dirname(file)
-    filename = os.path.basename(file)
-    inFileName = os.path.normpath(f"{inPath}/{filename}")
-    outFileName = os.path.normpath(f"{outDir}/{filename}.spv")
-    outFiles.append(outFileName)
-    srcTimeStamp = getmtime(inFileName)
-    targetTimeStamp = getmtime(outFileName)
-    if srcTimeStamp <= targetTimeStamp:
-        return 0
+time_t ShaderTools::getmtime(const string& filename) {
+    if (!fs::exists(filename)) { return 0; }
+    auto ftime = fs::last_write_time(filename);
+    return fs::file_time_type::clock::to_time_t(ftime);
+}
 
-    inFile = open(f"{inFileName}", 'r')
-    outFile = open(os.path.normpath(f"{outDir}/{filename}"), 'w')
-    contents = preprocess(inPath, inFile)
-    outFile.write(contents)
-    inFile.close()
-    outFile.close()
-    glslangValidator='glslangValidator.exe' if PLATFORM_WIN32 else 'glslangValidator'
-    result = cmd(f"{glslangValidator} {defines} -V "+os.path.normpath(f"{outDir}/{filename}")+f" -o {outFileName}")
-    if result == 0:
-        print(f"compiled file: {file}")
-    else:
-        print(f"ERROR: cannot compile file: {file}")
-    return result
+int ShaderTools::compileShaderGLSL(string filename, const string& defines, const string& outDir, vector<string>& outFiles) {
+    string parentPath = fs::path(filename).parent_path();
+    filename = fs::path(filename).filename();
+    string inFileName = fs::path(parentPath + "/" + filename);
+    string outFileName = fs::path(outDir + "/" + filename + ".spv");
+    outFiles.push_back(outFileName);
+    time_t srcTimeStamp = getmtime(inFileName);
+    time_t targetTimeStamp = getmtime(outFileName);
+    if (srcTimeStamp <= targetTimeStamp)
+        return 0;
+
+    ofstream outFile(fs::path(outDir + "/" + filename));
+    string contents = preprocess(parentPath, inFileName);
+    outFile<< contents;
+    outFile.close();
+#ifdef WIN32
+    string glslangValidator="glslangValidator.exe";
+#else
+    string glslangValidator = "glslangValidator";
+#endif
+    int result = cmd(glslangValidator+" " + defines + " -V "+
+                     fs::path(outDir + "/" + filename).string()+
+                     fs::path(" -o"+ outFileName).string());
+    if (result == 0) {
+        printf("compiled file: %s\n", filename.c_str());
+    }
+    else {
+        fprintf(stderr, "ERROR: cannot compile file: %s", filename.c_str());
+    }
+    return result;
+}
 
 def convertShader(file, extraArgs, outDir, fmt, outFiles):
     filename = os.path.splitext(os.path.basename(file))[0]

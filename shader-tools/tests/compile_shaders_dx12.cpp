@@ -1,21 +1,23 @@
-import sys
-from shader_tools import *
-            
-paths = ['ngfx/data/shaders', 'NodeGL/data/shaders', 'NodeGL/pynodegl-utils/pynodegl_utils/examples/shaders']
-extensions=['.vert', '.frag', '.comp']
-glslFiles = addFiles(paths, extensions)
-if len(sys.argv) == 2:
-	glslFiles = filterFiles(glslFiles, sys.argv[1])
-	
-outDir = 'cmake-build-debug'
+#include <vector>
+#include <string>
+using namespace std;
 
-defines = '-DGRAPHICS_BACKEND_DIRECTX12=1'
-spvFiles = compileShaders(glslFiles, defines, outDir, 'glsl')
-spvMapFiles = generateShaderMaps(glslFiles, outDir, 'glsl')
-hlslFiles = convertShaders(spvFiles, outDir, 'hlsl')
-hlslPatchFiles = glob.glob(f"patches/*.hlsl.patch")
-applyPatches(hlslPatchFiles, outDir)
-hlsllibFiles = compileShaders(hlslFiles, defines, outDir, 'hlsl')
-hlslMapFiles = generateShaderMaps(hlslFiles, outDir, 'hlsl')
-hlslMapPatchFiles = glob.glob(f"patches/*.hlsl.map.patch")
-applyPatches(hlslMapPatchFiles, outDir)
+int main(int argc, char** argv) {
+    const vector<string> paths = { "ngfx/data/shaders", "nodegl/data/shaders", "nodegl/pynodegl-utils/pynodegl_utils/examples/shaders" };
+    const vector<string> extensions = {".vert", ".frag", ".comp"};
+    auto glslFiles = addFiles(paths, extensions);
+    if (argc == 2) glslFiles = filterFiles(glslFiles, argv[1]);
+    string outDir = "cmake-build-debug";
+    string defines = "-DGRAPHICS_BACKEND_DIRECTX12=1";
+    auto spvFiles = compileShaders(glslFiles, defines, outDir, "glsl");
+    auto spvMapFiles = generateShaderMaps(glslFiles, outDir, "glsl");
+    auto hlslFiles = convertShaders(spvFiles, outDir, 'hlsl');
+    auto hlslPatchFiles = glob.glob(f"patches/*.hlsl.patch");
+    applyPatches(hlslPatchFiles, outDir);
+    auto hlsllibFiles = compileShaders(hlslFiles, defines, outDir, "hlsl");
+    auto hlslMapFiles = generateShaderMaps(hlslFiles, outDir, 'hlsl');
+    auto hlslMapPatchFiles = glob.glob(f"patches/*.hlsl.map.patch");
+    applyPatches(hlslMapPatchFiles, outDir);
+    return 0;
+}
+
