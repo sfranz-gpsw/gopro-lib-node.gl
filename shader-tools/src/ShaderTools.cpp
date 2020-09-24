@@ -16,6 +16,11 @@ static string readFile(const string& path) {
     return contents;
 }
 
+static vector<string> splitExt(const string& filename) {
+    auto it = filename.find_last_of('.');
+    return { filename.substr(0, it), filename.substr(it + 1) };
+}
+
 ShaderTools::ShaderTools() {
     verbose = (string(getenv("V"))=="1");
     defaultIncludePaths = { "ngfx/data/shaders", "nodegl/data/shaders" };
@@ -99,24 +104,28 @@ int ShaderTools::compileShaderGLSL(string filename, const string& defines, const
     return result;
 }
 
-def convertShader(file, extraArgs, outDir, fmt, outFiles):
-    filename = os.path.splitext(os.path.basename(file))[0]
-    inFileName = f"{outDir}/{filename}.spv"
-    outFileName = f"{outDir}/{filename}" + ('.metal' if fmt == 'msl' else '.hlsl')
-    outFiles.append(outFileName)
-    srcTimeStamp = getmtime(inFileName)
-    targetTimeStamp = getmtime(outFileName)
-    if srcTimeStamp <= targetTimeStamp:
-        return 0
+int ShaderTools::convertShader(const string& file, const string& extraArgs, string outDir, string fmt, vector<string>& outFiles) {
+    string strippedFilename = splitExt(fs::path(file).filename())[0];
+    string inFileName = fs::path(outDir + "/" + strippedFilename + ".spv");
+    string outFileName = fs::path(outDir + "/" + strippedFilename + (fmt == "msl" ? ".metal" : ".hlsl"));
+    outFiles.push_back(outFileName);
+    auto srcTimeStamp = getmtime(inFileName);
+    auto targetTimeStamp = getmtime(outFileName);
+    if (srcTimeStamp <= targetTimeStamp) return 0;
 
-    args = ('--msl' if fmt == 'msl' else "--hlsl --shader-model 60") + f" {extraArgs}"
-    spirv_cross='spirv-cross.exe' if PLATFORM_WIN32 else 'spirv-cross'
-    result = cmd(f"{spirv_cross} {args} {inFileName} --output {outFileName}")
-    if result == 0:
-        print(f"converted file: {inFileName} to {outFileName}")
-    else:
-        print(f"ERROR: cannot convert file: {file}")
-    return result
+    string args = (fmt == "msl" ? "--msl" : "--hlsl --shader-model 60") + extraArgs;
+#ifdef _WIN32
+    string spirvCross = "spirv-cross.exe";
+#else
+    string spirvCross = "spirv-cross";
+#endif
+    int result = cmd(spirvCross + " " + args + " " + inFileName + " " + "--output" + " " + outFileName);
+    if (result == 0)
+        printf("converted file: %s to %s", inFileName.c_str(), outFileName.c_str());
+    else
+        fprintf(stderr, "ERROR: cannot convert file: %s", file.c_str());
+    return result;
+}
 
 def compileShaderMTL(file, defines, outDir, outFiles):
     filename = os.path.splitext(os.path.basename(file))[0]
@@ -137,6 +146,7 @@ def compileShaderMTL(file, defines, outDir, outFiles):
     else:
         print(f"ERROR: cannot compile file: {file}")
     return result
+
 
 def compileShaderHLSL(file, defines, outDir, outFiles):
     filename = os.path.splitext(os.path.basename(file))[0]
