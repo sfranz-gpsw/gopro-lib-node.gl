@@ -311,60 +311,55 @@ json ShaderTools::patchShaderReflectionDataHLSL(const string& hlslFile, json& re
     return reflectData;
 }
 
-def genShaderReflectionMSL(file, outDir):
-    result = 0
-    filename = os.path.splitext(os.path.basename(file))[0]
-    inFileName = f"{outDir}/{filename}.spv.reflect"
-    outFileName = f"{outDir}/{filename}.metal.reflect"
+int ShaderTools::genShaderReflectionMSL(const string& file, string outDir) {
+    auto splitFilename = FileUtil::splitExt(fs::path(file).filename());
+    string strippedFilename = splitFilename[0];
+    string inFileName = outDir + "/" + strippedFilename + ".spv.reflect";
+    string outFileName = outDir + "/" + strippedFilename + ".metal.reflect";
     if (FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
-    inFile = open(f"{inFileName}", 'r')
-    reflectData = json.loads(inFile.read())
-    inFile.close()
+    json reflectData = json::parse(FileUtil::readFile(inFileName));
 
-    ext = os.path.splitext(filename)[1]
-    reflectData = patchShaderReflectionDataMSL(file, reflectData, ext)
-    if not reflectData:
-        print(f"ERROR: cannot generate reflection map for file: {file}")
-        return 1
+    string ext = FileUtil::splitExt(fs::path(file).filename())[1];
+    reflectData = patchShaderReflectionDataMSL(file, reflectData, ext);
+    if (reflectData.empty()) {
+        fprintf(stderr, "ERROR: cannot generate reflection map for file: %s\n", file.c_str());
+        return 1;
+    }
         
-    outFile = open(f"{outFileName}", 'w')
-    contents = json.dumps(reflectData, sort_keys=True, indent=4, separators=(',', ': '))
-    outFile.write(contents)
-    outFile.close()
+    ofstream outFile(outFileName);
+    string contents = reflectData.dump();
+    outFile<<contents;
+    outFile.close();
 
-    if result == 0:
-        print(f"generated reflection map for file: {file}")
-    else:
-        print(f"ERROR: cannot generate reflection map for file: {file}")
+    printf("generated reflection map for file: %s\n", file.c_str());
+    return 0;
+}
 
-    return result
+int ShaderTools::genShaderReflectionHLSL(const string& file, string outDir) {
+    auto splitFilename = FileUtil::splitExt(fs::path(file).filename());
+    string strippedFilename = splitFilename[0];
+    string inFileName = outDir + "/" + strippedFilename + ".spv.reflect";;
+    string outFileName = outDir + "/" + strippedFilename + ".hlsl.reflect";
+    if (FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
-def genShaderReflectionHLSL(file, outDir):
-    result = 0
-    filename = os.path.splitext(os.path.basename(file))[0]
-    inFileName = f"{outDir}/{filename}.spv.reflect"
-    outFileName = f"{outDir}/{filename}.hlsl.reflect"
-    CHECK_TIMESTAMPS(inFileName, outFileName);
+    json reflectData = json::parse(FileUtil::readFile(inFileName));
 
-    inFile = open(f"{inFileName}", 'r')
-    reflectData = json.loads(inFile.read())
-    inFile.close()
+    string ext = FileUtil::splitExt(fs::path(file).filename())[1];
+    reflectData = patchShaderReflectionDataHLSL(file, reflectData, ext);
+    if (reflectData.empty()) {
+        fprintf(stderr, "ERROR: cannot generate reflection map for file: %s\n", file.c_str());
+        return 1;
+    }
 
-    ext = os.path.splitext(filename)[1]
-    reflectData = patchShaderReflectionDataHLSL(file, reflectData, ext)
+    ofstream outFile(outFileName);
+    string contents = reflectData.dump();
+    outFile<<contents;
+    outFile.close();
 
-    outFile = open(f"{outFileName}", 'w')
-    contents = json.dumps(reflectData, sort_keys=True, indent=4, separators=(',', ': '))
-    outFile.write(contents)
-    outFile.close()
-
-    if result == 0:
-        print(f"generated reflection map for file: {file}")
-    else:
-        print(f"ERROR: cannot generate reflection map for file: {file}")
-
-    return 0
+    printf("generated reflection map for file: %s\n", file.c_str());
+    return 0;
+}
 
 def parseReflectionData(reflectData, ext):
     contents = ''

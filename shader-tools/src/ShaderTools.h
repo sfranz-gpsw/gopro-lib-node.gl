@@ -54,6 +54,8 @@ private:
     bool findMetalReflectData(const std::vector<std::smatch>& metalReflectData, const std::string& name, std::smatch &match);
     void generateShaderMapMSL(const std::string& file, std::string outDir, std::vector<std::string>& outFiles);
     int genShaderReflectionGLSL(const std::string& file, std::string outDir);
+    int genShaderReflectionHLSL(const std::string& file, std::string outDir);
+    int genShaderReflectionMSL(const std::string& file, std::string outDir);
     json patchShaderReflectionDataMSL(const std::string& file, json& reflectData, const std::string& ext);
     json patchShaderReflectionDataHLSL(const std::string& hlslFile, json& reflectData, std::string ext);
     std::string preprocess(const std::string& dataPath, const std::string& inFile);
