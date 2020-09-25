@@ -24,6 +24,7 @@
 #include <filesystem>
 #include <regex>
 #include <fstream>
+#include <set>
 using namespace std;
 using namespace ngfx;
 namespace fs = std::filesystem;
@@ -268,40 +269,47 @@ json ShaderTools::patchShaderReflectionDataMSL(const string& metalFile, json& re
     return reflectData;
 }
 
-def patchShaderReflectionDataHLSL(file, reflectData, ext):
-    hlslFile = open(f"{file}", 'r')
-    hlslContents = hlslFile.read()
-    hlslReflectData = {}
+json ShaderTools::patchShaderReflectionDataHLSL(const string& hlslFile, json& reflectData, string ext) {
+    string hlslContents = FileUtil::readFile(hlslFile);
+    HLSLReflectData hlslReflectData;
 
-    #parse semantics
-    if ext == '.vert':
-        inputs = getDictEntry(reflectData, 'inputs')
-        for input in inputs:
-            hlslReflectData = re.findall(input['name'] + r'\s*:\s*([^;]*);', hlslContents)
-            input['semantic'] = hlslReflectData[0]
+    //parse semantics
+    if (ext == ".vert") {
+        json& inputs = reflectData["inputs"];
+        for (json& input: inputs) {
+            regex p(input["name"].get<string>() + "\\s*:\\s*([^;]*);");
+            vector<smatch> hlslReflectData = RegexUtil::findAll(p, hlslContents);
+            input["semantic"] = stoi(hlslReflectData[0].str(0));
+        }
+    }
 
-    #get descriptors
-    textures, ubos, ssbos, images = getDictEntries(reflectData, ['textures', 'ubos', 'ssbos', 'images'])
-    numDescriptors = len(textures) + len(images) + len(ubos) + len(ssbos)
-    descriptors = {}
-    for desc in textures: descriptors[desc['set']] = desc
-    for desc in ubos: descriptors[desc['set']] = desc
-    for desc in ssbos: descriptors[desc['set']] = desc
-    for desc in images: descriptors[desc['set']] = desc
+    //get descriptors
+    json &textures = reflectData["textures"],
+         &ubos = reflectData["ubos"],
+         &ssbos = reflectData["ssbos"],
+         &images = reflectData["images"];
+    uint32_t numDescriptors = textures.size() + images.size() + ubos.size() + ssbos.size();
+    json descriptors;
+    for (const auto& desc: textures) descriptors[desc["set"].get<int>()] = desc;
+    for (const auto& desc: textures) descriptors[desc["set"].get<int>()] = desc;
+    for (const auto& desc: ubos) descriptors[desc["set"].get<int>()] = desc;
+    for (const auto& desc: ssbos) descriptors[desc["set"].get<int>()] = desc;
+    for (const auto& desc: images) descriptors[desc["set"].get<int>()] = desc;
 
-    #patch descriptor bindings
-    sets = []
-    for set in sorted(descriptors):
-        desc = descriptors[set]
-        while set in sets: set += 1
-        desc['set'] = set
-        sets.append(set)
-        if desc['type'] in ['sampler2D', 'sampler3D', 'samplerCube' ]:
-            sets.append(set + 1)
-
-    hlslFile.close()
-
-    return reflectData
+    //patch descriptor bindings
+    set<int> sets;
+    set<string> samplerTypes = {"sampler2D", "sampler3D", "samplerCube"};
+    for (const int& setValue: descriptors) {
+        int set = setValue;
+        json& desc = descriptors[set];
+        while (sets.find(set) != sets.end()) set += 1;
+        desc["set"] = set;
+        sets.insert(set);
+        if (samplerTypes.find(desc["type"]) != samplerTypes.end())
+            sets.insert(set + 1);
+    }
+    return reflectData;
+}
 
 def genShaderReflectionMSL(file, outDir):
     result = 0

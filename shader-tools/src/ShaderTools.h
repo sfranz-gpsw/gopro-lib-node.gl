@@ -48,10 +48,14 @@ private:
     struct MetalReflectData {
         std::vector<std::smatch> attributes, buffers, textures;
     };
+    struct HLSLReflectData {
+        std::vector<std::smatch> attributes, buffers, textures;
+    };
     bool findMetalReflectData(const std::vector<std::smatch>& metalReflectData, const std::string& name, std::smatch &match);
     void generateShaderMapMSL(const std::string& file, std::string outDir, std::vector<std::string>& outFiles);
     int genShaderReflectionGLSL(const std::string& file, std::string outDir);
     json patchShaderReflectionDataMSL(const std::string& file, json& reflectData, const std::string& ext);
+    json patchShaderReflectionDataHLSL(const std::string& hlslFile, json& reflectData, std::string ext);
     std::string preprocess(const std::string& dataPath, const std::string& inFile);
     bool verbose = false;
     std::vector<std::string> defaultIncludePaths;
