@@ -25,6 +25,7 @@
 #include <regex>
 #include <fstream>
 #include <set>
+#include <cctype>
 using namespace std;
 using namespace ngfx;
 namespace fs = std::filesystem;
@@ -51,6 +52,12 @@ vector<smatch> RegexUtil::findAll(const regex& p, string contents) {
         contents = m.suffix().str();
     }
     return matches;
+}
+
+static string toLower(const string& str) {
+    string r = str;
+    for (uint32_t j = 0; j<r.size(); j++) r[j] = tolower(r[j]);
+    return r;
 }
 
 ShaderTools::ShaderTools() {
@@ -361,28 +368,36 @@ int ShaderTools::genShaderReflectionHLSL(const string& file, string outDir) {
     return 0;
 }
 
-def parseReflectionData(reflectData, ext):
-    contents = ''
-    if ext == '.vert':
-        inputs = getDictEntry(reflectData, 'inputs')
-        contents += 'INPUT_ATTRIBUTES {}\n'.format(len(inputs))
-        for input in inputs:
-            inputName = input['name']
-            inputSemantic = ''
-            inputNameLower = inputName.lower()
-            inputSemantic = 'UNDEFINED'
-            if 'semantic' in input: inputSemantic = input['semantic']
-            inputTypeMap = {'float': 'VERTEXFORMAT_FLOAT', 'vec2': 'VERTEXFORMAT_FLOAT2', 'vec3': 'VERTEXFORMAT_FLOAT3', 'vec4': 'VERTEXFORMAT_FLOAT4',
-                            'ivec2': 'VERTEXFORMAT_INT2', 'ivec3': 'VERTEXFORMAT_INT3', 'ivec4': 'VERTEXFORMAT_INT4',
-                            'mat2': 'VERTEXFORMAT_MAT2', 'mat3': 'VERTEXFORMAT_MAT3', 'mat4': 'VERTEXFORMAT_MAT4'}
-            inputType = inputTypeMap[input['type']]
-            contents += '\t{} {} {} {}\n'.format(inputName, inputSemantic, input['location'], inputType)
+string ShaderTools::parseReflectionData(const json& reflectData, string ext) {
+    string contents = "";
+    if (ext == ".vert") {
+        const json& inputs = reflectData["inputs"];
+        contents += "INPUT_ATTRIBUTES "+to_string(inputs.size())+"\n";
+        for (const json& input: inputs) {
+            string inputName = input["name"];
+            string inputSemantic = "";
+            string inputNameLower = toLower(inputName);
+            inputSemantic = "UNDEFINED";
+            if (input.find("semantic") != input.end()) inputSemantic = input["semantic"];
+            map<string, string> inputTypeMap = {
+                { "float", "VERTEXFORMAT_FLOAT" }, { "vec2", "VERTEXFORMAT_FLOAT2" }, { "vec3" , "VERTEXFORMAT_FLOAT3" }, { "vec4", "VERTEXFORMAT_FLOAT4" },
+                { "ivec2", "VERTEXFORMAT_INT2" }, { "ivec3", "VERTEXFORMAT_INT3" }, { "ivec4", "VERTEXFORMAT_INT4" },
+                { "mat2", "VERTEXFORMAT_MAT2" }, { "mat3", "VERTEXFORMAT_MAT3" }, { "mat4", "VERTEXFORMAT_MAT4" }
+            };
+            string inputType = inputTypeMap[input["type"]];
+            contents += "\t"+inputName+" "+inputSemantic+" "+input["location"].get<string>()+" "+inputType+"\n";
+        }
+    }
+    const json &textures = reflectData["textures"],
+         &ubos = reflectData["ubos"],
+         &ssbos = reflectData["ssbos"],
+         &images = reflectData["images"],
+         &types = reflectData["types"];
+    json uniformBufferInfos;
+    json shaderStorageBufferInfos;
 
-    textures, ubos, ssbos, images, types = getDictEntries(reflectData, ['textures', 'ubos','ssbos','images','types'])
-    uniformBufferInfos = []
-    shaderStorageBufferInfos = []
-
-    def parseMembers(membersData, members, baseOffset = 0, baseName = ''):
+    auto parseMembers = [&](const json& membersData, json& members, uint32_t baseOffset = 0, string baseName = "") {
+#if 0 //TODO
         for memberData in membersData:
             typeSizeMap = {'int': 4, 'uint': 4, 'float': 4,
                            'vec2': 8, 'vec3': 12, 'vec4': 16,
@@ -403,60 +418,97 @@ def parseReflectionData(reflectData, ext):
                 parseMembers(type['members'], members, baseOffset + memberData['offset'], baseName + memberData['name'] + '.')
             else:
                 print(f"ERROR: unrecognized type: {memberType}")
+#endif
+    };
 
-    def parseBuffers(buffers, bufferInfos):
+    auto parseBuffers = [&](const json& buffers, json& bufferInfos) {
+#if 0 //TODO
         for buffer in buffers:
             bufferType = types[buffer['type']]
             bufferMembers = []
             parseMembers(bufferType['members'], bufferMembers)
             bufferInfo = {'name':buffer['name'], 'set': buffer['set'], 'binding': buffer['binding'], 'members': bufferMembers}
             bufferInfos.append(bufferInfo)
+#endif
+    };
+    parseBuffers(ubos, uniformBufferInfos);
+    parseBuffers(ssbos, shaderStorageBufferInfos);
 
-    parseBuffers(ubos, uniformBufferInfos)
-    parseBuffers(ssbos, shaderStorageBufferInfos)
+    json textureDescriptors = {};
+    json bufferDescriptors = {};
+    for (const json& texture: textures) {
+        textureDescriptors[texture["set"].get<int>()] = {
+            { "type", texture["type"] },
+            { "name", texture["name"] },
+            { "set", texture["set"] },
+            { "binding", texture["binding"] }
+        };
+    }
+    for (const json& image: images) {
+        textureDescriptors[image["set"].get<int>()] = {
+            { "type", image["type"] },
+            { "name", image["name"] },
+            { "set", image["set"] },
+            { "binding", image["binding"] }
+        };
+    }
+    for (const json& ubo: ubos) {
+        bufferDescriptors[ubo["set"].get<int>()] = {
+            { "type", "uniformBuffer" },
+            { "name", ubo["name"] },
+            { "set", ubo["set"] },
+            { "binding", ubo["binding"] }
+        };
+    }
+    for (const json& ssbo: ssbos) {
+        bufferDescriptors[ssbo["set"].get<int>()] = {
+            { "type", "shaderStorageBuffer" },
+            { "name", ssbo["name"] },
+            { "set", ssbo["set"] },
+            { "binding", ssbo["binding"] }
+        };
+    }
+    contents += "DESCRIPTORS "+to_string(textureDescriptors.size() + bufferDescriptors.size()) + "\n";
+    map<string, string> descriptorTypeMap = {
+        { "sampler2D", "DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER" },
+        { "sampler3D", "DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER" },
+        { "samplerCube", "DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER" },
+        { "image2D", "DESCRIPTOR_TYPE_STORAGE_IMAGE" },
+        { "uniformBuffer", "DESCRIPTOR_TYPE_UNIFORM_BUFFER" },
+        { "shaderStorageBuffer", "DESCRIPTOR_TYPE_STORAGE_BUFFER" }
+    };
+    for (int set : textureDescriptors) {
+        const json& descriptor = textureDescriptors[set];
+        string descriptorType = descriptorTypeMap[descriptor["type"]];
+        contents += "\t" + descriptor["name"].get<string>() + " " + descriptorType + " " + descriptor["set"].get<string>() + "\n";
+    }
+    for (int set : bufferDescriptors) {
+        const json& descriptor = bufferDescriptors[set];
+        string descriptorType = descriptorTypeMap[descriptor["type"]];
+        contents += "\t" + descriptor["name"].get<string>() + " " + descriptorType + " " + descriptor["set"].get<string>() + "\n";
+    }
+    auto processBufferInfos = [&](const json& bufferInfo) -> string {
+        string contents = "";
+        const json& memberInfos = bufferInfo["members"];
+        contents += bufferInfo["name"].get<string>() + " " + bufferInfo["set"].get<string>() + " " + to_string(memberInfos.size()) + "\n";
+        for (const json& m: memberInfos) {
+            contents += m["name"].get<string>() + " " + m["offset"].get<string>() + " " + m["size"].get<string>() + " " + m["array_count"].get<string>() + " " + m["array_stride"].get<string>() + "\n";
+        }
+        return contents;
+    };
+    contents += "UNIFORM_BUFFER_INFOS "+to_string(uniformBufferInfos.size())+"\n";
+    for (const json& bufferInfo: uniformBufferInfos) {
+        contents += processBufferInfos(bufferInfo);
+    }
 
-    textureDescriptors = {}; bufferDescriptors = {}
-    for texture in textures:
-        textureDescriptors[texture['set']] = {'type':texture['type'], 'name':texture['name'], 'set':texture['set'], 'binding':texture['binding']}
-    for image in images:
-        textureDescriptors[image['set']] = {'type':image['type'], 'name':image['name'], 'set':image['set'], 'binding':image['binding']}
-    for ubo in ubos:
-        bufferDescriptors[ubo['set']] = {'type':'uniformBuffer', 'name':ubo['name'], 'set':ubo['set'], 'binding':ubo['binding']}
-    for ssbo in ssbos:
-        bufferDescriptors[ssbo['set']] = {'type':'shaderStorageBuffer', 'name':ssbo['name'], 'set':ssbo['set'], 'binding':ssbo['binding']}
-    contents += 'DESCRIPTORS {}\n'.format(len(textureDescriptors) + len(bufferDescriptors))
-    descriptorTypeMap = {'sampler2D': 'DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER',
-        'sampler3D': 'DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER',
-        'samplerCube': 'DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER',
-        'image2D': 'DESCRIPTOR_TYPE_STORAGE_IMAGE',
-        'uniformBuffer': 'DESCRIPTOR_TYPE_UNIFORM_BUFFER',
-        'shaderStorageBuffer': 'DESCRIPTOR_TYPE_STORAGE_BUFFER'}
-    for set in sorted(textureDescriptors):
-        descriptor = textureDescriptors[set]
-        descriptorType = descriptorTypeMap[descriptor['type']]
-        contents += '\t{} {} {}\n'.format(descriptor['name'], descriptorType, descriptor['set'])
-    for set in sorted(bufferDescriptors):
-        descriptor = bufferDescriptors[set]
-        descriptorType = descriptorTypeMap[descriptor['type']]
-        contents += '\t{} {} {}\n'.format(descriptor['name'], descriptorType, descriptor['set'])
-    def processBufferInfos(bufferInfo):
-        contents = ''
-        memberInfos = bufferInfo['members']
-        contents += '{} {} {}\n'.format(bufferInfo['name'], bufferInfo['set'], len(memberInfos))
-        for m in memberInfos:
-            contents += '{} {} {} {} {}\n'.format(m['name'], m['offset'], m['size'], m['array_count'], m['array_stride'])
-        return contents
+    contents += "SHADER_STORAGE_BUFFER_INFOS "+ to_string(shaderStorageBufferInfos.size())+"\n";
+    for (const json& bufferInfo: shaderStorageBufferInfos) {
+        contents += processBufferInfos(bufferInfo);
+    }
+    return contents;
+}
 
-    contents += 'UNIFORM_BUFFER_INFOS {}\n'.format(len(uniformBufferInfos))
-    for bufferInfo in uniformBufferInfos:
-        contents += processBufferInfos(bufferInfo)
-
-    contents += 'SHADER_STORAGE_BUFFER_INFOS {}\n'.format(len(shaderStorageBufferInfos))
-    for bufferInfo in shaderStorageBufferInfos:
-        contents += processBufferInfos(bufferInfo)
-    return contents
-
-void ShaderTools::generateShaderMapGLSL(const string& file, string outDir, vector<string>& outFiles) {
+int ShaderTools::generateShaderMapGLSL(const string& file, string outDir, vector<string>& outFiles) {
     genShaderReflectionGLSL(file, outDir);
     string dataPath = fs::path(file).parent_path();
     string filename = fs::path(file).filename();
@@ -478,7 +530,7 @@ void ShaderTools::generateShaderMapGLSL(const string& file, string outDir, vecto
     return 0;
 }
 
-void ShaderTools::generateShaderMapMSL(const string& file, string outDir, vector<string>& outFiles) {
+int ShaderTools::generateShaderMapMSL(const string& file, string outDir, vector<string>& outFiles) {
     genShaderReflectionMSL(file, outDir);
     dataPath = os.path.dirname(file);
     filename = os.path.splitext(os.path.basename(file))[0];
@@ -500,7 +552,7 @@ void ShaderTools::generateShaderMapMSL(const string& file, string outDir, vector
     return 0;
 }
 
-def generateShaderMapHLSL(file, outDir, outFiles):
+int ShaderTools::generateShaderMapHLSL(const string& file, string outDir, vector<string>& outFiles) {
     genShaderReflectionHLSL(file, outDir)
     dataPath = os.path.dirname(file)
     filename = os.path.splitext(os.path.basename(file))[0]
@@ -522,6 +574,7 @@ def generateShaderMapHLSL(file, outDir, outFiles):
     outFile.close()
     outFiles.append(outFileName)
     return 0
+}
 
 vector<string> ShaderTools::convertShaders(const vector<string> &files, string outDir, string fmt) {
     vector<string> outFiles;

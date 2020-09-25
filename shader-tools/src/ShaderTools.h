@@ -56,6 +56,10 @@ private:
     int genShaderReflectionGLSL(const std::string& file, std::string outDir);
     int genShaderReflectionHLSL(const std::string& file, std::string outDir);
     int genShaderReflectionMSL(const std::string& file, std::string outDir);
+    int generateShaderMapGLSL(const std::string& file, std::string outDir, std::vector<std::string>& outFiles);
+    int generateShaderMapHLSL(const std::string& file, std::string outDir, std::vector<std::string>& outFiles);
+    int generateShaderMapMSL(const std::string& file, std::string outDir, std::vector<std::string>& outFiles);
+    std::string parseReflectionData(const json& reflectData, std::string ext);
     json patchShaderReflectionDataMSL(const std::string& file, json& reflectData, const std::string& ext);
     json patchShaderReflectionDataHLSL(const std::string& hlslFile, json& reflectData, std::string ext);
     std::string preprocess(const std::string& dataPath, const std::string& inFile);
