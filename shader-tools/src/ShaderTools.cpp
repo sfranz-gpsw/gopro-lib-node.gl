@@ -21,6 +21,8 @@
 
 #include "ShaderTools.h"
 #include "FileUtil.h"
+#include "RegexUtil.h"
+#include "StringUtil.h"
 #include <filesystem>
 #include <regex>
 #include <fstream>
@@ -28,6 +30,8 @@
 #include <cctype>
 using namespace std;
 using namespace ngfx;
+auto readFile = FileUtil::readFile;
+auto toLower = StringUtil::toLower;
 namespace fs = std::filesystem;
 
 #ifdef _WIN32
@@ -39,26 +43,6 @@ namespace fs = std::filesystem;
     #define GLSLANG_VALIDATOR string("glslangValidator")
     #define SPIRV_CROSS string("spirv-cross")
 #endif
-
-struct RegexUtil {
-    static vector<smatch> findAll(const regex& p, string contents);
-};
-
-vector<smatch> RegexUtil::findAll(const regex& p, string contents) {
-    vector<smatch> matches;
-    smatch m;
-    while (regex_search(contents, m, p) ) {
-        matches.push_back(m);
-        contents = m.suffix().str();
-    }
-    return matches;
-}
-
-static string toLower(const string& str) {
-    string r = str;
-    for (uint32_t j = 0; j<r.size(); j++) r[j] = tolower(r[j]);
-    return r;
-}
 
 ShaderTools::ShaderTools() {
     verbose = (string(getenv("V"))=="1");
@@ -96,7 +80,7 @@ string ShaderTools::preprocess(const string& dataPath, const string& inFile) {
             string includeFilename = matchIncludeGroups[1];
             string includeFilePath;
             findIncludeFile(includeFilename, includePaths, includeFilePath);
-            contents += FileUtil::readFile(includeFilePath);
+            contents += readFile(includeFilePath);
         }
         else {
             contents += line;
@@ -194,7 +178,7 @@ int ShaderTools::genShaderReflectionGLSL(const string& file, string outDir) {
     inFileName = outDir + "/" + filename + ".spv.reflect";
     outFileName = inFileName;
 
-    auto reflectData = json::parse(FileUtil::readFile(inFileName));
+    auto reflectData = json::parse(readFile(inFileName));
 
     ofstream outFile(outFileName);
     string contents = reflectData.dump(4);
@@ -219,7 +203,7 @@ bool ShaderTools::findMetalReflectData(const vector<smatch>& metalReflectData, c
 }
 
 json ShaderTools::patchShaderReflectionDataMSL(const string& metalFile, json& reflectData, const string& ext) {
-    string metalContents = FileUtil::readFile(metalFile);
+    string metalContents = readFile(metalFile);
     MetalReflectData metalReflectData;
     if (ext == ".vert") {
        metalReflectData.attributes = RegexUtil::findAll(regex("([^\\s]*)[\\s]*([^\\s]*)[\\s]*\\[\\[attribute\\(([0-9]+)\\)\\]\\]"), metalContents);
@@ -277,7 +261,7 @@ json ShaderTools::patchShaderReflectionDataMSL(const string& metalFile, json& re
 }
 
 json ShaderTools::patchShaderReflectionDataHLSL(const string& hlslFile, json& reflectData, string ext) {
-    string hlslContents = FileUtil::readFile(hlslFile);
+    string hlslContents = readFile(hlslFile);
     HLSLReflectData hlslReflectData;
 
     //parse semantics
@@ -325,7 +309,7 @@ int ShaderTools::genShaderReflectionMSL(const string& file, string outDir) {
     string outFileName = outDir + "/" + strippedFilename + ".metal.reflect";
     if (FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
-    json reflectData = json::parse(FileUtil::readFile(inFileName));
+    json reflectData = json::parse(readFile(inFileName));
 
     string ext = FileUtil::splitExt(fs::path(file).filename())[1];
     reflectData = patchShaderReflectionDataMSL(file, reflectData, ext);
@@ -350,7 +334,7 @@ int ShaderTools::genShaderReflectionHLSL(const string& file, string outDir) {
     string outFileName = outDir + "/" + strippedFilename + ".hlsl.reflect";
     if (FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
-    json reflectData = json::parse(FileUtil::readFile(inFileName));
+    json reflectData = json::parse(readFile(inFileName));
 
     string ext = FileUtil::splitExt(fs::path(file).filename())[1];
     reflectData = patchShaderReflectionDataHLSL(file, reflectData, ext);
@@ -514,66 +498,60 @@ int ShaderTools::generateShaderMapGLSL(const string& file, string outDir, vector
     string filename = fs::path(file).filename();
     string ext = FileUtil::splitExt(filename)[1];
 
-    inFileName = f"{outDir}/{filename}.spv.reflect";
-    outFileName = f"{outDir}/{filename}.spv.map";
-    CHECK_TIMESTAMPS(inFileName, outFileName);
+    string inFileName = fs::path(outDir + "/" + filename + ".spv.reflect");
+    string outFileName = fs::path(outDir + "/" + filename + ".spv.map");
+    if (FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
-    inFile = open(f"{inFileName}", 'r');
-    outFile = open(f"{outFileName}", 'w');
+    auto reflectData = json::parse(readFile(inFileName));
+    string contents = parseReflectionData(reflectData, ext);
 
-    reflectData = json.loads(inFile.read());
-    contents = parseReflectionData(reflectData, ext);
-
-    outFile.write(contents);
+    ofstream outFile(outFileName);
+    outFile<<contents;
     outFile.close();
-    outFiles.append(outFileName);
+    outFiles.push_back(outFileName);
     return 0;
 }
 
 int ShaderTools::generateShaderMapMSL(const string& file, string outDir, vector<string>& outFiles) {
     genShaderReflectionMSL(file, outDir);
-    dataPath = os.path.dirname(file);
-    filename = os.path.splitext(os.path.basename(file))[0];
-    ext = os.path.splitext(filename)[1];
+    string dataPath = fs::path(file).parent_path();
+    auto splitFilename = FileUtil::splitExt(fs::path(file).filename());
+    string filename = splitFilename[0];
+    string ext = splitFilename[1];
 
-    inFileName = f"{outDir}/{filename}.metal.reflect";
-    outFileName = f"{outDir}/{filename}.metal.map";
-    CHECK_TIMESTAMPS(inFileName, outFileName);
+    string inFileName = fs::path(outDir + "/" + filename + ".metal.reflect");
+    string outFileName = fs::path(outDir + "/" + filename + ".metal.map");
+    if (FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
-    inFile = open(f"{inFileName}", 'r');
-    outFile = open(f"{outFileName}", 'w');
+    auto reflectData = json::parse(readFile(inFileName));
+    string contents = parseReflectionData(reflectData, ext);
 
-    reflectData = json.loads(inFile.read());
-    contents = parseReflectionData(reflectData, ext);
-
-    outFile.write(contents);
+    ofstream outFile(outFileName);
+    outFile<<contents;
     outFile.close();
-    outFiles.append(outFileName);
+    outFiles.push_back(outFileName);
     return 0;
 }
 
 int ShaderTools::generateShaderMapHLSL(const string& file, string outDir, vector<string>& outFiles) {
-    genShaderReflectionHLSL(file, outDir)
-    dataPath = os.path.dirname(file)
-    filename = os.path.splitext(os.path.basename(file))[0]
-    ext = os.path.splitext(filename)[1]
+    genShaderReflectionHLSL(file, outDir);
+    string dataPath = fs::path(file).parent_path();
+    auto splitFilename = FileUtil::splitExt(fs::path(file).filename());
+    string filename = splitFilename[0];
+    string ext = splitFilename[1];
 
-    inFileName = f"{outDir}/{filename}.hlsl.reflect"
-    outFileName = f"{outDir}/{filename}.hlsl.map"
-    srcTimeStamp = getmtime(inFileName)
-    CHECK_TIMESTAMPS(inFileName, outFileName);
+    string inFileName = fs::path(outDir + "/" + filename + ".hlsl.reflect");
+    string outFileName = fs::path(outDir + "/" + filename + ".hlsl.map");
+    if (FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
-    inFile = open(f"{inFileName}", 'r')
-    outFile = open(f"{outFileName}", 'w')
+    auto reflectData = json::parse(readFile(inFileName));
+    string contents = parseReflectionData(reflectData, ext);
 
-    reflectData = json.loads(inFile.read())
-    inFile.close()
-    contents = parseReflectionData(reflectData, ext)
-
-    outFile.write(contents)
-    outFile.close()
-    outFiles.append(outFileName)
-    return 0
+    ofstream outFile(outFileName);
+    outFile<<contents;
+    outFile.close();
+    outFiles.push_back(outFileName);
+    return 0;
 }
 
 vector<string> ShaderTools::convertShaders(const vector<string> &files, string outDir, string fmt) {
