@@ -38,11 +38,19 @@ namespace fs = std::filesystem;
     #define SPIRV_CROSS string("spirv-cross")
 #endif
 
-#define CHECK_TIMESTAMPS(srcFileName, targetFileName) \
-    time_t srcTimeStamp = getmtime(srcFileName); \
-    time_t targetTimeStamp = getmtime(targetFileName); \
-    if (srcTimeStamp <= targetTimeStamp) \
-        return 0
+struct RegexUtil {
+    static vector<smatch> findAll(const regex& p, string contents);
+};
+
+vector<smatch> RegexUtil::findAll(const regex& p, string contents) {
+    vector<smatch> matches;
+    smatch m;
+    while (regex_search(contents, m, p) ) {
+        matches.push_back(m);
+        contents = m.suffix().str();
+    }
+    return matches;
+}
 
 ShaderTools::ShaderTools() {
     verbose = (string(getenv("V"))=="1");
@@ -89,18 +97,12 @@ string ShaderTools::preprocess(const string& dataPath, const string& inFile) {
     return contents;
 }
 
-time_t ShaderTools::getmtime(const string& filename) {
-    if (!fs::exists(filename)) { return 0; }
-    auto ftime = fs::last_write_time(filename);
-    return fs::file_time_type::clock::to_time_t(ftime);
-}
-
 int ShaderTools::compileShaderGLSL(string filename, const string& defines, const string& outDir, vector<string>& outFiles) {
     string parentPath = fs::path(filename).parent_path();
     filename = fs::path(filename).filename();
     string inFileName = fs::path(parentPath + "/" + filename);
     string outFileName = fs::path(outDir + "/" + filename + ".spv");
-    CHECK_TIMESTAMPS(inFileName, outFileName);
+    if (FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
     ofstream outFile(fs::path(outDir + "/" + filename));
     string contents = preprocess(parentPath, inFileName);
@@ -123,7 +125,7 @@ int ShaderTools::compileShaderMTL(const string& file, const string& defines, str
     string strippedFilename = FileUtil::splitExt(fs::path(file).filename())[0];
     string inFileName = fs::path(outDir +"/" + strippedFilename + ".metal");
     string outFileName = fs::path(outDir + "/" + strippedFilename + ".metallib");
-    CHECK_TIMESTAMPS(inFileName, outFileName);
+    if (FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
     string debugFlags = "-gline-tables-only -MO";
     int result = cmd(
@@ -142,7 +144,7 @@ int ShaderTools::compileShaderHLSL(const string& file, const string& defines, st
     string strippedFilename = FileUtil::splitExt(fs::path(file).filename())[0];
     string inFileName = outDir+"/"+strippedFilename +".hlsl";
     string outFileName = outDir +"/" +strippedFilename +".dxc";
-    CHECK_TIMESTAMPS(inFileName, outFileName);
+    if (FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
     string shaderModel = "";
     if (strstr(inFileName.c_str(), ".vert")) shaderModel = "vs_5_0";
@@ -161,7 +163,7 @@ int ShaderTools::convertShader(const string& file, const string& extraArgs, stri
     string strippedFilename = FileUtil::splitExt(fs::path(file).filename())[0];
     string inFileName = fs::path(outDir + "/" + strippedFilename + ".spv");
     string outFileName = fs::path(outDir + "/" + strippedFilename + (fmt == "msl" ? ".metal" : ".hlsl"));
-    CHECK_TIMESTAMPS(inFileName, outFileName);
+    if (FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
     string args = (fmt == "msl" ? "--msl" : "--hlsl --shader-model 60") + extraArgs;
     int result = cmd(SPIRV_CROSS + " " + args + " " + inFileName + " " + "--output" + " " + outFileName);
@@ -177,7 +179,7 @@ int ShaderTools::genShaderReflectionGLSL(const string& file, string outDir) {
     string filename = FileUtil::splitExt(fs::path(file).filename())[0];
     string inFileName = outDir + "/" + filename + ".spv";
     string outFileName = outDir + "/" + filename + ".spv.reflect";
-    CHECK_TIMESTAMPS(inFileName, outFileName);
+    if (FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
     int result = cmd(SPIRV_CROSS+" "+inFileName+" --reflect --output "+outFileName);
 
@@ -200,52 +202,71 @@ int ShaderTools::genShaderReflectionGLSL(const string& file, string outDir) {
     return result;
 }
 
-json ShaderTools::findMetalReflectData(const json& metalReflectData, const string& name) {
-    for (const json& data: metalReflectData) {
-        if (data[1] == name) return data;
-        else if (strstr(data[0].get<string>().c_str(), name.c_str())) return data;
+bool ShaderTools::findMetalReflectData(const vector<smatch>& metalReflectData, const string& name, smatch& match) {
+    for (const smatch& data: metalReflectData) {
+        if (data.str(1) == name) { match = data; return true; }
+        else if (strstr(data[0].str().c_str(), name.c_str())) { match = data; return true; }
     }
-    return {};
+    return false;
 }
 
-json ShaderTools::patchShaderReflectionDataMSL(const string& file, const json& reflectData, const string& ext) {
-    ifstream metalFile(file);
+json ShaderTools::patchShaderReflectionDataMSL(const string& metalFile, json& reflectData, const string& ext) {
     string metalContents = FileUtil::readFile(metalFile);
-    json metalReflectData = {};
-    if ext == ".vert":
-        metalReflectData['attributes'] = re.findall(r'([^\s]*)[\s]*([^\s]*)[\s]*\[\[attribute\(([0-9]+)\)\]\]', metalContents);
-    metalReflectData['buffers'] = re.findall(r'([^\s]*)[\s]*([^\s]*)[\s]*\[\[buffer\(([0-9]+)\)\]\]', metalContents);
-    metalReflectData['textures'] = re.findall(r'([^\s]*)[\s]*([^\s]*)[\s]*\[\[texture\(([0-9]+)\)\]\]', metalContents);
-    metalFile.close();
+    MetalReflectData metalReflectData;
+    if (ext == ".vert") {
+       metalReflectData.attributes = RegexUtil::findAll(regex("([^\\s]*)[\\s]*([^\\s]*)[\\s]*\\[\\[attribute\\(([0-9]+)\\)\\]\\]"), metalContents);
+    }
+    metalReflectData.buffers = RegexUtil::findAll(regex("([^\\s]*)[\\s]*([^\\s]*)[\\s]*\\[\\[buffer\(([0-9]+)\\)\\]\\]"), metalContents);
+    metalReflectData.textures = RegexUtil::findAll(regex("([^\\s]*)[\\s]*([^\\s]*)[\\s]*\\[\\[texture\(([0-9]+)\\)\\]\\]"), metalContents);
 
-    textures, ubos, ssbos, images, types = getDictEntries(reflectData, ['textures', 'ubos','ssbos','images','types'])
-    numDescriptors = len(textures) + len(images) + len(ubos) + len(ssbos)
+    json &textures = reflectData["textures"],
+               &ubos = reflectData["ubos"],
+               &ssbos = reflectData["ssbos"],
+               &images = reflectData["images"],
+               &types = reflectData["types"];
+    uint32_t numDescriptors = textures.size() + images.size() + ubos.size() + ssbos.size();
 
-    #update input bindings
-    if ext == '.vert':
-        inputs = getDictEntry(reflectData, 'inputs')
-        for input in inputs:
-            metalInputReflectData = findMetalReflectData(metalReflectData['attributes'], input['name'])
-            if not metalInputReflectData:
-                print(f"ERROR: cannot patch shader reflection data for file: {file}, reflectData: ", metalReflectData['attributes'], 'input name: ',input['name'])
-                return None
-            input['location'] = int(metalInputReflectData[2]) + numDescriptors
+    //update input bindings
+    if (ext == ".vert") {
+        json& inputs = reflectData["inputs"];
+        for (json& input : inputs) {
+            smatch metalInputReflectData;
+            bool foundMatch = findMetalReflectData(metalReflectData.attributes, input["name"], metalInputReflectData);
+            if (!foundMatch) {
+                fprintf(stderr, "ERROR: cannot patch shader reflection data for file: %s", metalFile.c_str());
+                return {};
+            }
+            input["location"] = stoi(metalInputReflectData.str(2)) + numDescriptors;
+        }
+    }
 
-    #update descriptor bindings
-    for descriptor in textures:
-        metalTextureReflectData = findMetalReflectData(metalReflectData['textures'], descriptor['name'])
-        descriptor['set'] = int(metalTextureReflectData[2])
-    for descriptor in ubos:
-        metalBufferReflectData = findMetalReflectData(metalReflectData['buffers'], descriptor['name'])
-        descriptor['set'] = int(metalBufferReflectData[2])
-    for descriptor in ssbos:
-        metalBufferReflectData = findMetalReflectData(metalReflectData['buffers'], descriptor['name'])
-        descriptor['set'] = int(metalBufferReflectData[2])
-    for descriptor in images:
-        metalTextureReflectData = findMetalReflectData(metalReflectData['textures'], descriptor['name'])
-        descriptor['set'] = int(metalTextureReflectData[2])
+    //update descriptor bindings
+    for (json& descriptor : textures) {
+        smatch metalTextureReflectData;
+        bool foundMatch = findMetalReflectData(metalReflectData.textures, descriptor["name"], metalTextureReflectData);
+        assert(foundMatch);
+        descriptor["set"] = stoi(metalTextureReflectData.str(2));
+    }
+    for (json& descriptor: ubos) {
+        smatch metalBufferReflectData;
+        bool foundMatch = findMetalReflectData(metalReflectData.buffers, descriptor["name"], metalBufferReflectData);
+        assert(foundMatch);
+        descriptor["set"] = stoi(metalBufferReflectData.str(2));
+    }
+    for (json& descriptor: ssbos) {
+        smatch metalBufferReflectData;
+        bool foundMatch = findMetalReflectData(metalReflectData.buffers, descriptor["name"], metalBufferReflectData);
+        assert(foundMatch);
+        descriptor["set"] = stoi(metalBufferReflectData.str(2));
+    }
+    for (json& descriptor: images) {
+        smatch metalTextureReflectData;
+        bool foundMatch = findMetalReflectData(metalReflectData.textures, descriptor["name"], metalTextureReflectData);
+        descriptor["set"] = stoi(metalTextureReflectData.str(2));
+    }
 
-    return reflectData
+    return reflectData;
+}
 
 def patchShaderReflectionDataHLSL(file, reflectData, ext):
     hlslFile = open(f"{file}", 'r')
@@ -287,7 +308,7 @@ def genShaderReflectionMSL(file, outDir):
     filename = os.path.splitext(os.path.basename(file))[0]
     inFileName = f"{outDir}/{filename}.spv.reflect"
     outFileName = f"{outDir}/{filename}.metal.reflect"
-    CHECK_TIMESTAMPS(inFileName, outFileName);
+    if (FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
     inFile = open(f"{inFileName}", 'r')
     reflectData = json.loads(inFile.read())

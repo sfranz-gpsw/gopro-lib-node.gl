@@ -22,6 +22,8 @@
 #pragma once
 #include <ctime>
 #include <string>
+#include <map>
+#include <regex>
 #include <vector>
 #include <json.hpp>
 using json = nlohmann::json;
@@ -43,11 +45,13 @@ private:
     int convertShader(const std::string& file, const std::string& extraArgs, std::string outDir, std::string fmt, std::vector<std::string>& outFiles);
     bool findIncludeFile(const std::string& includeFilename, const std::vector<std::string> &includePaths,
         std::string& includeFile);
-    json findMetalReflectData(const json& metalReflectData, const std::string& name);
+    struct MetalReflectData {
+        std::vector<std::smatch> attributes, buffers, textures;
+    };
+    bool findMetalReflectData(const std::vector<std::smatch>& metalReflectData, const std::string& name, std::smatch &match);
     void generateShaderMapMSL(const std::string& file, std::string outDir, std::vector<std::string>& outFiles);
     int genShaderReflectionGLSL(const std::string& file, std::string outDir);
-    std::time_t getmtime(const std::string& filename);
-    json patchShaderReflectionDataMSL(const std::string& file, const json& reflectData, const std::string& ext);
+    json patchShaderReflectionDataMSL(const std::string& file, json& reflectData, const std::string& ext);
     std::string preprocess(const std::string& dataPath, const std::string& inFile);
     bool verbose = false;
     std::vector<std::string> defaultIncludePaths;

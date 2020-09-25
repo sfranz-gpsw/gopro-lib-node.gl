@@ -26,6 +26,20 @@ using namespace std;
 namespace fs = std::filesystem;
 using namespace ngfx;
 
+time_t FileUtil::getmtime(const string& filename) {
+    if (!fs::exists(filename)) { return 0; }
+    auto ftime = fs::last_write_time(filename);
+    return fs::file_time_type::clock::to_time_t(ftime);
+}
+
+bool FileUtil::srcFileChanged(const string& srcFileName, const string& targetFileName) {
+    time_t srcTimeStamp = getmtime(srcFileName);
+    time_t targetTimeStamp = getmtime(targetFileName);
+    if (srcTimeStamp <= targetTimeStamp)
+        return true;
+    return false;
+}
+
 string FileUtil::readFile(const string& path) {
     string contents;
     ifstream in(path, ios::ate);

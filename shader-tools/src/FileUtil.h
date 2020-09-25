@@ -5,6 +5,8 @@
 namespace ngfx {
 class FileUtil {
 public:
+    static time_t getmtime(const std::string& filename);
+    static bool srcFileChanged(const std::string& srcFileName, const std::string& targetFileName);
     static std::string readFile(const std::string& path);
     static std::vector<std::string> splitExt(const std::string& filename);
     static std::vector<std::string> findFiles(const std::string& path);
