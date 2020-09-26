@@ -380,29 +380,36 @@ string ShaderTools::parseReflectionData(const json& reflectData, string ext) {
     json uniformBufferInfos;
     json shaderStorageBufferInfos;
 
-    auto parseMembers = [&](const json& membersData, json& members, uint32_t baseOffset = 0, string baseName = "") {
-#if 0 //TODO
-        for memberData in membersData:
-            typeSizeMap = {'int': 4, 'uint': 4, 'float': 4,
-                           'vec2': 8, 'vec3': 12, 'vec4': 16,
-                           'ivec2': 8, 'ivec3': 12, 'ivec4': 16,
-                           'uvec2': 8, 'uvec3': 12, 'uvec4': 16,
-                           'mat2': 16, 'mat3': 36, 'mat4': 64}
-            memberType = memberData['type']
-            if memberType in typeSizeMap:
-                member = memberData.copy()
-                member['name'] = baseName + member['name']
-                member['size'] = typeSizeMap[memberType]
-                member['offset'] += baseOffset
-                member['array_count'] = member['array'][0] if 'array' in member else 0
-                member['array_stride'] = member['array_stride'] if 'array_stride' in member else 0
-                members.append(member)
-            elif memberType in types:
-                type = types[memberType]
-                parseMembers(type['members'], members, baseOffset + memberData['offset'], baseName + memberData['name'] + '.')
-            else:
-                print(f"ERROR: unrecognized type: {memberType}")
-#endif
+    std::function<void(const json&, json&, uint32_t, string)> parseMembers = [&](const json& membersData, json& members, uint32_t baseOffset = 0, string baseName = "") {
+        for (const json& memberData: membersData) {
+            const map<string, int> typeSizeMap = {
+               {"int",4}, {"uint",4}, {"float",4},
+               {"vec2",8}, {"vec3",12}, {"vec4",16},
+               {"ivec2",8}, {"ivec3",12}, {"ivec4",16},
+               {"uvec2",8}, {"uvec3",12}, {"uvec4",16},
+               {"mat2",16}, {"mat3",36}, {"mat4",64}
+            };
+            string memberType = memberData["type"];
+            if (typeSizeMap.find(memberType) != typeSizeMap.end()) {
+                json member = memberData;
+                member["name"] = baseName + member["name"].get<string>();
+                member["size"] = typeSizeMap.at(memberType);
+                member["offset"] += baseOffset;
+                member["array_count"] = (member.find("array") != member.end()) ? member["array"][0].get<int>() : 0;
+                member["array_stride"] = (member.find("array_stride") != member.end()) ? member["array_stride"].get<int>(): 0;
+                members.push_back(member);
+            }
+            else if (types.find(memberType) != types.end()) {
+                const json& type = types[memberType];
+                parseMembers(
+                    type["members"],
+                    members,
+                    baseOffset + memberData["offset"].get<int>(),
+                    baseName + memberData["name"].get<string>() + "."
+                );
+            }
+            else fprintf(stderr, "ERROR: unrecognized type: {memberType}");
+        }
     };
 
     auto parseBuffers = [&](const json& buffers, json& bufferInfos) {
@@ -410,7 +417,7 @@ string ShaderTools::parseReflectionData(const json& reflectData, string ext) {
         for buffer in buffers:
             bufferType = types[buffer['type']]
             bufferMembers = []
-            parseMembers(bufferType['members'], bufferMembers)
+            ParseReflectionUtil::parseMembers(bufferType['members'], bufferMembers)
             bufferInfo = {'name':buffer['name'], 'set': buffer['set'], 'binding': buffer['binding'], 'members': bufferMembers}
             bufferInfos.append(bufferInfo)
 #endif
