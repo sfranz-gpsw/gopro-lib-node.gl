@@ -24,5 +24,3 @@
 #define ENABLE_VSYNC
 #define USE_PRECOMPILED_SHADERS
 #define ORIGIN_BOTTOM_LEFT
-
-inline const std::string DATA_PATH() { char* p = getenv("DATA_PATH"); return p ? p : "."; }

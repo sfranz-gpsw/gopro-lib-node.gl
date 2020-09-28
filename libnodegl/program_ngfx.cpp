@@ -44,11 +44,14 @@ struct program *ngli_program_ngfx_create(struct gctx *gctx) {
 static string compileShader(const string& src, const string& ext) {
     string tmpFile = string(fs::temp_directory_path()) + "/" + "tmp" + ext;
     FileUtil::writeFile(tmpFile, src);
+    string outDir = fs::temp_directory_path();
 #ifdef GRAPHICS_BACKEND_VULKAN
     string defines = "-DGRAPHICS_BACKEND_VULKAN=1";
 #endif
-   auto outFiles = shaderTools.compileShaders({ tmpFile }, defines, fs::temp_directory_path());
-   return FileUtil::splitExt(outFiles[0])[0];
+   auto glslFiles = { tmpFile };
+   auto spvFiles = shaderTools.compileShaders(glslFiles, defines, outDir, "glsl");
+   auto spvMapFiles = shaderTools.generateShaderMaps(glslFiles, outDir, "glsl");
+   return FileUtil::splitExt(spvFiles[0])[0];
 }
 
 int ngli_program_ngfx_init(struct program *s, const char *vertex, const char *fragment, const char *compute) {

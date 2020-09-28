@@ -36,6 +36,10 @@ static struct gctx *ngfx_create(const struct ngl_config *config)
 {
     gctx_ngfx* ctx = new gctx_ngfx;
     ctx->graphicsContext = GraphicsContext::create("NGLApplication", true);
+    if (config->offscreen) {
+        Surface surface(config->width, config->height, true);
+        ctx->graphicsContext->setSurface(&surface);
+    }
     return (struct gctx *)ctx;
 }
 
