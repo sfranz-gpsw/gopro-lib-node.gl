@@ -51,6 +51,11 @@ static string getEnv(const string& name) {
     char* value = getenv(name.c_str());
     return (value ? value : "");
 }
+static json* getEntry(const json& data, const string& key) {
+    auto it = data.find(key);
+    if (it == data.end()) return nullptr;
+    return (json*)&it.value();
+}
 ShaderTools::ShaderTools() {
     verbose = (getEnv("V")=="1");
     defaultIncludePaths = { "ngfx/data/shaders", "nodegl/data/shaders" };
@@ -220,17 +225,17 @@ json ShaderTools::patchShaderReflectionDataMSL(const string& metalFile, json& re
     metalReflectData.buffers = RegexUtil::findAll(regex("([^\\s]*)[\\s]*([^\\s]*)[\\s]*\\[\\[buffer\(([0-9]+)\\)\\]\\]"), metalContents);
     metalReflectData.textures = RegexUtil::findAll(regex("([^\\s]*)[\\s]*([^\\s]*)[\\s]*\\[\\[texture\(([0-9]+)\\)\\]\\]"), metalContents);
 
-    json &textures = reflectData["textures"],
-               &ubos = reflectData["ubos"],
-               &ssbos = reflectData["ssbos"],
-               &images = reflectData["images"],
-               &types = reflectData["types"];
-    uint32_t numDescriptors = textures.size() + images.size() + ubos.size() + ssbos.size();
+    json *textures = getEntry(reflectData, "textures"),
+               *ubos = getEntry(reflectData, "ubos"),
+               *ssbos = getEntry(reflectData, "ssbos"),
+               *images = getEntry(reflectData, "images"),
+               *types = getEntry(reflectData, "types");
+    uint32_t numDescriptors = textures->size() + images->size() + ubos->size() + ssbos->size();
 
     //update input bindings
     if (ext == ".vert") {
-        json& inputs = reflectData["inputs"];
-        for (json& input : inputs) {
+        json* inputs = getEntry(reflectData, "inputs");
+        for (json& input : *inputs) {
             smatch metalInputReflectData;
             bool foundMatch = findMetalReflectData(metalReflectData.attributes, input["name"], metalInputReflectData);
             if (!foundMatch) {
@@ -242,25 +247,25 @@ json ShaderTools::patchShaderReflectionDataMSL(const string& metalFile, json& re
     }
 
     //update descriptor bindings
-    for (json& descriptor : textures) {
+    if (textures) for (json& descriptor : *textures) {
         smatch metalTextureReflectData;
         bool foundMatch = findMetalReflectData(metalReflectData.textures, descriptor["name"], metalTextureReflectData);
         assert(foundMatch);
         descriptor["set"] = stoi(metalTextureReflectData.str(2));
     }
-    for (json& descriptor: ubos) {
+    if (ubos) for (json& descriptor: *ubos) {
         smatch metalBufferReflectData;
         bool foundMatch = findMetalReflectData(metalReflectData.buffers, descriptor["name"], metalBufferReflectData);
         assert(foundMatch);
         descriptor["set"] = stoi(metalBufferReflectData.str(2));
     }
-    for (json& descriptor: ssbos) {
+    if (ssbos) for (json& descriptor: *ssbos) {
         smatch metalBufferReflectData;
         bool foundMatch = findMetalReflectData(metalReflectData.buffers, descriptor["name"], metalBufferReflectData);
         assert(foundMatch);
         descriptor["set"] = stoi(metalBufferReflectData.str(2));
     }
-    for (json& descriptor: images) {
+    if (images) for (json& descriptor: *images) {
         smatch metalTextureReflectData;
         bool foundMatch = findMetalReflectData(metalReflectData.textures, descriptor["name"], metalTextureReflectData);
         descriptor["set"] = stoi(metalTextureReflectData.str(2));
@@ -275,8 +280,8 @@ json ShaderTools::patchShaderReflectionDataHLSL(const string& hlslFile, json& re
 
     //parse semantics
     if (ext == ".vert") {
-        json& inputs = reflectData["inputs"];
-        for (json& input: inputs) {
+        json* inputs = getEntry(reflectData, "inputs");
+        for (json& input: *inputs) {
             regex p(input["name"].get<string>() + "\\s*:\\s*([^;]*);");
             vector<smatch> hlslReflectData = RegexUtil::findAll(p, hlslContents);
             input["semantic"] = stoi(hlslReflectData[0].str(0));
@@ -284,17 +289,17 @@ json ShaderTools::patchShaderReflectionDataHLSL(const string& hlslFile, json& re
     }
 
     //get descriptors
-    json &textures = reflectData["textures"],
-         &ubos = reflectData["ubos"],
-         &ssbos = reflectData["ssbos"],
-         &images = reflectData["images"];
-    uint32_t numDescriptors = textures.size() + images.size() + ubos.size() + ssbos.size();
+    json *textures = getEntry(reflectData, "textures"),
+         *ubos = getEntry(reflectData, "ubos"),
+         *ssbos = getEntry(reflectData, "ssbos"),
+         *images = getEntry(reflectData, "images");
+    uint32_t numDescriptors = (textures ? textures->size() : 0) + (images ? images->size() : 0) +
+        (ubos ? ubos->size() : 0) + (ssbos ? ssbos->size() : 0);
     json descriptors;
-    for (const auto& desc: textures) descriptors[desc["set"].get<int>()] = desc;
-    for (const auto& desc: textures) descriptors[desc["set"].get<int>()] = desc;
-    for (const auto& desc: ubos) descriptors[desc["set"].get<int>()] = desc;
-    for (const auto& desc: ssbos) descriptors[desc["set"].get<int>()] = desc;
-    for (const auto& desc: images) descriptors[desc["set"].get<int>()] = desc;
+    if (textures) for (const auto& desc: *textures) descriptors[desc["set"].get<int>()] = desc;
+    if (ubos) for (const auto& desc: *ubos) descriptors[desc["set"].get<int>()] = desc;
+    if (ssbos) for (const auto& desc: *ssbos) descriptors[desc["set"].get<int>()] = desc;
+    if (images) for (const auto& desc: *images) descriptors[desc["set"].get<int>()] = desc;
 
     //patch descriptor bindings
     set<int> sets;
@@ -366,9 +371,9 @@ int ShaderTools::genShaderReflectionHLSL(const string& file, string outDir) {
 string ShaderTools::parseReflectionData(const json& reflectData, string ext) {
     string contents = "";
     if (ext == ".vert") {
-        const json& inputs = reflectData["inputs"];
-        contents += "INPUT_ATTRIBUTES "+to_string(inputs.size())+"\n";
-        for (const json& input: inputs) {
+        json* inputs = getEntry(reflectData, "inputs");
+        contents += "INPUT_ATTRIBUTES "+to_string(inputs->size())+"\n";
+        for (const json& input: *inputs) {
             string inputName = input["name"];
             string inputSemantic = "";
             string inputNameLower = toLower(inputName);
@@ -380,14 +385,14 @@ string ShaderTools::parseReflectionData(const json& reflectData, string ext) {
                 { "mat2", "VERTEXFORMAT_MAT2" }, { "mat3", "VERTEXFORMAT_MAT3" }, { "mat4", "VERTEXFORMAT_MAT4" }
             };
             string inputType = inputTypeMap[input["type"]];
-            contents += "\t"+inputName+" "+inputSemantic+" "+input["location"].get<string>()+" "+inputType+"\n";
+            contents += "\t"+inputName+" "+inputSemantic+" "+to_string(input["location"].get<int>())+" "+inputType+"\n";
         }
     }
-    const json &textures = reflectData["textures"],
-         &ubos = reflectData["ubos"],
-         &ssbos = reflectData["ssbos"],
-         &images = reflectData["images"],
-         &types = reflectData["types"];
+    json *textures = getEntry(reflectData, "textures"),
+         *ubos = getEntry(reflectData, "ubos"),
+         *ssbos = getEntry(reflectData, "ssbos"),
+         *images = getEntry(reflectData, "images"),
+         *types = getEntry(reflectData, "types");
     json uniformBufferInfos;
     json shaderStorageBufferInfos;
 
@@ -405,13 +410,13 @@ string ShaderTools::parseReflectionData(const json& reflectData, string ext) {
                 json member = memberData;
                 member["name"] = baseName + member["name"].get<string>();
                 member["size"] = typeSizeMap.at(memberType);
-                member["offset"] += baseOffset;
+                member["offset"] = member["offset"].get<int>() + baseOffset;
                 member["array_count"] = (member.find("array") != member.end()) ? member["array"][0].get<int>() : 0;
                 member["array_stride"] = (member.find("array_stride") != member.end()) ? member["array_stride"].get<int>(): 0;
                 members.push_back(member);
             }
-            else if (types.find(memberType) != types.end()) {
-                const json& type = types[memberType];
+            else if (types->find(memberType) != types->end()) {
+                const json& type = (*types)[memberType];
                 parseMembers(
                     type["members"],
                     members,
@@ -425,7 +430,7 @@ string ShaderTools::parseReflectionData(const json& reflectData, string ext) {
 
     auto parseBuffers = [&](const json& buffers, json& bufferInfos) {
         for (const json& buffer: buffers) {
-            const json& bufferType = types[buffer["type"].get<string>()];
+            const json& bufferType = (*types)[buffer["type"].get<string>()];
             json bufferMembers = {};
             parseMembers(bufferType["members"], bufferMembers, 0, "");
             json bufferInfo = {
@@ -437,37 +442,37 @@ string ShaderTools::parseReflectionData(const json& reflectData, string ext) {
             bufferInfos.push_back(bufferInfo);
         }
     };
-    parseBuffers(ubos, uniformBufferInfos);
-    parseBuffers(ssbos, shaderStorageBufferInfos);
+    if (ubos) parseBuffers(*ubos, uniformBufferInfos);
+    if (ssbos) parseBuffers(*ssbos, shaderStorageBufferInfos);
 
     json textureDescriptors = {};
     json bufferDescriptors = {};
-    for (const json& texture: textures) {
-        textureDescriptors[texture["set"].get<int>()] = {
+    if (textures) for (const json& texture: *textures) {
+        textureDescriptors[to_string(texture["set"].get<int>())] = {
             { "type", texture["type"] },
             { "name", texture["name"] },
             { "set", texture["set"] },
             { "binding", texture["binding"] }
         };
     }
-    for (const json& image: images) {
-        textureDescriptors[image["set"].get<int>()] = {
+    if (images) for (const json& image: *images) {
+        textureDescriptors[to_string(image["set"].get<int>())] = {
             { "type", image["type"] },
             { "name", image["name"] },
             { "set", image["set"] },
             { "binding", image["binding"] }
         };
     }
-    for (const json& ubo: ubos) {
-        bufferDescriptors[ubo["set"].get<int>()] = {
+    if (ubos) for (const json& ubo: *ubos) {
+        bufferDescriptors[to_string(ubo["set"].get<int>())] = {
             { "type", "uniformBuffer" },
             { "name", ubo["name"] },
             { "set", ubo["set"] },
             { "binding", ubo["binding"] }
         };
     }
-    for (const json& ssbo: ssbos) {
-        bufferDescriptors[ssbo["set"].get<int>()] = {
+    if (ssbos) for (const json& ssbo: *ssbos) {
+        bufferDescriptors[to_string(ssbo["set"].get<int>())] = {
             { "type", "shaderStorageBuffer" },
             { "name", ssbo["name"] },
             { "set", ssbo["set"] },
@@ -483,22 +488,22 @@ string ShaderTools::parseReflectionData(const json& reflectData, string ext) {
         { "uniformBuffer", "DESCRIPTOR_TYPE_UNIFORM_BUFFER" },
         { "shaderStorageBuffer", "DESCRIPTOR_TYPE_STORAGE_BUFFER" }
     };
-    for (int set : textureDescriptors) {
-        const json& descriptor = textureDescriptors[set];
-        string descriptorType = descriptorTypeMap[descriptor["type"]];
-        contents += "\t" + descriptor["name"].get<string>() + " " + descriptorType + " " + descriptor["set"].get<string>() + "\n";
+    for (auto& [key, val]: textureDescriptors.items()) {
+        int set = stoi(key);
+        string descriptorType = descriptorTypeMap[val["type"]];
+        contents += "\t" + val["name"].get<string>() + " " + descriptorType + " " + to_string(val["set"].get<int>()) + "\n";
     }
-    for (int set : bufferDescriptors) {
-        const json& descriptor = bufferDescriptors[set];
-        string descriptorType = descriptorTypeMap[descriptor["type"]];
-        contents += "\t" + descriptor["name"].get<string>() + " " + descriptorType + " " + descriptor["set"].get<string>() + "\n";
+    for (auto& [key, val]: bufferDescriptors.items()) {
+        int set = stoi(key);
+        string descriptorType = descriptorTypeMap[val["type"]];
+        contents += "\t" + val["name"].get<string>() + " " + descriptorType + " " + to_string(val["set"].get<int>()) + "\n";
     }
     auto processBufferInfos = [&](const json& bufferInfo) -> string {
         string contents = "";
         const json& memberInfos = bufferInfo["members"];
-        contents += bufferInfo["name"].get<string>() + " " + bufferInfo["set"].get<string>() + " " + to_string(memberInfos.size()) + "\n";
+        contents += bufferInfo["name"].get<string>() + " " + to_string(bufferInfo["set"].get<int>()) + " " + to_string(memberInfos.size()) + "\n";
         for (const json& m: memberInfos) {
-            contents += m["name"].get<string>() + " " + m["offset"].get<string>() + " " + m["size"].get<string>() + " " + m["array_count"].get<string>() + " " + m["array_stride"].get<string>() + "\n";
+            contents += m["name"].get<string>() + " " + to_string(m["offset"].get<int>()) + " " + to_string(m["size"].get<int>()) + " " + to_string(m["array_count"].get<int>()) + " " + to_string(m["array_stride"].get<int>()) + "\n";
         }
         return contents;
     };

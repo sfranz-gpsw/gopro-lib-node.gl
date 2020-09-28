@@ -53,7 +53,7 @@ string FileUtil::readFile(const string& path) {
 
 vector<string> FileUtil::splitExt(const string& filename) {
     auto it = filename.find_last_of('.');
-    return { filename.substr(0, it), filename.substr(it + 1) };
+    return { filename.substr(0, it), filename.substr(it) };
 }
 
 vector<string> FileUtil::findFiles(const string& path) {
