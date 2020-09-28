@@ -40,10 +40,12 @@ struct pipeline *ngli_pipeline_ngfx_create(struct gctx *gctx)
 int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_params *params)
 {
     pipeline_ngfx* pipeline = (pipeline_ngfx*)s;
-    program_ngfx* program = (program_ngfx*)pipeline->parent.program;
+    program_ngfx* program = (program_ngfx*)params->program;
     gctx_ngfx* gctx = (gctx_ngfx*)pipeline->parent.gctx;
     if (params->type == NGLI_PIPELINE_TYPE_GRAPHICS) {
-        GraphicsPipeline::create(gctx->graphicsContext, state, program->vs, program->fs, colorFormat, depthFormat);
+        GraphicsPipeline::State state;
+        //state.renderPass = ...;
+        GraphicsPipeline::create(gctx->graphicsContext, state, program->vs, program->fs, PIXELFORMAT_UNDEFINED, PIXELFORMAT_UNDEFINED);
     }
     else if (params->type == NGLI_PIPELINE_TYPE_COMPUTE) {
         ComputePipeline::create(gctx->graphicsContext, program->cs);
