@@ -62,7 +62,7 @@ ShaderTools::ShaderTools(bool verbose): verbose(verbose) {
 
 int ShaderTools::cmd(string str) {
     if (verbose) { LOG(">> %s", str.c_str()); }
-    else str += " > /dev/null 2>&1";
+    else str += " >> /dev/null 2>&1";
     return system(str.c_str());
 }
 
@@ -184,7 +184,6 @@ int ShaderTools::genShaderReflectionGLSL(const string& file, string outDir) {
     string inFileName = outDir + "/" + filename + ".spv";
     string outFileName = outDir + "/" + filename + ".spv.reflect";
     if (!FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
-    LOG("path: %s", getenv("PATH"));
     int result = cmd(SPIRV_CROSS+" "+inFileName+" --reflect --output "+outFileName);
 
     inFileName = outDir + "/" + filename + ".spv.reflect";
@@ -589,7 +588,10 @@ vector<string> ShaderTools::convertShaders(const vector<string> &files, string o
     return outFiles;
 }
 
-vector<string> ShaderTools::compileShaders(const vector<string>& files, const string& defines, string outDir, string fmt) {
+vector<string> ShaderTools::compileShaders(const vector<string>& files, string outDir, string fmt, string defines) {
+#ifdef GRAPHICS_BACKEND_VULKAN
+    defines += " -DGRAPHICS_BACKEND_VULKAN=1";
+#endif
     vector<string> outFiles;
     for (const string& file: files) {
         if (fmt == "glsl") compileShaderGLSL(file, defines, outDir, outFiles);

@@ -32,7 +32,7 @@ namespace ngfx {
 class ShaderTools {
 public:
     ShaderTools(bool verbose = false);
-    std::vector<std::string> compileShaders(const std::vector<std::string>& files, const std::string& defines, std::string outDir, std::string fmt = "glsl");
+    std::vector<std::string> compileShaders(const std::vector<std::string>& files, std::string outDir, std::string fmt = "glsl", std::string defines = "");
     std::vector<std::string> convertShaders(const std::vector<std::string> &files, std::string outDir, std::string fmt);
     std::vector<std::string> generateShaderMaps(const std::vector<std::string>& files, std::string outDir, std::string fmt);
 private:

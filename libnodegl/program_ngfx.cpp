@@ -45,23 +45,25 @@ static string compileShader(const string& src, const string& ext) {
     string tmpFile = string(fs::temp_directory_path()) + "/" + "tmp" + ext;
     FileUtil::writeFile(tmpFile, src);
     string outDir = fs::temp_directory_path();
-#ifdef GRAPHICS_BACKEND_VULKAN
-    string defines = "-DGRAPHICS_BACKEND_VULKAN=1";
-#endif
    auto glslFiles = { tmpFile };
-   auto spvFiles = shaderTools.compileShaders(glslFiles, defines, outDir, "glsl");
+   auto spvFiles = shaderTools.compileShaders(glslFiles, outDir, "glsl");
    auto spvMapFiles = shaderTools.generateShaderMaps(glslFiles, outDir, "glsl");
    return FileUtil::splitExt(spvFiles[0])[0];
 }
 
 int ngli_program_ngfx_init(struct program *s, const char *vertex, const char *fragment, const char *compute) {
-    gctx_ngfx *p_gctx_ngfx = (struct gctx_ngfx *)s->gctx;
-    if (vertex) VertexShaderModule::create(p_gctx_ngfx->graphicsContext->device, compileShader(vertex, ".vert"));
-    if (fragment) FragmentShaderModule::create(p_gctx_ngfx->graphicsContext->device, compileShader(fragment, ".frag"));
-    if (compute) ComputeShaderModule::create(p_gctx_ngfx->graphicsContext->device, compileShader(compute, ".comp"));
+    gctx_ngfx *gctx = (gctx_ngfx  *)s->gctx;
+    program_ngfx* program = (program_ngfx*)s;
+    if (vertex) program->vs = VertexShaderModule::create(gctx->graphicsContext->device, compileShader(vertex, ".vert")).release();
+    if (fragment) program->fs = FragmentShaderModule::create(gctx->graphicsContext->device, compileShader(fragment, ".frag")).release();
+    if (compute) program->cs = ComputeShaderModule::create(gctx->graphicsContext->device, compileShader(compute, ".comp")).release();
     return 0;
 }
 void ngli_program_ngfx_freep(struct program **sp) {
-    TODO("delete pipeline");
+    program_ngfx* program = (program_ngfx*)*sp;
+    if (program->vs) { delete program->vs; }
+    if (program->fs) { delete program->fs; }
+    if (program->cs) { delete program->cs; }
+    ngli_freep(sp);
 }
 

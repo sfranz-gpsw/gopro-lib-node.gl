@@ -25,11 +25,13 @@
 #include "graphics/Graphics.h"
 #include "compute/ComputePipeline.h"
 #include "graphics/GraphicsPipeline.h"
+#include "gctx_ngfx.h"
+#include "program_ngfx.h"
 using namespace ngfx;
 
 struct pipeline *ngli_pipeline_ngfx_create(struct gctx *gctx)
 {
-    struct pipeline_ngfx *s = (pipeline_ngfx*)ngli_calloc(1, sizeof(*s));
+    pipeline_ngfx *s = (pipeline_ngfx*)ngli_calloc(1, sizeof(*s));
     if (!s)
         return NULL;
     s->parent.gctx = gctx;
@@ -37,7 +39,15 @@ struct pipeline *ngli_pipeline_ngfx_create(struct gctx *gctx)
 }
 int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_params *params)
 {
-    TODO("ComputePipeline::create / GraphicsPipeline::create");
+    pipeline_ngfx* pipeline = (pipeline_ngfx*)s;
+    program_ngfx* program = (program_ngfx*)pipeline->parent.program;
+    gctx_ngfx* gctx = (gctx_ngfx*)pipeline->parent.gctx;
+    if (params->type == NGLI_PIPELINE_TYPE_GRAPHICS) {
+        GraphicsPipeline::create(gctx->graphicsContext, state, program->vs, program->fs, colorFormat, depthFormat);
+    }
+    else if (params->type == NGLI_PIPELINE_TYPE_COMPUTE) {
+        ComputePipeline::create(gctx->graphicsContext, program->cs);
+    }
     return 0;
 }
 int ngli_pipeline_ngfx_bind_resources(struct pipeline *s, const struct pipeline_desc_params *desc_params,

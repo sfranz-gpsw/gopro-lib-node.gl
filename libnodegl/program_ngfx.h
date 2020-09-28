@@ -23,11 +23,14 @@
 #define PROGRAM_NGFX_H
 
 #include "program.h"
-
+#include "graphics/ShaderModule.h"
 struct gctx;
 
 struct program_ngfx {
     struct program parent;
+    ngfx::VertexShaderModule *vs = nullptr;
+    ngfx::FragmentShaderModule *fs = nullptr;
+    ngfx::ComputeShaderModule *cs = nullptr;
 };
 
 struct program *ngli_program_ngfx_create(struct gctx *gctx);
