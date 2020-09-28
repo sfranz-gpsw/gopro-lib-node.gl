@@ -35,7 +35,7 @@ time_t FileUtil::getmtime(const string& filename) {
 bool FileUtil::srcFileChanged(const string& srcFileName, const string& targetFileName) {
     time_t srcTimeStamp = getmtime(srcFileName);
     time_t targetTimeStamp = getmtime(targetFileName);
-    if (srcTimeStamp <= targetTimeStamp)
+    if (srcTimeStamp > targetTimeStamp)
         return true;
     return false;
 }
@@ -64,6 +64,16 @@ vector<string> FileUtil::findFiles(const string& path) {
     return files;
 }
 
+vector<string> FileUtil::findFiles(const string& path, const string& ext) {
+    vector<string> files;
+    for (const auto & entry : fs::directory_iterator(path)) {
+        const fs::path& path = entry.path();
+        if (path.extension() != ext) continue;
+        files.push_back(path);
+    }
+    return files;
+}
+
 vector<string> FileUtil::filterFiles(const vector<string>& files, const string& fileFilter) {
     vector<string> filteredFiles;
     for (const string& file: files) {
@@ -76,9 +86,8 @@ vector<string> FileUtil::filterFiles(const vector<string>& files, const string& 
 vector<string> FileUtil::findFiles(const vector<string>& paths, const vector<string>& extensions) {
     vector<string> files;
     for (const string& path: paths) {
-        vector<string> dirFiles = findFiles(path);
         for (const string& ext: extensions) {
-            vector<string> filteredFiles = filterFiles(dirFiles, ext);
+            vector<string> filteredFiles = findFiles(path, ext);
             files.insert(files.end(),filteredFiles.begin(), filteredFiles.end());
         }
     }
