@@ -24,8 +24,14 @@
 #include <stdlib.h>
 #include "log.h"
 #include "graphics/ShaderModule.h"
+#include "graphics/ShaderTools.h"
+#include "FileUtil.h"
 #include "gctx_ngfx.h"
+#include <filesystem>
 using namespace ngfx;
+using namespace std;
+namespace fs = std::filesystem;
+static ShaderTools shaderTools(true);
 
 struct program *ngli_program_ngfx_create(struct gctx *gctx) {
     program_ngfx *s = (program_ngfx*)ngli_calloc(1, sizeof(*s));
@@ -34,12 +40,22 @@ struct program *ngli_program_ngfx_create(struct gctx *gctx) {
     s->parent.gctx = gctx;
     return (struct program *)s;
 }
+
+static string compileShader(const string& src, const string& ext) {
+    string tmpFile = string(fs::temp_directory_path()) + "/" + "tmp" + ext;
+    FileUtil::writeFile(tmpFile, src);
+#ifdef GRAPHICS_BACKEND_VULKAN
+    string defines = "-DGRAPHICS_BACKEND_VULKAN=1";
+#endif
+   auto outFiles = shaderTools.compileShaders({ tmpFile }, defines, fs::temp_directory_path());
+   return FileUtil::splitExt(outFiles[0])[0];
+}
+
 int ngli_program_ngfx_init(struct program *s, const char *vertex, const char *fragment, const char *compute) {
     gctx_ngfx *p_gctx_ngfx = (struct gctx_ngfx *)s->gctx;
-    //if (vertex) VertexShaderModule::create(p_gctx_ngfx->graphicsContext->device, vertex);
-    //if (fragment) FragmentShaderModule::create(p_gctx_ngfx->graphicsContext->device, fragment);
-    //if (compute) ComputeShaderModule::create(p_gctx_ngfx->graphicsContext->device, compute);
-    TODO("VertexShaderModule::create / FragmentShaderModule::create / ComputeShaderModule::create");
+    if (vertex) VertexShaderModule::create(p_gctx_ngfx->graphicsContext->device, compileShader(vertex, ".vert"));
+    if (fragment) FragmentShaderModule::create(p_gctx_ngfx->graphicsContext->device, compileShader(fragment, ".frag"));
+    if (compute) ComputeShaderModule::create(p_gctx_ngfx->graphicsContext->device, compileShader(compute, ".comp"));
     return 0;
 }
 void ngli_program_ngfx_freep(struct program **sp) {

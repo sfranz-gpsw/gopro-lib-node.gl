@@ -56,8 +56,7 @@ static json* getEntry(const json& data, const string& key) {
     if (it == data.end()) return nullptr;
     return (json*)&it.value();
 }
-ShaderTools::ShaderTools() {
-    verbose = (getEnv("V")=="1");
+ShaderTools::ShaderTools(bool verbose): verbose(verbose) {
     defaultIncludePaths = { "ngfx/data/shaders", "nodegl/data/shaders" };
 }
 
@@ -108,9 +107,9 @@ int ShaderTools::compileShaderGLSL(string filename, const string& defines, const
     string outFileName = fs::path(outDir + "/" + filename + ".spv");
     if (!FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
+    string contents = preprocess(parentPath, inFileName);
     ofstream outFile(fs::path(outDir + "/" + filename));
     assert(outFile);
-    string contents = preprocess(parentPath, inFileName);
     outFile<< contents;
     outFile.close();
     int result = cmd(GLSLANG_VALIDATOR+" " + defines + " -V "+

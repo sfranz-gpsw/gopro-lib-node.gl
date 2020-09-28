@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project (nodegl)
+set(CMAKE_CXX_STANDARD 17)
 
 file (GLOB_RECURSE NODEGL_SRC_FILES *.c *.cpp *.h)
 
@@ -37,6 +38,7 @@ target_link_libraries(nodegl PUBLIC
         ${SHADERC_LIBRARIES}
         ${GL_LIBRARIES}
         ${NGFX_LIBRARIES}
+        ${SHADER_TOOLS_LIBRARIES}
 )
 target_link_directories(nodegl PUBLIC 
         ${VULKANSDK_LIBRARY_DIRS}
@@ -46,4 +48,6 @@ target_include_directories(nodegl PUBLIC
         ${VULKANSDK_INCLUDE_DIRS}
         ${GL_INCLUDE_DIRS}
         ${NGFX_INCLUDE_DIRS}
+        ${SHADER_TOOLS_INCLUDE_DIRS}
+        ${JSON_INCLUDE_DIRS}
 )

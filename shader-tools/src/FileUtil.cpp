@@ -22,6 +22,7 @@
 #include <fstream>
 #include <filesystem>
 #include <cstring>
+#include <cassert>
 using namespace std;
 namespace fs = std::filesystem;
 using namespace ngfx;
@@ -42,13 +43,21 @@ bool FileUtil::srcFileChanged(const string& srcFileName, const string& targetFil
 
 string FileUtil::readFile(const string& path) {
     string contents;
-    ifstream in(path, ios::ate);
+    ifstream in(path, ifstream::binary | ios::ate);
+    assert(in);
     auto size = in.tellg();
     in.seekg(0);
     contents.resize(size);
     in.read(&contents[0], size);
     in.close();
     return contents;
+}
+
+void FileUtil::writeFile(const string& path, const string& contents) {
+    ofstream out(path);
+    assert(out);
+    out.write(contents.data(), contents.size());
+    out.close();
 }
 
 vector<string> FileUtil::splitExt(const string& filename) {
@@ -93,3 +102,4 @@ vector<string> FileUtil::findFiles(const vector<string>& paths, const vector<str
     }
     return files;
 }
+
