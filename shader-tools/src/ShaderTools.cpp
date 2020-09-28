@@ -413,14 +413,18 @@ string ShaderTools::parseReflectionData(const json& reflectData, string ext) {
     };
 
     auto parseBuffers = [&](const json& buffers, json& bufferInfos) {
-#if 0 //TODO
-        for buffer in buffers:
-            bufferType = types[buffer['type']]
-            bufferMembers = []
-            ParseReflectionUtil::parseMembers(bufferType['members'], bufferMembers)
-            bufferInfo = {'name':buffer['name'], 'set': buffer['set'], 'binding': buffer['binding'], 'members': bufferMembers}
-            bufferInfos.append(bufferInfo)
-#endif
+        for (const json& buffer: buffers) {
+            const json& bufferType = types[buffer["type"].get<string>()];
+            json bufferMembers = {};
+            parseMembers(bufferType["members"], bufferMembers, 0, "");
+            json bufferInfo = {
+                { "name",buffer["name"].get<string>() },
+                { "set", buffer["set"].get<int>() },
+                { "binding", buffer["binding"].get<int>() },
+                { "members", bufferMembers }
+            };
+            bufferInfos.push_back(bufferInfo);
+        }
     };
     parseBuffers(ubos, uniformBufferInfos);
     parseBuffers(ssbos, shaderStorageBufferInfos);
