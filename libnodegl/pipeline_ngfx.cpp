@@ -49,9 +49,9 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
         GraphicsContext::RenderPassConfig renderPassConfig;
         renderPassConfig.enableDepthStencil = rt_desc.depth_stencil.format != NGLI_FORMAT_UNDEFINED;
         renderPassConfig.numColorAttachments = rt_desc.nb_colors;
-        renderPassConfig.numSamples = rt_desc.colors[0].samples;
+        renderPassConfig.numSamples = std::max(rt_desc.colors[0].samples, 1);
         TODO("set renderPassConfig.offscreen");
-        renderPassConfig.offscreen = false;
+        renderPassConfig.offscreen = true;
         state.renderPass = gctx->graphicsContext->getRenderPass(renderPassConfig);
         GraphicsPipeline::create(gctx->graphicsContext, state, program->vs, program->fs, PIXELFORMAT_UNDEFINED, PIXELFORMAT_UNDEFINED);
     }

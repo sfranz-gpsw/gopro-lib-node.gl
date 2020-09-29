@@ -29,6 +29,7 @@
 #include "memory.h"
 #include "log.h"
 #include "math_utils.h"
+#include "format.h"
 using namespace std;
 using namespace ngfx;
 
@@ -45,7 +46,24 @@ static struct gctx *ngfx_create(const struct ngl_config *config)
 
 static int ngfx_init(struct gctx *s)
 {
-    TODO("initialize default_rendertarget_desc");
+    const ngl_config *config = &s->config;
+    gctx_ngfx *ctx = (gctx_ngfx *)s;
+    if (config->offscreen) {
+        ctx->default_rendertarget_desc.nb_colors = 1;
+        ctx->default_rendertarget_desc.colors[0].format = NGLI_FORMAT_R8G8B8A8_UNORM;
+        ctx->default_rendertarget_desc.colors[0].samples = config->samples;
+        ctx->default_rendertarget_desc.colors[0].resolve = config->samples > 0 ? 1 : 0;
+        ctx->default_rendertarget_desc.depth_stencil.format = ctx->graphicsContext->depthFormat;
+        ctx->default_rendertarget_desc.depth_stencil.samples = config->samples;
+        ctx->default_rendertarget_desc.depth_stencil.resolve = 0;
+    } else {
+        ctx->default_rendertarget_desc.nb_colors = 1;
+        ctx->default_rendertarget_desc.colors[0].format = NGLI_FORMAT_B8G8R8A8_UNORM;
+        ctx->default_rendertarget_desc.colors[0].samples = config->samples;
+        ctx->default_rendertarget_desc.colors[0].resolve = config->samples > 0 ? 1 : 0;
+        ctx->default_rendertarget_desc.depth_stencil.format = ctx->graphicsContext->depthFormat;
+        ctx->default_rendertarget_desc.depth_stencil.samples = config->samples;
+    }
     return 0;
 }
 
