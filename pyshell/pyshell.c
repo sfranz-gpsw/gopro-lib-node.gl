@@ -19,18 +19,22 @@
  * under the License.
  */
 #include <Python.h>
-#include <clocale>
-#include <cstdlib>
+#include <stdlib.h>
 
 int main(int argc, char** argv) {
-    wchar_t **wargv = new wchar_t*[argc];
+    //Convert arguments to UTF8 string
+    wchar_t **wargv = (wchar_t**)malloc(sizeof(wchar_t*) * argc);
     for (uint32_t j = 0; j<argc; j++) {
         int len = strlen(argv[j]);
-        wargv[j] = new wchar_t[len+1];
-        std::mbstowcs(wargv[j], argv[j], len);
+        wargv[j] = (wchar_t*)malloc(sizeof(wchar_t) * (len+1));
+        mbstowcs(wargv[j], argv[j], len);
         wargv[j][len] = 0;
     }
+
     Py_Initialize();
     Py_Main(argc, wargv);
     Py_Finalize();
+
+    for (uint32_t j = 0; j<argc; j++) free(wargv[j]);
+    free(wargv);
 }

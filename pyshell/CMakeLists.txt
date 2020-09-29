@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project (pyshell)
 
-file (GLOB_RECURSE PYSHELL_SRC_FILES *.cpp)
+file (GLOB_RECURSE PYSHELL_SRC_FILES *.c)
 
 add_executable(pyshell ${PYSHELL_SRC_FILES})
 target_include_directories(pyshell PUBLIC ${PYTHON_INCLUDE_DIRS})
