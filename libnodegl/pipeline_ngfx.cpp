@@ -27,6 +27,7 @@
 #include "graphics/GraphicsPipeline.h"
 #include "gctx_ngfx.h"
 #include "program_ngfx.h"
+#include "format.h"
 using namespace ngfx;
 
 struct pipeline *ngli_pipeline_ngfx_create(struct gctx *gctx)
@@ -44,7 +45,14 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
     gctx_ngfx* gctx = (gctx_ngfx*)pipeline->parent.gctx;
     if (params->type == NGLI_PIPELINE_TYPE_GRAPHICS) {
         GraphicsPipeline::State state;
-        //state.renderPass = ...;
+        auto& rt_desc = params->graphics.rt_desc;
+        GraphicsContext::RenderPassConfig renderPassConfig;
+        renderPassConfig.enableDepthStencil = rt_desc.depth_stencil.format != NGLI_FORMAT_UNDEFINED;
+        renderPassConfig.numColorAttachments = rt_desc.nb_colors;
+        renderPassConfig.numSamples = rt_desc.colors[0].samples;
+        TODO("set renderPassConfig.offscreen");
+        renderPassConfig.offscreen = false;
+        state.renderPass = gctx->graphicsContext->getRenderPass(renderPassConfig);
         GraphicsPipeline::create(gctx->graphicsContext, state, program->vs, program->fs, PIXELFORMAT_UNDEFINED, PIXELFORMAT_UNDEFINED);
     }
     else if (params->type == NGLI_PIPELINE_TYPE_COMPUTE) {
