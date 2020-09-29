@@ -47,6 +47,7 @@ struct gctx_class {
 
     void (*set_rendertarget)(struct gctx *s, struct rendertarget *rt);
     struct rendertarget *(*get_rendertarget)(struct gctx *s);
+    struct rendertarget **(*get_default_rendertargets)(struct gctx *s);
     const struct rendertarget_desc *(*get_default_rendertarget_desc)(struct gctx *s);
     void (*set_viewport)(struct gctx *s, const int *viewport);
     void (*get_viewport)(struct gctx *s, int *viewport);
@@ -56,7 +57,6 @@ struct gctx_class {
     void (*get_clear_color)(struct gctx *s, float *color);
     void (*clear_color)(struct gctx *s);
     void (*clear_depth_stencil)(struct gctx *s);
-    void (*invalidate_depth_stencil)(struct gctx *s);
     int (*get_preferred_depth_format)(struct gctx *s);
     int (*get_preferred_depth_stencil_format)(struct gctx *s);
 
@@ -121,6 +121,7 @@ void ngli_gctx_get_rendertarget_uvcoord_matrix(struct gctx *s, float *dst);
 
 void ngli_gctx_set_rendertarget(struct gctx *s, struct rendertarget *rt);
 struct rendertarget *ngli_gctx_get_rendertarget(struct gctx *s);
+struct rendertarget **ngli_gctx_get_default_rendertargets(struct gctx *s);
 const struct rendertarget_desc *ngli_gctx_get_default_rendertarget_desc(struct gctx *s);
 
 void ngli_gctx_set_viewport(struct gctx *s, const int *viewport);
@@ -133,7 +134,6 @@ void ngli_gctx_get_clear_color(struct gctx *s, float *color);
 
 void ngli_gctx_clear_color(struct gctx *s);
 void ngli_gctx_clear_depth_stencil(struct gctx *s);
-void ngli_gctx_invalidate_depth_stencil(struct gctx *s);
 
 int ngli_gctx_get_preferred_depth_format(struct gctx *s);
 int ngli_gctx_get_preferred_depth_stencil_format(struct gctx *s);

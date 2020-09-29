@@ -75,9 +75,11 @@ int ngli_gctx_draw(struct gctx *s, struct ngl_node *scene, double t)
 
     if (scene) {
         struct ngl_ctx *ctx = scene->ctx;
+        struct rendertarget **default_rendertargets = ngli_gctx_get_default_rendertargets(s);
+        ctx->available_rendertargets[0] = default_rendertargets[0];
+        ctx->available_rendertargets[1] = default_rendertargets[1];
         ctx->current_rendertarget = ngli_gctx_get_rendertarget(s);
         ctx->bind_current_rendertarget = 0;
-        ctx->clear_current_rendertarget = 0;
         LOG(DEBUG, "draw scene %s @ t=%f", scene->label, t);
         ngli_node_draw(scene);
     }
@@ -128,6 +130,11 @@ struct rendertarget *ngli_gctx_get_rendertarget(struct gctx *s)
     return s->class->get_rendertarget(s);
 }
 
+struct rendertarget **ngli_gctx_get_default_rendertargets(struct gctx *s)
+{
+    return s->class->get_default_rendertargets(s);
+}
+
 const struct rendertarget_desc *ngli_gctx_get_default_rendertarget_desc(struct gctx *s)
 {
     return s->class->get_default_rendertarget_desc(s);
@@ -171,11 +178,6 @@ void ngli_gctx_clear_color(struct gctx *s)
 void ngli_gctx_clear_depth_stencil(struct gctx *s)
 {
     s->class->clear_depth_stencil(s);
-}
-
-void ngli_gctx_invalidate_depth_stencil(struct gctx *s)
-{
-    s->class->invalidate_depth_stencil(s);
 }
 
 int ngli_gctx_get_preferred_depth_format(struct gctx *s)

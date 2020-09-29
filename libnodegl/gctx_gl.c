@@ -47,7 +47,7 @@ static void capture_default(struct gctx *s)
 {
     struct gctx_gl *s_priv = (struct gctx_gl *)s;
     struct ngl_config *config = &s->config;
-    struct rendertarget *rt = s_priv->rt;
+    struct rendertarget *rt = s_priv->rts[1];
 
     ngli_rendertarget_resolve(rt);
     if (config->capture_buffer)
@@ -58,7 +58,7 @@ static void capture_ios(struct gctx *s)
 {
     struct gctx_gl *s_priv = (struct gctx_gl *)s;
     struct glcontext *gl = s_priv->glcontext;
-    struct rendertarget *rt = s_priv->rt;
+    struct rendertarget *rt = s_priv->rts[1];
 
     ngli_rendertarget_resolve(rt);
     ngli_glFinish(gl);
@@ -170,22 +170,45 @@ static int offscreen_rendertarget_init(struct gctx *s)
         .colors[0] = {
             .attachment     = config->samples ? s_priv->ms_color : s_priv->color,
             .resolve_target = config->samples ? s_priv->color    : NULL,
+            .load_op        = NGLI_LOAD_OP_CLEAR,
+            .load_value[0]  = config->clear_color[0],
+            .load_value[1]  = config->clear_color[1],
+            .load_value[2]  = config->clear_color[2],
+            .load_value[3]  = config->clear_color[3],
+            .store_op       = NGLI_STORE_OP_STORE,
         },
         .depth_stencil = {
             .attachment = s_priv->depth,
+            .load_op    = NGLI_LOAD_OP_CLEAR,
+            .store_op   = NGLI_STORE_OP_STORE,
         },
     };
 
-    s_priv->rt = ngli_rendertarget_create(s);
-    if (!s_priv->rt)
+    s_priv->rts[0] = ngli_rendertarget_create(s);
+    if (!s_priv->rts[0])
         return NGL_ERROR_MEMORY;
-    ret = ngli_rendertarget_init(s_priv->rt, &rt_params);
+    ret = ngli_rendertarget_init(s_priv->rts[0], &rt_params);
     if (ret < 0)
         return ret;
 
+    rt_params.colors[0].load_op = NGLI_LOAD_OP_LOAD;
+    rt_params.colors[0].store_op = NGLI_STORE_OP_STORE;
+    rt_params.depth_stencil.load_op = NGLI_LOAD_OP_LOAD;
+    rt_params.depth_stencil.store_op = NGLI_LOAD_OP_DONTCARE;
+
+    s_priv->rts[1] = ngli_rendertarget_create(s);
+    if (!s_priv->rts[1])
+        return NGL_ERROR_MEMORY;
+    ret = ngli_rendertarget_init(s_priv->rts[1], &rt_params);
+    if (ret < 0)
+        return ret;
+
+    s_priv->default_rendertargets[0] = s_priv->rts[0];
+    s_priv->default_rendertargets[1] = s_priv->rts[1];
+
     s_priv->capture_func = ios_capture ? capture_ios : capture_default;
 
-    ngli_gctx_set_rendertarget(s, s_priv->rt);
+    ngli_gctx_set_rendertarget(s, s_priv->rts[0]);
     const int vp[4] = {0, 0, config->width, config->height};
     ngli_gctx_set_viewport(s, vp);
 
@@ -195,7 +218,8 @@ static int offscreen_rendertarget_init(struct gctx *s)
 static void offscreen_rendertarget_reset(struct gctx *s)
 {
     struct gctx_gl *s_priv = (struct gctx_gl *)s;
-    ngli_rendertarget_freep(&s_priv->rt);
+    ngli_rendertarget_freep(&s_priv->rts[0]);
+    ngli_rendertarget_freep(&s_priv->rts[1]);
     ngli_texture_freep(&s_priv->color);
     ngli_texture_freep(&s_priv->ms_color);
     ngli_texture_freep(&s_priv->depth);
@@ -319,9 +343,12 @@ static int gl_resize(struct gctx *s, int width, int height, const int *viewport)
 
 static int gl_pre_draw(struct gctx *s, double t)
 {
-    ngli_gctx_clear_color(s);
-    ngli_gctx_clear_depth_stencil(s);
-
+    struct gctx_gl *s_priv = (struct gctx_gl *)s;
+    struct glcontext *gl = s_priv->glcontext;
+    const struct ngl_config *config = &s->config;
+    const float *color = config->clear_color;
+    ngli_glClearColor(gl, color[0], color[1], color[2], color[3]);
+    ngli_glClear(gl, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     return 0;
 }
 
@@ -404,9 +431,23 @@ static void gl_set_rendertarget(struct gctx *s, struct rendertarget *rt)
     if (rt == s_priv->rendertarget)
         return;
 
+    if (s_priv->rendertarget) {
+        struct rendertarget_gl *rt_gl = (struct rendertarget_gl *)s_priv->rendertarget;
+        if (!(gl->features & NGLI_FEATURE_INVALIDATE_SUBDATA))
+            ngli_glInvalidateFramebuffer(gl, GL_FRAMEBUFFER, rt_gl->nb_invalidate_attachments, rt_gl->invalidate_attachments);
+    }
+
     struct rendertarget_gl *rt_gl = (struct rendertarget_gl *)rt;
     const GLuint fbo_id = rt_gl ? rt_gl->id : ngli_glcontext_get_default_framebuffer(gl);
     ngli_glBindFramebuffer(gl, GL_FRAMEBUFFER, fbo_id);
+
+    if (rt) {
+        const int scissor_test = s_priv->glstate.scissor_test;
+        ngli_glDisable(gl, GL_SCISSOR_TEST);
+        ngli_rendertarget_gl_clear(rt);
+        if (scissor_test)
+            ngli_glEnable(gl, GL_SCISSOR_TEST);
+    }
 
     s_priv->rendertarget = rt;
 }
@@ -415,6 +456,12 @@ static struct rendertarget *gl_get_rendertarget(struct gctx *s)
 {
     struct gctx_gl *s_priv = (struct gctx_gl *)s;
     return s_priv->rendertarget;
+}
+
+static struct rendertarget **gl_get_default_rendertargets(struct gctx *s)
+{
+    struct gctx_gl *s_priv = (struct gctx_gl *)s;
+    return s_priv->default_rendertargets;
 }
 
 static const struct rendertarget_desc *gl_get_default_rendertarget_desc(struct gctx *s)
@@ -493,18 +540,6 @@ static void gl_clear_depth_stencil(struct gctx *s)
         ngli_glEnable(gl, GL_SCISSOR_TEST);
 }
 
-static void gl_invalidate_depth_stencil(struct gctx *s)
-{
-    struct gctx_gl *s_priv = (struct gctx_gl *)s;
-    struct glcontext *gl = s_priv->glcontext;
-
-    if (!(gl->features & NGLI_FEATURE_INVALIDATE_SUBDATA))
-        return;
-
-    static const GLenum attachments[] = {GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT};
-    ngli_glInvalidateFramebuffer(gl, GL_FRAMEBUFFER, NGLI_ARRAY_NB(attachments), attachments);
-}
-
 static int gl_get_preferred_depth_format(struct gctx *s)
 {
     return NGLI_FORMAT_D16_UNORM;
@@ -531,6 +566,7 @@ const struct gctx_class ngli_gctx_gl = {
     .set_rendertarget         = gl_set_rendertarget,
     .get_rendertarget         = gl_get_rendertarget,
     .get_default_rendertarget_desc = gl_get_default_rendertarget_desc,
+    .get_default_rendertargets = gl_get_default_rendertargets,
     .set_viewport             = gl_set_viewport,
     .get_viewport             = gl_get_viewport,
     .set_scissor              = gl_set_scissor,
@@ -539,7 +575,6 @@ const struct gctx_class ngli_gctx_gl = {
     .get_clear_color          = gl_get_clear_color,
     .clear_color              = gl_clear_color,
     .clear_depth_stencil      = gl_clear_depth_stencil,
-    .invalidate_depth_stencil = gl_invalidate_depth_stencil,
     .get_preferred_depth_format = gl_get_preferred_depth_format,
     .get_preferred_depth_stencil_format = gl_get_preferred_depth_stencil_format,
 
@@ -600,6 +635,7 @@ const struct gctx_class ngli_gctx_gles = {
     .set_rendertarget         = gl_set_rendertarget,
     .get_rendertarget         = gl_get_rendertarget,
     .get_default_rendertarget_desc = gl_get_default_rendertarget_desc,
+    .get_default_rendertargets = gl_get_default_rendertargets,
     .set_viewport             = gl_set_viewport,
     .get_viewport             = gl_get_viewport,
     .set_scissor              = gl_set_scissor,
@@ -608,7 +644,6 @@ const struct gctx_class ngli_gctx_gles = {
     .get_clear_color          = gl_get_clear_color,
     .clear_color              = gl_clear_color,
     .clear_depth_stencil      = gl_clear_depth_stencil,
-    .invalidate_depth_stencil = gl_invalidate_depth_stencil,
     .get_preferred_depth_format = gl_get_preferred_depth_format,
     .get_preferred_depth_stencil_format = gl_get_preferred_depth_stencil_format,
 

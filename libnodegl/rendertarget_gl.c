@@ -194,6 +194,42 @@ static int require_resolve_fbo(struct rendertarget *s)
     return 0;
 }
 
+static void clear_buffer(struct rendertarget *s)
+{
+    struct gctx_gl *gctx_gl = (struct gctx_gl *)s->gctx;
+    struct glcontext *gl = gctx_gl->glcontext;
+    struct rendertarget_gl *s_priv = (struct rendertarget_gl *)s;
+    const struct rendertarget_params *params = &s->params;
+
+    if (params->nb_colors >= 1) {
+        const struct attachment *color = &params->colors[0];
+        const float *load_value = color->load_value;
+        ngli_glClearColor(gl, load_value[0], load_value[1], load_value[2], load_value[3]);
+        ngli_glClear(gl, s_priv->clear_flags);
+    }
+}
+
+static void clear_buffers(struct rendertarget *s)
+{
+    struct gctx_gl *gctx_gl = (struct gctx_gl *)s->gctx;
+    struct glcontext *gl = gctx_gl->glcontext;
+    const struct rendertarget_params *params = &s->params;
+
+    for (int i = 0; i < params->nb_colors; i++) {
+        const struct attachment *color = &params->colors[i];
+        if (color->load_op != NGLI_LOAD_OP_LOAD) {
+            ngli_glClearBufferfv(gl, GL_COLOR, i, color->load_value);
+        }
+    }
+
+    if (params->depth_stencil.attachment) {
+        const struct attachment *depth_stencil = &params->depth_stencil;
+        if (depth_stencil->load_op != NGLI_LOAD_OP_LOAD) {
+            ngli_glClearBufferfi(gl, GL_DEPTH_STENCIL, 0, 1.0f, 0);
+        }
+    }
+}
+
 struct rendertarget *ngli_rendertarget_gl_create(struct gctx *gctx)
 {
     struct rendertarget_gl *s = ngli_calloc(1, sizeof(*s));
@@ -225,6 +261,7 @@ int ngli_rendertarget_gl_init(struct rendertarget *s, const struct rendertarget_
     if (ret < 0)
         goto done;
 
+    s_priv->clear = clear_buffer;
     s_priv->resolve = resolve_no_draw_buffers;
     if (gl->features & NGLI_FEATURE_DRAW_BUFFERS) {
         if (s->nb_color_attachments > limits->max_draw_buffers) {
@@ -244,7 +281,57 @@ int ngli_rendertarget_gl_init(struct rendertarget *s, const struct rendertarget_
                 draw_buffers[-1] = GL_COLOR_ATTACHMENT0 + i;
             }
 
+            s_priv->clear = clear_buffers;
             s_priv->resolve = resolve_draw_buffers;
+        }
+    }
+
+    for (int i = 0; i < params->nb_colors; i++) {
+        const struct attachment *attachment = &params->colors[i];
+        switch (attachment->load_op) {
+        case NGLI_LOAD_OP_DONTCARE:
+        case NGLI_LOAD_OP_CLEAR:
+            s_priv->clear_flags |= GL_COLOR_BUFFER_BIT;
+            break;
+        case NGLI_LOAD_OP_LOAD:
+            break;
+        default:
+            ngli_assert(0);
+        }
+
+        switch (attachment->store_op) {
+        case NGLI_STORE_OP_DONTCARE:
+            s_priv->invalidate_attachments[s_priv->nb_invalidate_attachments++] = GL_COLOR_ATTACHMENT0 + i;
+            break;
+        case NGLI_STORE_OP_STORE:
+            break;
+        default:
+            ngli_assert(0);
+        }
+    }
+
+    const struct attachment *depth_stencil = &params->depth_stencil;
+    if (depth_stencil->attachment) {
+        switch (depth_stencil->load_op) {
+        case NGLI_LOAD_OP_DONTCARE:
+        case NGLI_LOAD_OP_CLEAR:
+            s_priv->clear_flags |= GL_DEPTH_BUFFER_BIT;
+            break;
+        case NGLI_LOAD_OP_LOAD:
+            break;
+        default:
+            ngli_assert(0);
+        }
+
+        switch (depth_stencil->store_op) {
+        case NGLI_STORE_OP_DONTCARE:
+            s_priv->invalidate_attachments[s_priv->nb_invalidate_attachments++] = GL_DEPTH_ATTACHMENT;
+            s_priv->invalidate_attachments[s_priv->nb_invalidate_attachments++] = GL_STENCIL_ATTACHMENT;
+            break;
+        case NGLI_STORE_OP_STORE:
+            break;
+        default:
+            ngli_assert(0);
         }
     }
 
@@ -277,6 +364,12 @@ void ngli_rendertarget_gl_resolve(struct rendertarget *s)
     struct rendertarget_gl *rt_gl = (struct rendertarget_gl *)rt;
     const GLuint fbo_id = rt_gl ? rt_gl->id : ngli_glcontext_get_default_framebuffer(gl);
     ngli_glBindFramebuffer(gl, GL_FRAMEBUFFER, fbo_id);
+}
+
+void ngli_rendertarget_gl_clear(struct rendertarget *s)
+{
+    const struct rendertarget_gl *s_priv = (struct rendertarget_gl *)s;
+    s_priv->clear(s);
 }
 
 void ngli_rendertarget_gl_read_pixels(struct rendertarget *s, uint8_t *data)

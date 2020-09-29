@@ -46,13 +46,14 @@ struct gctx_gl {
     struct glstate glstate;
     struct graphicstate default_graphicstate;
     struct rendertarget_desc default_rendertarget_desc;
+    struct rendertarget *default_rendertargets[2];
     struct rendertarget *rendertarget;
     int viewport[4];
     int scissor[4];
     float clear_color[4];
     int timer_active;
     /* Offscreen render target */
-    struct rendertarget *rt;
+    struct rendertarget *rts[2];
     struct texture *color;
     struct texture *ms_color;
     struct texture *depth;
