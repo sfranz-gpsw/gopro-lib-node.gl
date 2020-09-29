@@ -40,9 +40,25 @@ struct pipeline *ngli_pipeline_ngfx_create(struct gctx *gctx)
 }
 int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_params *params)
 {
-    pipeline_ngfx* pipeline = (pipeline_ngfx*)s;
+    s->type     = params->type;
+    s->graphics = params->graphics;
+    s->program  = params->program;
+
+    ngli_assert(ngli_darray_count(&s->uniform_descs) == 0);
+    LOG(INFO, "%p %p %p", s->texture_descs.data, s->buffer_descs.data, s->attribute_descs.data);
+    ngli_darray_init(&s->texture_descs, sizeof(struct pipeline_texture_desc), 0);
+    ngli_darray_init(&s->buffer_descs,  sizeof(struct pipeline_buffer_desc), 0);
+    ngli_darray_init(&s->attribute_descs, sizeof(struct pipeline_attribute_desc), 0);
+
+    ngli_assert(ngli_darray_count(&s->uniforms) == 0);
+    ngli_darray_init(&s->textures, sizeof(struct texture*), 0);
+    ngli_darray_init(&s->buffers,  sizeof(struct buffer*), 0);
+    ngli_darray_init(&s->attributes, sizeof(struct buffer*), 0);
+
     program_ngfx* program = (program_ngfx*)params->program;
+    pipeline_ngfx* pipeline = (pipeline_ngfx*)s;
     gctx_ngfx* gctx = (gctx_ngfx*)pipeline->parent.gctx;
+
     if (params->type == NGLI_PIPELINE_TYPE_GRAPHICS) {
         GraphicsPipeline::State state;
         auto& rt_desc = params->graphics.rt_desc;
@@ -63,7 +79,24 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
 int ngli_pipeline_ngfx_bind_resources(struct pipeline *s, const struct pipeline_desc_params *desc_params,
                                       const struct pipeline_resource_params *data_params)
 {
-    TODO("Graphics::bindVertexBuffer, Graphics::bindUniformBuffer, Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
+    ngli_darray_clear(&s->attributes);
+    ngli_darray_clear(&s->buffers);
+    ngli_darray_clear(&s->textures);
+    for (int i = 0; i<data_params->nb_attributes; i++) {
+        const struct buffer **attribute = &data_params->attributes[i];
+        if (!ngli_darray_push(&s->attributes, attribute))
+                    return NGL_ERROR_MEMORY;
+    }
+    for (int i = 0; i<data_params->nb_buffers; i++) {
+        const struct buffer **buffer = &data_params->buffers[i];
+        if (!ngli_darray_push(&s->buffers, buffer))
+                    return NGL_ERROR_MEMORY;
+    }
+    for (int i = 0; i<data_params->nb_textures; i++) {
+        const struct texture **texture= &data_params->textures[i];
+        if (!ngli_darray_push(&s->textures, texture))
+                    return NGL_ERROR_MEMORY;
+    }
     return 0;
 }
 int ngli_pipeline_ngfx_update_attribute(struct pipeline *s, int index, struct buffer *buffer) {
@@ -72,7 +105,30 @@ int ngli_pipeline_ngfx_update_attribute(struct pipeline *s, int index, struct bu
 }
 int ngli_pipeline_ngfx_update_uniform(struct pipeline *s, int index, const void *value) { TODO(); return 0; }
 int ngli_pipeline_ngfx_update_texture(struct pipeline *s, int index, struct texture *texture) { TODO(); return 0; }
-void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instances) { TODO(); }
-void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices, int indices_format, int nb_indices, int nb_instances) { TODO();}
-void ngli_pipeline_ngfx_dispatch(struct pipeline *s, int nb_group_x, int nb_group_y, int nb_group_z) { TODO(); }
-void ngli_pipeline_ngfx_freep(struct pipeline **sp) { TODO();}
+void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instances) {
+    TODO("Graphics::bindVertexBuffer, Graphics::bindUniformBuffer, Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
+    TODO("Graphics::draw");
+}
+void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices, int indices_format, int nb_indices, int nb_instances) {
+    TODO("Graphics::bindVertexBuffer, Graphics::bindUniformBuffer, Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
+    TODO("Graphics::drawIndexed");
+}
+void ngli_pipeline_ngfx_dispatch(struct pipeline *s, int nb_group_x, int nb_group_y, int nb_group_z) {
+    TODO("Graphics::bindVertexBuffer, Graphics::bindUniformBuffer, Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
+    TODO("Graphics::dispatch");
+}
+void ngli_pipeline_ngfx_freep(struct pipeline **sp) {
+    if (!*sp)
+        return;
+
+    pipeline *s = *sp;
+    ngli_darray_reset(&s->uniform_descs);
+    ngli_darray_reset(&s->texture_descs);
+    ngli_darray_reset(&s->buffer_descs);
+    ngli_darray_reset(&s->attribute_descs);
+
+    ngli_darray_reset(&s->uniforms);
+    ngli_darray_reset(&s->textures);
+    ngli_darray_reset(&s->buffers);
+    ngli_darray_reset(&s->attributes);
+}
