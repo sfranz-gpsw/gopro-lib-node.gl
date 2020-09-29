@@ -78,16 +78,20 @@ RenderPass* VKGraphicsContext::getRenderPass(RenderPassConfig config) {
 }
 
 void VKGraphicsContext::initRenderPass(const RenderPassConfig &config, VKRenderPass& renderPass) {
-    VkFormat colorFormat = vkSwapchain->surfaceFormat.format, depthFormat = vkPhysicalDevice.depthFormat;
-    std::vector<VkAttachmentDescription> attachments = {
-        {
+    VkFormat colorFormat = vkSwapchain->surfaceFormat.format,
+             depthFormat = vkPhysicalDevice.depthFormat;
+    std::vector<VkAttachmentDescription> attachments;
+    uint32_t depthAttachmentBaseIndex = 0;
+    for (uint32_t j = 0; j<config.numColorAttachments; j++) {
+        attachments.push_back({
             0, colorFormat, VK_SAMPLE_COUNT_1_BIT,
             VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
             VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-        }
-    };
+        });
+    }
     if (config.enableDepthStencil) {
+        depthAttachmentBaseIndex = attachments.size();
         attachments.push_back({
             0, depthFormat, VK_SAMPLE_COUNT_1_BIT,
             VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
@@ -96,14 +100,19 @@ void VKGraphicsContext::initRenderPass(const RenderPassConfig &config, VKRenderP
         });
     }
 
-    VkAttachmentReference colorReference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-    VkAttachmentReference depthReference = { 1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+    std::vector<VkAttachmentReference> colorReferences(config.numColorAttachments);
+    for (uint32_t j = 0; j<colorReferences.size(); j++) {
+        colorReferences[j] = { j, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+    }
+    VkAttachmentReference depthReference = {
+        depthAttachmentBaseIndex, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+    };
 
     std::vector<VkSubpassDescription> subpasses = {
         {
             0, VK_PIPELINE_BIND_POINT_GRAPHICS,
             0, nullptr,
-            1, &colorReference, nullptr, config.enableDepthStencil ? &depthReference : nullptr,
+            uint32_t(colorReferences.size()), colorReferences.data(), nullptr, config.enableDepthStencil ? &depthReference : nullptr,
             0, nullptr
         }
     };
@@ -127,23 +136,27 @@ void VKGraphicsContext::initRenderPass(const RenderPassConfig &config, VKRenderP
 }
 
 void VKGraphicsContext::initRenderPassMSAA(const RenderPassConfig &config, VKRenderPass& renderPass) {
-    VkFormat colorFormat = vkSwapchain->surfaceFormat.format, depthFormat = vkPhysicalDevice.depthFormat;
-    std::vector<VkAttachmentDescription> attachments = {
-        {
+    VkFormat colorFormat = vkSwapchain->surfaceFormat.format,
+             depthFormat = vkPhysicalDevice.depthFormat;
+    std::vector<VkAttachmentDescription> attachments;
+    uint32_t depthAttachmentBaseIndex = 0;
+    for (uint32_t j = 0; j<config.numColorAttachments; j++) {
+        attachments.push_back({
             0, colorFormat, VkSampleCountFlagBits(config.numSamples),
             VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
             VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-        },
-        {
+        });
+        attachments.push_back({
             0, colorFormat, VkSampleCountFlagBits(1),
             VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE,
             VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-        }
-    };
+        });
+    }
 
     if (config.enableDepthStencil) {
+        depthAttachmentBaseIndex = attachments.size();
         attachments.push_back({
             0, depthFormat, VkSampleCountFlagBits(config.numSamples),
             VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -158,15 +171,22 @@ void VKGraphicsContext::initRenderPassMSAA(const RenderPassConfig &config, VKRen
         });
     }
 
-    VkAttachmentReference colorReference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-    VkAttachmentReference resolveReference = { 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-    VkAttachmentReference depthReference = { 2, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+    std::vector<VkAttachmentReference> colorReferences(config.numColorAttachments);
+    for (uint32_t j = 0; j<colorReferences.size(); j++) {
+        colorReferences[j] = { 2 * j, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+    }
+    std::vector<VkAttachmentReference> resolveReferences(config.numColorAttachments);
+    for (uint32_t j = 0; j<resolveReferences.size(); j++) {
+        resolveReferences[j] = { 2 * j + 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+    }
+    VkAttachmentReference depthReference = { depthAttachmentBaseIndex, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
 
     std::vector<VkSubpassDescription> subpasses = {
         {
             0, VK_PIPELINE_BIND_POINT_GRAPHICS,
             0, nullptr,
-            1, &colorReference, &resolveReference, config.enableDepthStencil ? &depthReference : nullptr,
+            uint32_t(colorReferences.size()), colorReferences.data(),
+            resolveReferences.data(), config.enableDepthStencil ? &depthReference : nullptr,
             0, nullptr
         }
     };
@@ -191,7 +211,7 @@ void VKGraphicsContext::initRenderPassMSAA(const RenderPassConfig &config, VKRen
 
 void VKGraphicsContext::initOffscreenRenderPass(const RenderPassConfig &config, VKRenderPass& renderPass) {
     VkFormat colorFormat = VkFormat(defaultOffscreenSurfaceFormat),
-            depthFormat = vkPhysicalDevice.depthFormat;
+             depthFormat = vkPhysicalDevice.depthFormat;
     std::vector<VkAttachmentDescription> attachments;
     uint32_t depthAttachmentBaseIndex = 0;
     for (uint32_t j = 0; j<config.numColorAttachments; j++) {
@@ -249,7 +269,7 @@ void VKGraphicsContext::initOffscreenRenderPass(const RenderPassConfig &config, 
 
 void VKGraphicsContext::initOffscreenRenderPassMSAA(const RenderPassConfig &config, VKRenderPass& renderPass) {
     VkFormat colorFormat = VkFormat(defaultOffscreenSurfaceFormat),
-            depthFormat = vkPhysicalDevice.depthFormat;
+             depthFormat = vkPhysicalDevice.depthFormat;
     std::vector<VkAttachmentDescription> attachments;
     uint32_t depthAttachmentBaseIndex = 0;
     for (uint32_t j = 0; j<config.numColorAttachments; j++) {
