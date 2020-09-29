@@ -100,7 +100,26 @@ string ShaderTools::preprocess(const string& dataPath, const string& inFile) {
     return contents;
 }
 
-int ShaderTools::compileShaderGLSL(string filename, const string& defines, const string& outDir, vector<string>& outFiles) {
+string ShaderTools::patchShaderLayoutsGLSL(const string& dataPath, const string& inFile) {
+    string contents = "";
+    istringstream sstream(readFile(inFile));
+    string line;
+    while (std::getline(sstream, line)) {
+        //Patch GLSL shader layouts
+        smatch g;
+        bool matchLayout = regex_search(line, g,
+            regex("^(.*)" "layout\\s*\\(" "([^)]*)" "binding[\\s]*=[\\s]*" "([\\d]+)" "([^)]*)" "\\)" "(.*)$"));
+        if (matchLayout) {
+            contents += g[1].str() + "layout(" + g[2].str() + "set = " + g[3].str() + ", binding = 0" + g[4].str() + ")" + g[5].str() + "\n";
+        }
+        else {
+            contents += line + "\n";
+        }
+    }
+    return contents;
+}
+
+int ShaderTools::compileShaderGLSL(string filename, const string& defines, const string& outDir, vector<string>& outFiles, int flags) {
     string parentPath = fs::path(filename).parent_path();
     filename = fs::path(filename).filename();
     string inFileName = fs::path(parentPath + "/" + filename);
@@ -108,6 +127,7 @@ int ShaderTools::compileShaderGLSL(string filename, const string& defines, const
     if (!FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
     string contents = preprocess(parentPath, inFileName);
+    if (flags & PATCH_SHADER_LAYOUTS_GLSL) contents = patchShaderLayoutsGLSL(parentPath, inFileName);
     ofstream outFile(fs::path(outDir + "/" + filename));
     assert(outFile);
     outFile<< contents;
@@ -588,13 +608,13 @@ vector<string> ShaderTools::convertShaders(const vector<string> &files, string o
     return outFiles;
 }
 
-vector<string> ShaderTools::compileShaders(const vector<string>& files, string outDir, string fmt, string defines) {
+vector<string> ShaderTools::compileShaders(const vector<string>& files, string outDir, string fmt, string defines, int flags) {
 #ifdef GRAPHICS_BACKEND_VULKAN
     defines += " -DGRAPHICS_BACKEND_VULKAN=1";
 #endif
     vector<string> outFiles;
     for (const string& file: files) {
-        if (fmt == "glsl") compileShaderGLSL(file, defines, outDir, outFiles);
+        if (fmt == "glsl") compileShaderGLSL(file, defines, outDir, outFiles, flags);
         else if (fmt == "msl") compileShaderMTL(file, defines, outDir, outFiles);
         else if (fmt == "hlsl") compileShaderHLSL(file, defines, outDir, outFiles);
     }

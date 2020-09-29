@@ -41,14 +41,15 @@ struct program *ngli_program_ngfx_create(struct gctx *gctx) {
     return (struct program *)s;
 }
 
-static string compileShader(const string& src, const string& ext) {
+static string compileShader(string src, const string& ext) {
+    //patch source bindings
     string tmpFile = string(fs::temp_directory_path()) + "/" + "tmp" + ext;
     FileUtil::writeFile(tmpFile, src);
     string outDir = fs::temp_directory_path();
-   auto glslFiles = { tmpFile };
-   auto spvFiles = shaderTools.compileShaders(glslFiles, outDir, "glsl");
-   auto spvMapFiles = shaderTools.generateShaderMaps(glslFiles, outDir, "glsl");
-   return FileUtil::splitExt(spvFiles[0])[0];
+    auto glslFiles = { tmpFile };
+    auto spvFiles = shaderTools.compileShaders(glslFiles, outDir, "glsl", "", ShaderTools::PATCH_SHADER_LAYOUTS_GLSL);
+    auto spvMapFiles = shaderTools.generateShaderMaps(glslFiles, outDir, "glsl");
+    return FileUtil::splitExt(spvFiles[0])[0];
 }
 
 int ngli_program_ngfx_init(struct program *s, const char *vertex, const char *fragment, const char *compute) {

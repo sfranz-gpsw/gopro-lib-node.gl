@@ -32,14 +32,15 @@ namespace ngfx {
 class ShaderTools {
 public:
     ShaderTools(bool verbose = false);
-    std::vector<std::string> compileShaders(const std::vector<std::string>& files, std::string outDir, std::string fmt = "glsl", std::string defines = "");
+    enum { PATCH_SHADER_LAYOUTS_GLSL = 1};
+    std::vector<std::string> compileShaders(const std::vector<std::string>& files, std::string outDir, std::string fmt = "glsl", std::string defines = "", int flags = 0);
     std::vector<std::string> convertShaders(const std::vector<std::string> &files, std::string outDir, std::string fmt);
     std::vector<std::string> generateShaderMaps(const std::vector<std::string>& files, std::string outDir, std::string fmt);
 private:
     void applyPatches(const std::vector<std::string> &patchFiles, std::string outDir);
     int cmd(std::string str);
     int compileShaderGLSL(std::string filename, const std::string& defines, const std::string& outDir,
-                          std::vector<std::string>& outFiles);
+                          std::vector<std::string>& outFiles, int flags = 0);
     int compileShaderHLSL(const std::string& file, const std::string& defines, std::string outDir, std::vector<std::string>& outFiles);
     int compileShaderMTL(const std::string& file, const std::string& defines, std::string outDir, std::vector<std::string> &outFiles);
     int convertShader(const std::string& file, const std::string& extraArgs, std::string outDir, std::string fmt, std::vector<std::string>& outFiles);
@@ -61,6 +62,7 @@ private:
     std::string parseReflectionData(const json& reflectData, std::string ext);
     json patchShaderReflectionDataMSL(const std::string& file, json& reflectData, const std::string& ext);
     json patchShaderReflectionDataHLSL(const std::string& hlslFile, json& reflectData, std::string ext);
+    std::string patchShaderLayoutsGLSL(const std::string& dataPath, const std::string& inFile);
     std::string preprocess(const std::string& dataPath, const std::string& inFile);
     bool verbose = false;
     std::vector<std::string> defaultIncludePaths;
