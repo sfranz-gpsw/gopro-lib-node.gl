@@ -248,6 +248,55 @@ int ngli_rendertarget_gl_init(struct rendertarget *s, const struct rendertarget_
         }
     }
 
+    for (int i = 0; i < params->nb_colors; i++) {
+        const struct attachment *attachment = &params->colors[i];
+        switch (attachment->op_load) {
+        case NGLI_LOAD_OP_DONTCARE:
+        case NGLI_LOAD_OP_CLEAR:
+            s_priv->clear_flags |= GL_COLOR_BUFFER_BIT;
+            s_priv->clear_draw_buffers[s_priv->nb_clear_draw_buffers++] = GL_COLOR_ATTACHMENT0 + i;
+            break;
+        case NGLI_LOAD_OP_LOAD:
+            break;
+        default:
+            ngli_assert(0);
+        }
+
+        switch (attachment->op_store) {
+        case NGLI_STORE_OP_DONTCARE:
+            s_priv->invalidate_attachments[s_priv->nb_invalidate_attachments++] = GL_COLOR_ATTACHMENT0 + i;
+            break;
+        case NGLI_STORE_OP_STORE:
+            break;
+        default:
+            ngli_assert(0);
+        }
+    }
+
+    const struct attachment *depth_stencil = &params->depth_stencil;
+    if (depth_stencil->attachment) {
+        switch (depth_stencil->op_load) {
+        case NGLI_LOAD_OP_DONTCARE:
+        case NGLI_LOAD_OP_CLEAR:
+            s_priv->clear_flags |= GL_DEPTH_BUFFER_BIT;
+            break;
+        case NGLI_LOAD_OP_LOAD:
+            break;
+        default:
+            ngli_assert(0);
+        }
+        switch (depth_stencil->op_store) {
+        case NGLI_STORE_OP_DONTCARE:
+            s_priv->invalidate_attachments[s_priv->nb_invalidate_attachments++] = GL_DEPTH_ATTACHMENT;
+            s_priv->invalidate_attachments[s_priv->nb_invalidate_attachments++] = GL_STENCIL_ATTACHMENT;
+            break;
+        case NGLI_STORE_OP_STORE:
+            break;
+        default:
+            ngli_assert(0);
+        }
+    }
+
 done:;
     struct rendertarget *rt = gctx_gl->rendertarget;
     struct rendertarget_gl *rt_gl = (struct rendertarget_gl *)rt;

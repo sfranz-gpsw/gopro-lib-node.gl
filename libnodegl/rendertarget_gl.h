@@ -32,6 +32,11 @@ struct rendertarget_gl {
     GLuint prev_id;
     GLenum draw_buffers[NGLI_MAX_COLOR_ATTACHMENTS];
     GLenum blit_draw_buffers[NGLI_MAX_COLOR_ATTACHMENTS*(NGLI_MAX_COLOR_ATTACHMENTS+1)/2];
+    GLenum clear_flags;
+    GLenum clear_draw_buffers[NGLI_MAX_COLOR_ATTACHMENTS];
+    int nb_clear_draw_buffers;
+    GLenum invalidate_attachments[NGLI_MAX_COLOR_ATTACHMENTS + 2];
+    int nb_invalidate_attachments;
     void (*resolve)(struct rendertarget *s);
 };
 

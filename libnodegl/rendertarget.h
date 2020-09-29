@@ -27,9 +27,22 @@
 
 #define NGLI_MAX_COLOR_ATTACHMENTS 8
 
+enum {
+    NGLI_LOAD_OP_DONTCARE,
+    NGLI_LOAD_OP_CLEAR,
+    NGLI_LOAD_OP_LOAD,
+};
+
+enum {
+    NGLI_STORE_OP_DONTCARE,
+    NGLI_STORE_OP_STORE,
+};
+
 struct attachment_desc {
     int format;
     int resolve;
+    int op_load;
+    int op_store;
 };
 
 struct rendertarget_desc {
@@ -44,6 +57,8 @@ struct attachment {
     int attachment_layer;
     struct texture *resolve_target;
     int resolve_target_layer;
+    int op_load;
+    int op_store;
 };
 
 struct rendertarget_params {

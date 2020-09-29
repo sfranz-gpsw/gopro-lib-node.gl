@@ -403,9 +403,28 @@ static void gl_set_rendertarget(struct gctx *s, struct rendertarget *rt)
     if (rt == s_priv->rendertarget)
         return;
 
+    if (s_priv->rendertarget) {
+        struct rendertarget_gl *rt_gl = (struct rendertarget_gl *)s_priv->rendertarget;
+        LOG(ERROR, "%d", rt_gl->nb_invalidate_attachments);
+        if (!(gl->features & NGLI_FEATURE_INVALIDATE_SUBDATA))
+            ngli_glInvalidateFramebuffer(gl, GL_FRAMEBUFFER, rt_gl->nb_invalidate_attachments, rt_gl->invalidate_attachments);
+    }
+
     struct rendertarget_gl *rt_gl = (struct rendertarget_gl *)rt;
     const GLuint fbo_id = rt_gl ? rt_gl->id : ngli_glcontext_get_default_framebuffer(gl);
     ngli_glBindFramebuffer(gl, GL_FRAMEBUFFER, fbo_id);
+
+    if (rt_gl) {
+        if (gl->features & NGLI_FEATURE_DRAW_BUFFERS && rt->nb_color_attachments > 1)
+            ngli_glDrawBuffers(gl, rt_gl->nb_clear_draw_buffers, rt_gl->clear_draw_buffers);
+        ngli_glClear(gl, rt_gl->clear_flags);
+        if (gl->features & NGLI_FEATURE_DRAW_BUFFERS && rt->nb_color_attachments > 1) {
+            LOG(ERROR, "glDrawBuffers: %d %x %x", rt->nb_color_attachments, rt_gl->draw_buffers[0], GL_COLOR_ATTACHMENT0);
+            ngli_glDrawBuffers(gl, rt->nb_color_attachments, rt_gl->draw_buffers);
+        }
+    } else {
+        ngli_glClear(gl, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
 
     s_priv->rendertarget = rt;
 }
