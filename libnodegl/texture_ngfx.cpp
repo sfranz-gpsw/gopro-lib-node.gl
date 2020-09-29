@@ -23,6 +23,7 @@
 #include "log.h"
 #include "memory.h"
 #include "graphics/Texture.h"
+#include "gctx_ngfx.h"
 using namespace ngfx;
 
 struct texture *ngli_texture_ngfx_create(struct gctx *gctx) {
@@ -34,8 +35,15 @@ struct texture *ngli_texture_ngfx_create(struct gctx *gctx) {
 }
 
 int ngli_texture_ngfx_init(struct texture *s,
-                           const struct texture_params *params) {
+                           const struct texture_params *p) {
     TODO("Texture::create");
+    struct gctx_ngfx *ctx = (struct gctx_ngfx *)s->gctx;
+    Texture::create(ctx->graphicsContext, ctx->graphics,
+        nullptr, format, size, p->width, p->height, d, arrayLayers,
+        imageUsageFlags, textureType, genMipmaps,
+        to_ngfx_filter(p->min_filter), to_ngfx_filter(p->mag_filter), to_ngfx_filter(p->mipmap_filter),
+        p->samples
+    );
     return 0;
 }
 
