@@ -62,7 +62,7 @@ int ngli_buffer_gl_init(struct buffer *s, int size, int usage)
     return 0;
 }
 
-int ngli_buffer_gl_upload(struct buffer *s, const void *data, int size)
+int ngli_buffer_gl_upload(struct buffer *s, const void *data, uint32_t size, uint32_t offset)
 {
     struct gctx_gl *gctx_gl = (struct gctx_gl *)s->gctx;
     struct glcontext *gl = gctx_gl->glcontext;

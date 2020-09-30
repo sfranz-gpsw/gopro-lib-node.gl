@@ -198,6 +198,28 @@ static int ngfx_get_preferred_depth_stencil_format(struct gctx *s)
     return 0;
 }
 
+void ngli_gctx_ngfx_begin_render_pass(struct gctx *s)
+{
+    gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
+    Graphics *graphics = s_priv->graphics;
+    CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
+#if 0 //TODO
+    graphics->beginRenderPass(cmd_buf, s_priv->render_pass, framebuffer, clear_color, clear_depth, clear_stencil);
+    graphics->setViewport(cmd_buf, vp_rect);
+    graphics->setScissor(cmd_buf, scissor_rect);
+#endif
+}
+
+void ngli_gctx_ngfx_end_render_pass(struct gctx *s)
+{
+    gctx_ngfx *s_priv = (gctx_ngfx *)s;
+    Graphics *graphics = s_priv->graphics;
+    CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
+#if 0 //TODO
+    graphics->endRenderPass(cmd_buf);
+#endif
+}
+
 extern "C" const struct gctx_class ngli_gctx_ngfx = {
     .name         = "NGFX",
     .create       = ngfx_create,

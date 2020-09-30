@@ -36,4 +36,7 @@ struct gctx_ngfx {
     ngfx::CommandBuffer* cur_command_buffer = nullptr;
 };
 
+void ngli_gctx_ngfx_begin_render_pass(struct gctx *s);
+void ngli_gctx_ngfx_end_render_pass(struct gctx *s);
+
 #endif

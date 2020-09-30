@@ -221,19 +221,21 @@ void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instanc
     struct gctx_ngfx *gctx_ngfx = (struct gctx_ngfx *)s->gctx;
     CommandBuffer *cmd_buf = gctx_ngfx->cur_command_buffer;
 
-    //TODO: ngli_gctx_ngfx_begin_render_pass(s->gctx);
+    ngli_gctx_ngfx_begin_render_pass(s->gctx);
 
     bind_pipeline(s);
     bind_vertex_buffers(cmd_buf, s);
     bind_buffers(cmd_buf, s);
     bind_textures(cmd_buf, s);
     TODO("Graphics::draw");
+
+    ngli_gctx_ngfx_end_render_pass(s->gctx);
 }
 void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices, int indices_format, int nb_indices, int nb_instances) {
     struct gctx_ngfx *gctx_ngfx = (struct gctx_ngfx *)s->gctx;
     CommandBuffer *cmd_buf = gctx_ngfx->cur_command_buffer;
 
-    //TODO: ngli_gctx_ngfx_begin_render_pass(s->gctx);
+    ngli_gctx_ngfx_begin_render_pass(s->gctx);
 
     bind_pipeline(s);
     bind_vertex_buffers(cmd_buf, s);
@@ -242,12 +244,14 @@ void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices,
 
     TODO("Graphics::bindIndexBuffer");
     TODO("Graphics::drawIndexed");
+
+    ngli_gctx_ngfx_end_render_pass(s->gctx);
 }
 void ngli_pipeline_ngfx_dispatch(struct pipeline *s, int nb_group_x, int nb_group_y, int nb_group_z) {
     struct gctx_ngfx *gctx_ngfx = (struct gctx_ngfx *)s->gctx;
     CommandBuffer *cmd_buf = gctx_ngfx->cur_command_buffer;
 
-    //TODO: ngli_gctx_ngfx_begin_render_pass(s->gctx);
+    ngli_gctx_ngfx_begin_render_pass(s->gctx);
 
     bind_pipeline(s);
     bind_vertex_buffers(cmd_buf, s);
@@ -255,6 +259,8 @@ void ngli_pipeline_ngfx_dispatch(struct pipeline *s, int nb_group_x, int nb_grou
     bind_textures(cmd_buf, s);
 
     TODO("Graphics::dispatch");
+
+    ngli_gctx_ngfx_end_render_pass(s->gctx);
 }
 void ngli_pipeline_ngfx_freep(struct pipeline **sp) {
     if (!*sp)
