@@ -61,7 +61,7 @@ pkg_check_modules(VULKANSDK REQUIRED vulkan)
 pkg_check_modules(SHADERC REQUIRED shaderc_combined)
 set (GL_PACKAGES gl egl)
 pkg_check_modules(GL REQUIRED ${GL_PACKAGES})
-pkg_check_modules(PYTHON REQUIRED python3)
+pkg_check_modules(PYTHON REQUIRED python-3.7)
 
 set (SXPLAYER_DIR ${EXTERNAL_DIR}/sxplayer-9.5.1)
 set (SXPLAYER_INCLUDE_DIRS ${SXPLAYER_DIR})
