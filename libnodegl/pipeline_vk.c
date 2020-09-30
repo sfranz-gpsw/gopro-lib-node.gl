@@ -855,7 +855,7 @@ void ngli_pipeline_vk_draw(struct pipeline *s, int nb_vertices, int nb_instances
 
     VkCommandBuffer cmd_buf = gctx_vk->cur_command_buffer;
 
-    ngli_gctx_vk_commit_render_pass(s->gctx);
+    ngli_gctx_vk_begin_render_pass(s->gctx);
 
     vkCmdBindPipeline(cmd_buf, s_priv->bind_point, s_priv->pipeline);
 
@@ -919,11 +919,11 @@ void ngli_pipeline_vk_draw_indexed(struct pipeline *s, struct buffer *indices, i
         return;
     }
 
-    set_uniforms(s);
+    upload_uniforms(s);
 
     VkCommandBuffer cmd_buf = gctx_vk->cur_command_buffer;
 
-    ngli_gctx_vk_commit_render_pass(s->gctx);
+    ngli_gctx_vk_begin_render_pass(s->gctx);
 
     vkCmdBindPipeline(cmd_buf, s_priv->bind_point, s_priv->pipeline);
 
@@ -990,7 +990,7 @@ void ngli_pipeline_vk_dispatch(struct pipeline *s, int nb_group_x, int nb_group_
 
     VkCommandBuffer cmd_buf = gctx_vk->cur_command_buffer;
 
-    ngli_gctx_vk_commit_render_pass(s->gctx);
+    ngli_gctx_vk_begin_render_pass(s->gctx);
 
     vkCmdBindPipeline(cmd_buf, s_priv->bind_point, s_priv->pipeline);
 

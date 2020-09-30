@@ -661,7 +661,7 @@ static void vk_get_rendertarget_uvcoord_matrix(struct gctx *s, float *dst)
     memcpy(dst, matrix, 4 * 4 * sizeof(float));
 }
 
-void ngli_gctx_vk_commit_render_pass(struct gctx *s)
+void ngli_gctx_vk_begin_render_pass(struct gctx *s)
 {
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
     struct rendertarget *rt = s_priv->rendertarget;
@@ -792,7 +792,7 @@ static void vk_clear_color(struct gctx *s)
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
     struct rendertarget *rt = s_priv->rendertarget;
 
-    ngli_gctx_vk_commit_render_pass(s);
+    ngli_gctx_vk_begin_render_pass(s);
 
     VkClearAttachment clear_attachments = {
         .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -834,7 +834,7 @@ static void vk_clear_depth_stencil(struct gctx *s)
             return;
     }
 
-    ngli_gctx_vk_commit_render_pass(s);
+    ngli_gctx_vk_begin_render_pass(s);
 
     VkClearAttachment clear_attachments = {
         .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
