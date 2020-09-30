@@ -69,6 +69,10 @@
 #include "texture.h"
 #include "utils.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct node_class;
 
 typedef int (*cmd_func_type)(struct ngl_ctx *s, void *arg);
@@ -491,5 +495,9 @@ char *ngli_node_default_label(const char *class_name);
 int ngli_is_default_label(const char *class_name, const char *str);
 const struct node_param *ngli_node_param_find(const struct ngl_node *node, const char *key,
                                               uint8_t **base_ptrp);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

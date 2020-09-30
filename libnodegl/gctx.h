@@ -22,6 +22,10 @@
 #ifndef GCTX_H
 #define GCTX_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "buffer.h"
 #include "features.h"
 #include "gtimer.h"
@@ -151,5 +155,9 @@ int ngli_gctx_get_preferred_depth_format(struct gctx *s);
 int ngli_gctx_get_preferred_depth_stencil_format(struct gctx *s);
 
 void ngli_gctx_flush(struct gctx *s);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

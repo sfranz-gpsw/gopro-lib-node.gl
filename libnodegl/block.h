@@ -28,6 +28,10 @@
 #include "darray.h"
 #include "program.h" // MAX_ID_LEN
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum block_layout {
     NGLI_BLOCK_LAYOUT_STD140,
     NGLI_BLOCK_LAYOUT_STD430,
@@ -54,5 +58,9 @@ void ngli_block_init(struct block *s, enum block_layout layout);
 int ngli_block_add_field(struct block *s, const char *name, int type, int count);
 void ngli_block_datacopy(const struct block_field *fi, uint8_t *dst, const uint8_t *src);
 void ngli_block_reset(struct block *s);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -35,6 +35,10 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Logging levels
  */
@@ -593,5 +597,9 @@ int ngl_android_set_application_context(void *application_context);
  *         context or NULL if none has been set
  */
 void *ngl_android_get_application_context(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

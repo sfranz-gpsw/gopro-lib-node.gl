@@ -31,6 +31,10 @@
 
 #define HWMAP_FLAG_FRAME_OWNER (1 << 0)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct hwmap_class {
     const char *name;
     int flags;
@@ -51,5 +55,9 @@ struct hwupload {
 
 int ngli_hwupload_upload_frame(struct ngl_node *node);
 void ngli_hwupload_uninit(struct ngl_node *node);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* HWUPLOAD_H */

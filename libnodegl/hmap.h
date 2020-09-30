@@ -26,6 +26,10 @@
 #define HMAP_SIZE_NBIT 3
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct hmap;
 
 struct hmap_entry {
@@ -44,5 +48,9 @@ void *ngli_hmap_get(const struct hmap *hm, const char *key);
 const struct hmap_entry *ngli_hmap_next(const struct hmap *hm,
                                         const struct hmap_entry *prev);
 void ngli_hmap_freep(struct hmap **hmp);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

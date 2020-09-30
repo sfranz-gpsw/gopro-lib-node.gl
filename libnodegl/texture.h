@@ -24,6 +24,10 @@
 
 #include "utils.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct gctx;
 
 enum {
@@ -120,5 +124,9 @@ int ngli_texture_upload(struct texture *s, const uint8_t *data, int linesize);
 int ngli_texture_generate_mipmap(struct texture *s);
 
 void ngli_texture_freep(struct texture **sp);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

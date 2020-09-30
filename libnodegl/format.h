@@ -22,6 +22,10 @@
 #ifndef FORMAT_H
 #define FORMAT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum {
     NGLI_FORMAT_UNDEFINED,
     NGLI_FORMAT_R8_UNORM,
@@ -95,5 +99,9 @@ int ngli_format_get_nb_comp(int format);
 int ngli_format_has_depth(int format);
 
 int ngli_format_has_stencil(int format);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

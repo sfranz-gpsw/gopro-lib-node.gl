@@ -26,6 +26,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef __GNUC__
 # define ngli_printf_format(fmtpos, attrpos) __attribute__((__format__(__printf__, fmtpos, attrpos)))
 #else
@@ -107,5 +111,9 @@ int64_t ngli_gettime_relative(void);
 char *ngli_asprintf(const char *fmt, ...) ngli_printf_format(1, 2);
 uint32_t ngli_crc32(const char *s);
 void ngli_thread_set_name(const char *name);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* UTILS_H */
