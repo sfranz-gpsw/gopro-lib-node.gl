@@ -230,11 +230,30 @@ void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instanc
     TODO("Graphics::draw");
 }
 void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices, int indices_format, int nb_indices, int nb_instances) {
-    TODO("Graphics::bindVertexBuffer, Graphics::bindUniformBuffer, Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
+    struct gctx_ngfx *gctx_ngfx = (struct gctx_ngfx *)s->gctx;
+    CommandBuffer *cmd_buf = gctx_ngfx->cur_command_buffer;
+
+    //TODO: ngli_gctx_ngfx_begin_render_pass(s->gctx);
+
+    bind_pipeline(s);
+    bind_vertex_buffers(cmd_buf, s);
+    bind_buffers(cmd_buf, s);
+    bind_textures(cmd_buf, s);
+
+    TODO("Graphics::bindIndexBuffer");
     TODO("Graphics::drawIndexed");
 }
 void ngli_pipeline_ngfx_dispatch(struct pipeline *s, int nb_group_x, int nb_group_y, int nb_group_z) {
-    TODO("Graphics::bindVertexBuffer, Graphics::bindUniformBuffer, Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
+    struct gctx_ngfx *gctx_ngfx = (struct gctx_ngfx *)s->gctx;
+    CommandBuffer *cmd_buf = gctx_ngfx->cur_command_buffer;
+
+    //TODO: ngli_gctx_ngfx_begin_render_pass(s->gctx);
+
+    bind_pipeline(s);
+    bind_vertex_buffers(cmd_buf, s);
+    bind_buffers(cmd_buf, s);
+    bind_textures(cmd_buf, s);
+
     TODO("Graphics::dispatch");
 }
 void ngli_pipeline_ngfx_freep(struct pipeline **sp) {
