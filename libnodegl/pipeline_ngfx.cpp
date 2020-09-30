@@ -140,15 +140,35 @@ int ngli_pipeline_ngfx_update_texture(struct pipeline *s, int index, struct text
     TODO("index: %d texture: %p", index, texture);
     return 0;
 }
+
+static int set_uniforms(struct pipeline *s)
+{
+    for (int i = 0; i < NGLI_PROGRAM_SHADER_NB; i++) {
+        const uint8_t *udata = s->udata[i];
+        if (!udata)
+            continue;
+        struct buffer *ubuffer = s->ubuffer[i];
+        const struct block *ublock = s->ublock[i];
+        int ret = ngli_buffer_upload(ubuffer, udata, ublock->size, 0);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
 void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instances) {
+    set_uniforms(s);
     TODO("Graphics::bindVertexBuffer, Graphics::bindUniformBuffer, Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
     TODO("Graphics::draw");
 }
 void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices, int indices_format, int nb_indices, int nb_instances) {
+    TODO("Buffer::upload");
     TODO("Graphics::bindVertexBuffer, Graphics::bindUniformBuffer, Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
     TODO("Graphics::drawIndexed");
 }
 void ngli_pipeline_ngfx_dispatch(struct pipeline *s, int nb_group_x, int nb_group_y, int nb_group_z) {
+    TODO("Buffer::upload");
     TODO("Graphics::bindVertexBuffer, Graphics::bindUniformBuffer, Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
     TODO("Graphics::dispatch");
 }
