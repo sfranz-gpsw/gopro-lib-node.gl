@@ -68,7 +68,7 @@ struct gctx_class {
 
     struct buffer *(*buffer_create)(struct gctx *ctx);
     int (*buffer_init)(struct buffer *s, int size, int usage);
-    int (*buffer_upload)(struct buffer *s, const void *data, int size);
+    int (*buffer_upload)(struct buffer *s, const void *data, uint32_t size, uint32_t offset);
     int (*buffer_download)(struct buffer* s, void* data, uint32_t size, uint32_t offset);
     int (*buffer_map)(struct buffer *s, int size, uint32_t offset, void** data);
     void (*buffer_unmap)(struct buffer* s);

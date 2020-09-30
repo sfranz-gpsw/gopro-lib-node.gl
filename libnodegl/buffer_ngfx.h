@@ -34,7 +34,7 @@ struct gctx;
 
 struct buffer *ngli_buffer_ngfx_create(struct gctx *gctx);
 int ngli_buffer_ngfx_init(struct buffer *s, int size, int usage);
-int ngli_buffer_ngfx_upload(struct buffer *s, const void *data, int size);
+int ngli_buffer_ngfx_upload(struct buffer *s, const void *data, uint32_t size, uint32_t offset);
 int ngli_buffer_ngfx_download(struct buffer* s, void* data, uint32_t size, uint32_t offset);
 int ngli_buffer_ngfx_map(struct buffer *s, int size, uint32_t offset, void** data);
 void ngli_buffer_ngfx_unmap(struct buffer* s);

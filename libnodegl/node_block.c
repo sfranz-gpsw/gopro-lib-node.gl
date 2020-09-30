@@ -129,7 +129,7 @@ int ngli_node_block_ref(struct ngl_node *node)
         if (ret < 0)
             return ret;
 
-        ret = ngli_buffer_upload(s->buffer, s->data, s->data_size);
+        ret = ngli_buffer_upload(s->buffer, s->data, s->data_size, 0);
         if (ret < 0)
             return ret;
 
@@ -153,7 +153,7 @@ int ngli_node_block_upload(struct ngl_node *node)
     struct block_priv *s = node->priv_data;
 
     if (s->has_changed && s->buffer_last_upload_time != node->last_update_time) {
-        int ret = ngli_buffer_upload(s->buffer, s->data, s->data_size);
+        int ret = ngli_buffer_upload(s->buffer, s->data, s->data_size, 0);
         if (ret < 0)
             return ret;
         s->buffer_last_upload_time = node->last_update_time;

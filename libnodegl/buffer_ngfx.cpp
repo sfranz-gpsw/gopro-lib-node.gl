@@ -47,7 +47,7 @@ int ngli_buffer_ngfx_init(struct buffer *s, int size, int usage)
     return 0;
 }
 
-int ngli_buffer_ngfx_upload(struct buffer *s, const void *data, int size)
+int ngli_buffer_ngfx_upload(struct buffer *s, const void *data, uint32_t size, uint32_t offset)
 {
     struct buffer_ngfx *s_priv = (struct buffer_ngfx *)s;
     s_priv->v->upload(data, size);
