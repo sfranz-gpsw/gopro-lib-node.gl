@@ -30,6 +30,7 @@
 #include "gctx_ngfx.h"
 #include "program_ngfx.h"
 #include "format.h"
+#include "type.h"
 using namespace ngfx;
 
 struct pipeline *ngli_pipeline_ngfx_create(struct gctx *gctx)
@@ -179,6 +180,31 @@ int ngli_pipeline_ngfx_update_texture(struct pipeline *s, int index, struct text
     return 0;
 }
 
+static void bind_buffers(CommandBuffer* cmd_buf, struct pipeline *s) {
+    struct gctx_ngfx *gctx_ngfx = (struct gctx_ngfx *)s->gctx;
+    int nb_buffers = ngli_darray_count(&s->buffers);
+    for (int j = 0; j<nb_buffers; j++) {
+        const buffer_ngfx *buffer = *(const buffer_ngfx **)ngli_darray_get(&s->buffers, j);
+        const pipeline_buffer_desc &buffer_desc = *(const pipeline_buffer_desc *)ngli_darray_get(&s->buffer_descs, j);
+        if (buffer_desc.type == NGLI_TYPE_UNIFORM_BUFFER) {
+            gctx_ngfx->graphics->bindUniformBuffer(cmd_buf, buffer->v, buffer_desc.binding, buffer_desc.stage);
+        }
+        else {
+            gctx_ngfx->graphics->bindStorageBuffer(cmd_buf, buffer->v, buffer_desc.binding, buffer_desc.stage);
+        }
+    }
+}
+
+static void bind_vertex_buffers(CommandBuffer* cmd_buf, struct pipeline *s) {
+    struct gctx_ngfx *gctx_ngfx = (struct gctx_ngfx *)s->gctx;
+    int nb_attributes = ngli_darray_count(&s->attributes);
+    for (int j = 0; j<nb_attributes; j++) {
+        const pipeline_attribute_desc &attr_desc = *(const pipeline_attribute_desc *)ngli_darray_get(&s->attribute_descs, j);
+        const buffer_ngfx *buffer = *(const buffer_ngfx **)ngli_darray_get(&s->attributes, j);
+        gctx_ngfx->graphics->bindVertexBuffer(cmd_buf, buffer->v, attr_desc.location);
+    }
+}
+
 void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instances) {
     struct gctx_ngfx *gctx_ngfx = (struct gctx_ngfx *)s->gctx;
     CommandBuffer *cmd_buf = gctx_ngfx->cur_command_buffer;
@@ -188,22 +214,10 @@ void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instanc
     //TODO: ngli_gctx_ngfx_begin_render_pass(s->gctx);
 
     bind_pipeline(s);
+    bind_vertex_buffers(cmd_buf, s);
+    bind_buffers(cmd_buf, s);
 
-    int nb_buffers = ngli_darray_count(&s->buffers);
-    for (int j = 0; j<nb_buffers; j++) {
-        const buffer_ngfx *buffer = *(const buffer_ngfx **)ngli_darray_get(&s->buffers, j);
-        const pipeline_buffer_desc &buffer_desc = *(const pipeline_buffer_desc *)ngli_darray_get(&s->buffer_descs, j);
-        gctx_ngfx->graphics->bindUniformBuffer(cmd_buf, buffer->v, buffer_desc.binding, buffer_desc.stage); //TODO: bind SSBO
-    }
-
-    int nb_attributes = ngli_darray_count(&s->attributes);
-    for (int j = 0; j<nb_attributes; j++) {
-        const pipeline_attribute_desc &attr_desc = *(const pipeline_attribute_desc *)ngli_darray_get(&s->attribute_descs, j);
-        const buffer_ngfx *buffer = *(const buffer_ngfx **)ngli_darray_get(&s->attributes, j);
-        gctx_ngfx->graphics->bindVertexBuffer(cmd_buf, buffer->v, attr_desc.location);
-    }
-
-    TODO("Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
+    TODO("Graphics::bindIndexBuffer, Graphics::bindTexture, etc");
     TODO("Graphics::draw");
 }
 void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices, int indices_format, int nb_indices, int nb_instances) {
