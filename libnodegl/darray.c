@@ -104,8 +104,10 @@ void *ngli_darray_pop(struct darray *darray)
 
 void *ngli_darray_get(const struct darray *darray, int index)
 {
-    if (index < 0 || index >= darray->count)
+    if (index < 0 || index >= darray->count) {
+        LOG(ERROR, "array index out of bounds. Index: %d, count: %d", index, darray->count);
         return NULL;
+    }
     return darray->data + index * darray->element_size;
 }
 
