@@ -24,12 +24,14 @@
 
 #include "gctx.h"
 #include "graphics/GraphicsContext.h"
+#include "graphics/Graphics.h"
 #include <memory>
 
 struct gctx_ngfx {
     struct gctx parent;
     struct rendertarget_desc default_rendertarget_desc;
     ngfx::GraphicsContext* graphicsContext = nullptr;
+    ngfx::Graphics* graphics = nullptr;
 };
 
 #endif

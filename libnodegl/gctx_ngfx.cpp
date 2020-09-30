@@ -41,6 +41,10 @@ static struct gctx *ngfx_create(const struct ngl_config *config)
         Surface surface(config->width, config->height, true);
         ctx->graphicsContext->setSurface(&surface);
     }
+    else {
+        TODO("create window surface or use existing handle");
+    }
+    ctx->graphics = Graphics::create(ctx->graphicsContext);
     return (struct gctx *)ctx;
 }
 
@@ -87,7 +91,11 @@ static void ngfx_wait_idle(struct gctx *s)
 }
 
 static void ngfx_destroy(struct gctx *s)
-{ TODO();
+{
+    gctx_ngfx* ctx = new gctx_ngfx;
+    delete ctx->graphicsContext;
+    delete ctx->graphics;
+    delete ctx;
 
 }
 
