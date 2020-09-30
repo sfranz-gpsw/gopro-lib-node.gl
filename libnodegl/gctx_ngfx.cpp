@@ -77,7 +77,10 @@ static int ngfx_resize(struct gctx *s, int width, int height, const int *viewpor
 }
 
 static int ngfx_pre_draw(struct gctx *s, double t)
-{ TODO();
+{
+    TODO();
+    gctx_ngfx *s_priv = (gctx_ngfx *)s;
+    s_priv->cur_command_buffer = s_priv->graphicsContext->drawCommandBuffer();
     return 0;
 }
 

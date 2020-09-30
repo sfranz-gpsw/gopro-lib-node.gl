@@ -25,6 +25,7 @@
 #include "graphics/Graphics.h"
 #include "compute/ComputePipeline.h"
 #include "graphics/GraphicsPipeline.h"
+#include "buffer_ngfx.h"
 #include "gctx_ngfx.h"
 #include "program_ngfx.h"
 #include "format.h"
@@ -93,10 +94,27 @@ static int update_blocks(struct pipeline* s,  const struct pipeline_desc_params 
     return 0;
 }
 
+static int upload_uniforms(struct pipeline *s)
+{
+    for (int i = 0; i < NGLI_PROGRAM_SHADER_NB; i++) {
+        const uint8_t *udata = s->udata[i];
+        if (!udata)
+            continue;
+        struct buffer *ubuffer = s->ubuffer[i];
+        const struct block *ublock = s->ublock[i];
+        int ret = ngli_buffer_upload(ubuffer, udata, ublock->size, 0);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
 int ngli_pipeline_ngfx_bind_resources(struct pipeline *s, const struct pipeline_desc_params *desc_params,
                                       const struct pipeline_resource_params *data_params)
 {
     int ret;
+    struct gctx_ngfx *gctx_ngfx = (struct gctx_ngfx *)s->gctx;
     if ((ret = update_blocks(s, desc_params)) < 0)
         return ret;
     ngli_darray_clear(&s->attributes);
@@ -116,6 +134,15 @@ int ngli_pipeline_ngfx_bind_resources(struct pipeline *s, const struct pipeline_
         const struct texture **texture= &data_params->textures[i];
         if (!ngli_darray_push(&s->textures, texture))
                     return NGL_ERROR_MEMORY;
+    }
+
+    upload_uniforms(s);
+
+    CommandBuffer* cmd_buf = gctx_ngfx->cur_command_buffer;
+    for (int j = 0; j < desc_params->nb_buffers; j++) {
+        const buffer_ngfx *buffer = (const buffer_ngfx *)data_params->buffers[j];
+        const pipeline_buffer_desc &buffer_desc = desc_params->buffers_desc[j];
+        gctx_ngfx->graphics->bindUniformBuffer(cmd_buf, buffer->v, buffer_desc.binding, buffer_desc.stage);
     }
     return 0;
 }
@@ -141,34 +168,15 @@ int ngli_pipeline_ngfx_update_texture(struct pipeline *s, int index, struct text
     return 0;
 }
 
-static int set_uniforms(struct pipeline *s)
-{
-    for (int i = 0; i < NGLI_PROGRAM_SHADER_NB; i++) {
-        const uint8_t *udata = s->udata[i];
-        if (!udata)
-            continue;
-        struct buffer *ubuffer = s->ubuffer[i];
-        const struct block *ublock = s->ublock[i];
-        int ret = ngli_buffer_upload(ubuffer, udata, ublock->size, 0);
-        if (ret < 0)
-            return ret;
-    }
-
-    return 0;
-}
-
 void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instances) {
-    set_uniforms(s);
     TODO("Graphics::bindVertexBuffer, Graphics::bindUniformBuffer, Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
     TODO("Graphics::draw");
 }
 void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices, int indices_format, int nb_indices, int nb_instances) {
-    TODO("Buffer::upload");
     TODO("Graphics::bindVertexBuffer, Graphics::bindUniformBuffer, Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
     TODO("Graphics::drawIndexed");
 }
 void ngli_pipeline_ngfx_dispatch(struct pipeline *s, int nb_group_x, int nb_group_y, int nb_group_z) {
-    TODO("Buffer::upload");
     TODO("Graphics::bindVertexBuffer, Graphics::bindUniformBuffer, Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
     TODO("Graphics::dispatch");
 }

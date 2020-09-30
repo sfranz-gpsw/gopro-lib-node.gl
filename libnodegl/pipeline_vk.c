@@ -667,7 +667,7 @@ static int create_pipeline_layout(struct pipeline *s)
     return 0;
 }
 
-static int set_uniforms(struct pipeline *s)
+static int upload_uniforms(struct pipeline *s)
 {
     for (int i = 0; i < NGLI_PROGRAM_SHADER_NB; i++) {
         const uint8_t *udata = s->udata[i];
@@ -851,7 +851,7 @@ void ngli_pipeline_vk_draw(struct pipeline *s, int nb_vertices, int nb_instances
         return;
     }
 
-    set_uniforms(s);
+    upload_uniforms(s);
 
     VkCommandBuffer cmd_buf = gctx_vk->cur_command_buffer;
 
@@ -986,7 +986,7 @@ void ngli_pipeline_vk_dispatch(struct pipeline *s, int nb_group_x, int nb_group_
     struct gctx_vk *gctx_vk = (struct gctx_vk *)s->gctx;
     struct pipeline_vk *s_priv = (struct pipeline_vk *)s;
 
-    set_uniforms(s);
+    upload_uniforms(s);
 
     VkCommandBuffer cmd_buf = gctx_vk->cur_command_buffer;
 
