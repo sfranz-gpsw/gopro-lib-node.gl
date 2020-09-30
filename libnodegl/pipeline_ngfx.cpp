@@ -76,9 +76,29 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
     }
     return 0;
 }
+
+static int update_blocks(struct pipeline* s,  const struct pipeline_desc_params *pipeline_desc_params) {
+    /* Uniform blocks */
+    memcpy(s->ublock, pipeline_desc_params->ublock, sizeof(s->ublock));
+    memcpy(s->ubuffer, pipeline_desc_params->ubuffer, sizeof(s->ubuffer));
+    for (int i = 0; i < NGLI_PROGRAM_SHADER_NB; i++) {
+        const struct buffer *ubuffer = pipeline_desc_params->ubuffer[i];
+        if (!ubuffer)
+            continue;
+        const struct block *ublock = pipeline_desc_params->ublock[i];
+        s->udata[i] = (uint8_t*)ngli_calloc(1, ublock->size);
+        if (!s->udata[i])
+            return NGL_ERROR_MEMORY;
+    }
+    return 0;
+}
+
 int ngli_pipeline_ngfx_bind_resources(struct pipeline *s, const struct pipeline_desc_params *desc_params,
                                       const struct pipeline_resource_params *data_params)
 {
+    int ret;
+    if ((ret = update_blocks(s, desc_params)) < 0)
+        return ret;
     ngli_darray_clear(&s->attributes);
     ngli_darray_clear(&s->buffers);
     ngli_darray_clear(&s->textures);
@@ -103,8 +123,23 @@ int ngli_pipeline_ngfx_update_attribute(struct pipeline *s, int index, struct bu
     TODO();
     return 0;
 }
-int ngli_pipeline_ngfx_update_uniform(struct pipeline *s, int index, const void *value) { TODO(); return 0; }
-int ngli_pipeline_ngfx_update_texture(struct pipeline *s, int index, struct texture *texture) { TODO(); return 0; }
+int ngli_pipeline_ngfx_update_uniform(struct pipeline *s, int index, const void *value) {
+    if (index == -1)
+        return NGL_ERROR_NOT_FOUND;
+
+    const int stage = index >> 16;
+    const int field_index = index & 0xffff;
+    const struct block *block = s->ublock[stage];
+    const struct block_field *field_info = (const struct block_field *)ngli_darray_data(&block->fields);
+    const struct block_field *fi = &field_info[field_index];
+    uint8_t *dst = s->udata[stage] + fi->offset;
+    ngli_block_datacopy(fi, dst, (const uint8_t *)value);
+    return 0;
+}
+int ngli_pipeline_ngfx_update_texture(struct pipeline *s, int index, struct texture *texture) {
+    TODO("index: %d texture: %p", index, texture);
+    return 0;
+}
 void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instances) {
     TODO("Graphics::bindVertexBuffer, Graphics::bindUniformBuffer, Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
     TODO("Graphics::draw");
