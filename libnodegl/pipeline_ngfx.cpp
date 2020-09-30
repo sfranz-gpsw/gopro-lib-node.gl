@@ -95,34 +95,6 @@ static int update_blocks(struct pipeline* s,  const struct pipeline_desc_params 
     return 0;
 }
 
-static int build_attributes(struct pipeline *s, const struct pipeline_desc_params *desc_params, const struct pipeline_resource_params *data_params)
-{
-    struct pipeline_ngfx *s_priv = (struct pipeline_ngfx *)s;
-
-    ngli_darray_reset(&s_priv->vertex_buffers);
-    ngli_darray_reset(&s_priv->vertex_offsets);
-    ngli_darray_init(&s_priv->vertex_buffers, sizeof(Buffer*), 0);
-    ngli_darray_init(&s_priv->vertex_offsets, sizeof(uint32_t), 0);
-
-    for (int i = 0; i < data_params->nb_attributes; i++) {
-        const buffer *attribute = data_params->attributes[i];
-
-        buffer_ngfx *buffer_ngfx = (buffer_ngfx *)attribute;
-        Buffer* buffer = buffer_ngfx ? buffer_ngfx->v : nullptr;
-        if (!buffer)
-            s->nb_unbound_attributes++;
-
-        if (!ngli_darray_push(&s_priv->vertex_buffers, &buffer))
-            return NGL_ERROR_MEMORY;
-
-        uint32_t offset = 0;
-        if (!ngli_darray_push(&s_priv->vertex_offsets, &offset))
-            return NGL_ERROR_MEMORY;
-    }
-
-    return 0;
-}
-
 static int upload_uniforms(struct pipeline *s)
 {
     for (int i = 0; i < NGLI_PROGRAM_SHADER_NB; i++) {
@@ -154,8 +126,6 @@ int ngli_pipeline_ngfx_bind_resources(struct pipeline *s, const struct pipeline_
     int ret;
     if ((ret = update_blocks(s, desc_params)) < 0)
         return ret;
-    if ((ret = build_attributes(s, desc_params, data_params)) < 0)
-        return ret;
     ngli_darray_clear(&s->attributes);
     ngli_darray_clear(&s->buffers);
     ngli_darray_clear(&s->textures);
@@ -177,6 +147,11 @@ int ngli_pipeline_ngfx_bind_resources(struct pipeline *s, const struct pipeline_
     for (int i = 0; i < desc_params->nb_buffers; i++) {
         const struct pipeline_buffer_desc *pipeline_buffer_desc = &desc_params->buffers_desc[i];
         if (!ngli_darray_push(&s->buffer_descs, pipeline_buffer_desc))
+            return NGL_ERROR_MEMORY;
+    }
+    for (int i = 0; i < desc_params->nb_attributes; i++) {
+        const struct pipeline_attribute_desc *pipeline_attribute_desc = &desc_params->attributes_desc[i];
+        if (!ngli_darray_push(&s->attribute_descs, pipeline_attribute_desc))
             return NGL_ERROR_MEMORY;
     }
 
@@ -215,13 +190,20 @@ void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instanc
     bind_pipeline(s);
 
     int nb_buffers = ngli_darray_count(&s->buffers);
-    for (int j = 0; j < nb_buffers; j++) {
+    for (int j = 0; j<nb_buffers; j++) {
         const buffer_ngfx *buffer = *(const buffer_ngfx **)ngli_darray_get(&s->buffers, j);
         const pipeline_buffer_desc &buffer_desc = *(const pipeline_buffer_desc *)ngli_darray_get(&s->buffer_descs, j);
-        gctx_ngfx->graphics->bindUniformBuffer(cmd_buf, buffer->v, buffer_desc.binding, buffer_desc.stage);
+        gctx_ngfx->graphics->bindUniformBuffer(cmd_buf, buffer->v, buffer_desc.binding, buffer_desc.stage); //TODO: bind SSBO
     }
 
-    TODO("Graphics::bindVertexBuffer, Graphics::bindUniformBuffer, Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
+    int nb_attributes = ngli_darray_count(&s->attributes);
+    for (int j = 0; j<nb_attributes; j++) {
+        const pipeline_attribute_desc &attr_desc = *(const pipeline_attribute_desc *)ngli_darray_get(&s->attribute_descs, j);
+        const buffer_ngfx *buffer = *(const buffer_ngfx **)ngli_darray_get(&s->attributes, j);
+        gctx_ngfx->graphics->bindVertexBuffer(cmd_buf, buffer->v, attr_desc.location);
+    }
+
+    TODO("Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
     TODO("Graphics::draw");
 }
 void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices, int indices_format, int nb_indices, int nb_instances) {
