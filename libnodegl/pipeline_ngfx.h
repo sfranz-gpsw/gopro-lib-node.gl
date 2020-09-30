@@ -23,12 +23,16 @@
 #define PIPELINE_NGFX_H
 
 #include "pipeline.h"
+#include "compute/ComputePipeline.h"
+#include "graphics/GraphicsPipeline.h"
 
 struct gctx;
 struct glcontext;
 
 struct pipeline_ngfx {
     struct pipeline parent;
+    ngfx::GraphicsPipeline *gp = nullptr;
+    ngfx::ComputePipeline *cp = nullptr;
 };
 
 struct pipeline *ngli_pipeline_ngfx_create(struct gctx *gctx);

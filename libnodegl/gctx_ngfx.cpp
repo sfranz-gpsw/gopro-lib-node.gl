@@ -81,11 +81,15 @@ static int ngfx_pre_draw(struct gctx *s, double t)
     TODO();
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     s_priv->cur_command_buffer = s_priv->graphicsContext->drawCommandBuffer();
+    s_priv->cur_command_buffer->begin();
     return 0;
 }
 
 static int ngfx_post_draw(struct gctx *s, double t)
-{ TODO();
+{
+    TODO();
+    gctx_ngfx *s_priv = (gctx_ngfx *)s;
+    s_priv->cur_command_buffer->end();
     return 0;
 }
 

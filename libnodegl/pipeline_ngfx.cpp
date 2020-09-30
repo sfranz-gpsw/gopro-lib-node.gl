@@ -70,10 +70,10 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
         TODO("set renderPassConfig.offscreen");
         renderPassConfig.offscreen = true;
         state.renderPass = gctx->graphicsContext->getRenderPass(renderPassConfig);
-        GraphicsPipeline::create(gctx->graphicsContext, state, program->vs, program->fs, PIXELFORMAT_UNDEFINED, PIXELFORMAT_UNDEFINED);
+        pipeline->gp = GraphicsPipeline::create(gctx->graphicsContext, state, program->vs, program->fs, PIXELFORMAT_UNDEFINED, PIXELFORMAT_UNDEFINED);
     }
     else if (params->type == NGLI_PIPELINE_TYPE_COMPUTE) {
-        ComputePipeline::create(gctx->graphicsContext, program->cs);
+        pipeline->cp = ComputePipeline::create(gctx->graphicsContext, program->cs);
     }
     return 0;
 }
@@ -110,11 +110,19 @@ static int upload_uniforms(struct pipeline *s)
     return 0;
 }
 
+static int bind_pipeline(struct pipeline *s) {
+    pipeline_ngfx* pipeline = (pipeline_ngfx*)s;
+    struct gctx_ngfx *gctx_ngfx = (struct gctx_ngfx *)s->gctx;
+    CommandBuffer* cmd_buf = gctx_ngfx->cur_command_buffer;
+    if (pipeline->gp) gctx_ngfx->graphics->bindGraphicsPipeline(cmd_buf, pipeline->gp);
+    else if (pipeline->cp) gctx_ngfx->graphics->bindComputePipeline(cmd_buf, pipeline->cp);
+    return 0;
+}
+
 int ngli_pipeline_ngfx_bind_resources(struct pipeline *s, const struct pipeline_desc_params *desc_params,
                                       const struct pipeline_resource_params *data_params)
 {
     int ret;
-    struct gctx_ngfx *gctx_ngfx = (struct gctx_ngfx *)s->gctx;
     if ((ret = update_blocks(s, desc_params)) < 0)
         return ret;
     ngli_darray_clear(&s->attributes);
@@ -123,27 +131,24 @@ int ngli_pipeline_ngfx_bind_resources(struct pipeline *s, const struct pipeline_
     for (int i = 0; i<data_params->nb_attributes; i++) {
         const struct buffer **attribute = &data_params->attributes[i];
         if (!ngli_darray_push(&s->attributes, attribute))
-                    return NGL_ERROR_MEMORY;
+            return NGL_ERROR_MEMORY;
     }
     for (int i = 0; i<data_params->nb_buffers; i++) {
         const struct buffer **buffer = &data_params->buffers[i];
         if (!ngli_darray_push(&s->buffers, buffer))
-                    return NGL_ERROR_MEMORY;
+            return NGL_ERROR_MEMORY;
     }
     for (int i = 0; i<data_params->nb_textures; i++) {
         const struct texture **texture= &data_params->textures[i];
         if (!ngli_darray_push(&s->textures, texture))
-                    return NGL_ERROR_MEMORY;
+            return NGL_ERROR_MEMORY;
+    }
+    for (int i = 0; i < desc_params->nb_buffers; i++) {
+        const struct pipeline_buffer_desc *pipeline_buffer_desc = &desc_params->buffers_desc[i];
+        if (!ngli_darray_push(&s->buffer_descs, pipeline_buffer_desc))
+            return NGL_ERROR_MEMORY;
     }
 
-    upload_uniforms(s);
-
-    CommandBuffer* cmd_buf = gctx_ngfx->cur_command_buffer;
-    for (int j = 0; j < desc_params->nb_buffers; j++) {
-        const buffer_ngfx *buffer = (const buffer_ngfx *)data_params->buffers[j];
-        const pipeline_buffer_desc &buffer_desc = desc_params->buffers_desc[j];
-        gctx_ngfx->graphics->bindUniformBuffer(cmd_buf, buffer->v, buffer_desc.binding, buffer_desc.stage);
-    }
     return 0;
 }
 int ngli_pipeline_ngfx_update_attribute(struct pipeline *s, int index, struct buffer *buffer) {
@@ -169,6 +174,20 @@ int ngli_pipeline_ngfx_update_texture(struct pipeline *s, int index, struct text
 }
 
 void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instances) {
+    struct gctx_ngfx *gctx_ngfx = (struct gctx_ngfx *)s->gctx;
+    CommandBuffer *cmd_buf = gctx_ngfx->cur_command_buffer;
+
+    upload_uniforms(s);
+
+    bind_pipeline(s);
+
+    int nb_buffers = ngli_darray_count(&s->buffers);
+    for (int j = 0; j < nb_buffers; j++) {
+        const buffer_ngfx *buffer = *(const buffer_ngfx **)ngli_darray_get(&s->buffers, j);
+        const pipeline_buffer_desc &buffer_desc = *(const pipeline_buffer_desc *)ngli_darray_get(&s->buffer_descs, j);
+        gctx_ngfx->graphics->bindUniformBuffer(cmd_buf, buffer->v, buffer_desc.binding, buffer_desc.stage);
+    }
+
     TODO("Graphics::bindVertexBuffer, Graphics::bindUniformBuffer, Graphics::bindIndexBuffer, Graphics::bindStorageBuffer, Graphics::bindTexture, etc");
     TODO("Graphics::draw");
 }

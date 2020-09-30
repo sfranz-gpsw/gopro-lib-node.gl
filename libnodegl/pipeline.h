@@ -100,13 +100,13 @@ struct pipeline_desc_params {
 };
 
 struct pipeline_resource_params {
-    const struct texture** textures;
+    const struct texture **textures;
     int nb_textures;
-    const struct uniform** uniforms;
+    const struct uniform **uniforms;
     int nb_uniforms;
-    const struct buffer** buffers;
+    const struct buffer **buffers;
     int nb_buffers;
-    const struct buffer** attributes;
+    const struct buffer **attributes;
     int nb_attributes;
 };
 
