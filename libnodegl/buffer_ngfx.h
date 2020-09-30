@@ -27,7 +27,7 @@
 
 struct buffer_ngfx {
     struct buffer parent;
-    ngfx::Buffer* buffer = nullptr;
+    ngfx::Buffer* v = nullptr;
 };
 
 struct gctx;

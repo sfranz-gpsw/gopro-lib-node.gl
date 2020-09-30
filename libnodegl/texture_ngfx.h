@@ -23,9 +23,11 @@
 #define TEXTURE_NGFX_H
 
 #include "texture.h"
+#include "graphics/Texture.h"
 
 struct texture_ngfx {
     struct texture parent;
+    ngfx::Texture* v;
 };
 
 struct texture *ngli_texture_ngfx_create(struct gctx *gctx);

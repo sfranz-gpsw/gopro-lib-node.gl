@@ -42,7 +42,7 @@ int ngli_buffer_ngfx_init(struct buffer *s, int size, int usage)
     s->usage = usage;
     TODO("move buffer stride parameter to Graphics::bindBuffer param");
     TODO("pass usage flags (e.g. vertex buffer, index buffer, uniform buffer, etc)");
-    s_priv->buffer = Buffer::create(ctx->graphicsContext, NULL, size, 0,
+    s_priv->v = Buffer::create(ctx->graphicsContext, NULL, size, 0,
                    BUFFER_USAGE_VERTEX_BUFFER_BIT | BUFFER_USAGE_INDEX_BUFFER_BIT | BUFFER_USAGE_UNIFORM_BUFFER_BIT | BUFFER_USAGE_STORAGE_BUFFER_BIT);
     return 0;
 }
@@ -50,7 +50,7 @@ int ngli_buffer_ngfx_init(struct buffer *s, int size, int usage)
 int ngli_buffer_ngfx_upload(struct buffer *s, const void *data, int size)
 {
     struct buffer_ngfx *s_priv = (struct buffer_ngfx *)s;
-    s_priv->buffer->upload(data, size);
+    s_priv->v->upload(data, size);
     return 0;
 }
 
@@ -71,5 +71,9 @@ void ngli_buffer_ngfx_unmap(struct buffer* s) {
 }
 
 void ngli_buffer_ngfx_freep(struct buffer **sp) {
-    TODO("delete buffer");
+    if (!sp) return;
+    buffer *s = *sp;
+    buffer_ngfx *s_priv = (buffer_ngfx *)s;
+    delete s_priv->v;
+    ngli_freep(sp);
 }

@@ -264,7 +264,6 @@ extern "C" const struct gctx_class ngli_gctx_ngfx = {
     .texture_create           = ngli_texture_ngfx_create,
     .texture_init             = ngli_texture_ngfx_init,
     .texture_has_mipmap       = ngli_texture_ngfx_has_mipmap,
-    .texture_match_dimensions = ngli_texture_ngfx_match_dimensions,
     .texture_upload           = ngli_texture_ngfx_upload,
     .texture_generate_mipmap  = ngli_texture_ngfx_generate_mipmap,
     .texture_freep            = ngli_texture_ngfx_freep,

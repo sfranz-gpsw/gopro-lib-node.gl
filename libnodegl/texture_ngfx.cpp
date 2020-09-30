@@ -68,13 +68,14 @@ struct texture *ngli_texture_ngfx_create(struct gctx *gctx) {
 
 int ngli_texture_ngfx_init(struct texture *s,
                            const struct texture_params *p) {
+    struct texture_ngfx *s_priv = (struct texture_ngfx *)s;
     struct gctx_ngfx *ctx = (struct gctx_ngfx *)s->gctx;
     uint32_t size = get_bpp(p->format) * p->width * p->height;
     bool gen_mipmaps = p->mipmap_filter != NGLI_MIPMAP_FILTER_NONE;
     uint32_t image_usage_flags = ImageUsageFlags(IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT);
     uint32_t depth = (p->type == NGLI_TEXTURE_TYPE_3D) ? p->depth : 1;
     uint32_t array_layers = (p->type == NGLI_TEXTURE_TYPE_CUBE) ? 6 : 1;
-    Texture::create(ctx->graphicsContext, ctx->graphics,
+    s_priv->v = Texture::create(ctx->graphicsContext, ctx->graphics,
         nullptr, to_ngfx_format(p->format), size, p->width, p->height, depth, array_layers,
         image_usage_flags, to_ngfx_texture_type(p->type), gen_mipmaps,
         to_ngfx_filter(p->min_filter), to_ngfx_filter(p->mag_filter),
@@ -84,12 +85,11 @@ int ngli_texture_ngfx_init(struct texture *s,
     return 0;
 }
 
-void ngli_texture_ngfx_set_dimensions(struct texture *s, int width, int height, int depth) {
-    TODO();
-}
-
 int ngli_texture_ngfx_has_mipmap(const struct texture *s) { TODO(); return 0; }
-int ngli_texture_ngfx_match_dimensions(const struct texture *s, int width, int height, int depth) { TODO(); return 0; }
+int ngli_texture_ngfx_match_dimensions(const struct texture *s, int width, int height, int depth) {
+    const texture_params *params = &s->params;
+    return params->width == width && params->height == height && params->depth == depth;
+}
 
 int ngli_texture_ngfx_upload(struct texture *s, const uint8_t *data, int linesize) {
     TODO("Texture::upload");
@@ -101,6 +101,10 @@ int ngli_texture_ngfx_generate_mipmap(struct texture *s) {
 }
 
 void ngli_texture_ngfx_freep(struct texture **sp) {
-    TODO("delete texture");
+    if (!sp) return;
+    texture *s = *sp;
+    texture_ngfx *s_priv = (struct texture_ngfx *)s;
+    delete s_priv->v;
+    ngli_freep(sp);
 }
 
