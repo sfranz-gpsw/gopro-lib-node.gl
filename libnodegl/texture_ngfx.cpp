@@ -70,11 +70,12 @@ int ngli_texture_ngfx_init(struct texture *s,
                            const struct texture_params *p) {
     struct texture_ngfx *s_priv = (struct texture_ngfx *)s;
     struct gctx_ngfx *ctx = (struct gctx_ngfx *)s->gctx;
-    uint32_t size = get_bpp(p->format) * p->width * p->height;
+    s->bytes_per_pixel = get_bpp(p->format);
     bool gen_mipmaps = p->mipmap_filter != NGLI_MIPMAP_FILTER_NONE;
     uint32_t image_usage_flags = ImageUsageFlags(IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT);
     uint32_t depth = (p->type == NGLI_TEXTURE_TYPE_3D) ? p->depth : 1;
     uint32_t array_layers = (p->type == NGLI_TEXTURE_TYPE_CUBE) ? 6 : 1;
+    uint32_t size = s->bytes_per_pixel * p->width * p->height * depth * array_layers;
     s_priv->v = Texture::create(ctx->graphicsContext, ctx->graphics,
         nullptr, to_ngfx_format(p->format), size, p->width, p->height, depth, array_layers,
         image_usage_flags, to_ngfx_texture_type(p->type), gen_mipmaps,
@@ -92,7 +93,9 @@ int ngli_texture_ngfx_match_dimensions(const struct texture *s, int width, int h
 }
 
 int ngli_texture_ngfx_upload(struct texture *s, const uint8_t *data, int linesize) {
-    TODO("Texture::upload");
+    struct texture_ngfx *texture = (struct texture_ngfx *)s;
+    uint32_t size = s->bytes_per_pixel * texture->v->w * texture->v->h * texture->v->d * texture->v->arrayLayers;
+    texture->v->upload((void*)data, size, 0, 0, 0, texture->v->w, texture->v->h, texture->v->d, texture->v->arrayLayers);
     return 0;
 }
 int ngli_texture_ngfx_generate_mipmap(struct texture *s) {
