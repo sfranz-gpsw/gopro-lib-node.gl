@@ -90,7 +90,7 @@ int ngli_buffer_vk_init(struct buffer *s, int size, int usage)
     return 0;
 }
 
-int ngli_buffer_vk_upload(struct buffer *s, const void *data, int size)
+int ngli_buffer_vk_upload(struct buffer *s, const void *data, uint32_t size, uint32_t offset)
 {
     void *dst;
     VkResult res = ngli_buffer_map(s, size, 0, &dst);
