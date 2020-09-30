@@ -25,6 +25,7 @@
 #include "graphics/Graphics.h"
 #include "compute/ComputePipeline.h"
 #include "graphics/GraphicsPipeline.h"
+#include "graphics/Buffer.h"
 #include "buffer_ngfx.h"
 #include "gctx_ngfx.h"
 #include "program_ngfx.h"
@@ -94,6 +95,34 @@ static int update_blocks(struct pipeline* s,  const struct pipeline_desc_params 
     return 0;
 }
 
+static int build_attributes(struct pipeline *s, const struct pipeline_desc_params *desc_params, const struct pipeline_resource_params *data_params)
+{
+    struct pipeline_ngfx *s_priv = (struct pipeline_ngfx *)s;
+
+    ngli_darray_reset(&s_priv->vertex_buffers);
+    ngli_darray_reset(&s_priv->vertex_offsets);
+    ngli_darray_init(&s_priv->vertex_buffers, sizeof(Buffer*), 0);
+    ngli_darray_init(&s_priv->vertex_offsets, sizeof(uint32_t), 0);
+
+    for (int i = 0; i < data_params->nb_attributes; i++) {
+        const buffer *attribute = data_params->attributes[i];
+
+        buffer_ngfx *buffer_ngfx = (buffer_ngfx *)attribute;
+        Buffer* buffer = buffer_ngfx ? buffer_ngfx->v : nullptr;
+        if (!buffer)
+            s->nb_unbound_attributes++;
+
+        if (!ngli_darray_push(&s_priv->vertex_buffers, &buffer))
+            return NGL_ERROR_MEMORY;
+
+        uint32_t offset = 0;
+        if (!ngli_darray_push(&s_priv->vertex_offsets, &offset))
+            return NGL_ERROR_MEMORY;
+    }
+
+    return 0;
+}
+
 static int upload_uniforms(struct pipeline *s)
 {
     for (int i = 0; i < NGLI_PROGRAM_SHADER_NB; i++) {
@@ -124,6 +153,8 @@ int ngli_pipeline_ngfx_bind_resources(struct pipeline *s, const struct pipeline_
 {
     int ret;
     if ((ret = update_blocks(s, desc_params)) < 0)
+        return ret;
+    if ((ret = build_attributes(s, desc_params, data_params)) < 0)
         return ret;
     ngli_darray_clear(&s->attributes);
     ngli_darray_clear(&s->buffers);
@@ -178,6 +209,8 @@ void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instanc
     CommandBuffer *cmd_buf = gctx_ngfx->cur_command_buffer;
 
     upload_uniforms(s);
+
+    //TODO: ngli_gctx_ngfx_begin_render_pass(s->gctx);
 
     bind_pipeline(s);
 
