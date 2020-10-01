@@ -30,11 +30,9 @@ int main(int argc, char** argv) {
         mbstowcs(wargv[j], argv[j], len);
         wargv[j][len] = 0;
     }
-
     Py_Initialize();
     Py_Main(argc, wargv);
     Py_Finalize();
-
     for (uint32_t j = 0; j<argc; j++) free(wargv[j]);
     free(wargv);
 }

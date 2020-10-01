@@ -31,6 +31,9 @@
 #include "math_utils.h"
 #include "format.h"
 #include <glm/gtc/type_ptr.hpp>
+#ifdef ENABLE_RENDERDOC_CAPTURE
+#include "renderdoc_utils.h"
+#endif
 using namespace std;
 using namespace ngfx;
 
@@ -44,8 +47,13 @@ static int ngfx_init(struct gctx *s)
 {
     const ngl_config *config = &s->config;
     gctx_ngfx *ctx = (gctx_ngfx *)s;
-
+#ifdef ENABLE_RENDERDOC_CAPTURE
+    init_renderdoc();
+#endif
     ctx->graphics_context = GraphicsContext::create("NGLApplication", true);
+#ifdef ENABLE_RENDERDOC_CAPTURE
+    begin_renderdoc_capture(); //&((ngfx::VKGraphicsContext*)ctx->graphics_context)->vkDevice);
+#endif
     if (config->offscreen) {
         Surface surface(config->width, config->height, true);
         ctx->graphics_context->setSurface(&surface);
@@ -121,6 +129,7 @@ static int ngfx_post_draw(struct gctx *s, double t)
 {
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     s_priv->cur_command_buffer->end();
+    s_priv->graphics_context->queue->submit(s_priv->cur_command_buffer);
     return 0;
 }
 
@@ -133,14 +142,15 @@ static void ngfx_wait_idle(struct gctx *s)
 static void ngfx_destroy(struct gctx *s)
 {
     gctx_ngfx* ctx = new gctx_ngfx;
-
     if (ctx->output_framebuffer) delete ctx->output_framebuffer;
     if (ctx->depth_texture) delete ctx->depth_texture;
     if (ctx->output_texture) delete ctx->output_texture;
     delete ctx->graphics;
     delete ctx->graphics_context;
     delete ctx;
-
+#ifdef ENABLE_RENDERDOC_CAPTURE
+    end_renderdoc_capture();
+#endif
 }
 
 static int ngfx_transform_cull_mode(struct gctx *s, int cull_mode)

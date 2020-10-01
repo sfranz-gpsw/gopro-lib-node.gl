@@ -82,6 +82,11 @@ set (SHADER_TOOLS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shader-tools)
 set (SHADER_TOOLS_INCLUDE_DIRS ${SHADER_TOOLS_DIR} ${SHADER_TOOLS_DIR}/src)
 set (SHADER_TOOLS_LIBRARIES shader_tools)
 
+#optional: enable renderdoc integration for debugging
+set (RENDERDOC_DIR /home/$ENV{USER}/Downloads/renderdoc_1.7)
+set (RENDERDOC_INCLUDE_DIRS ${RENDERDOC_DIR}/include)
+set (RENDERDOC_LIBRARY_DIRS ${RENDERDOC_DIR}/lib)
+
 option (GRAPHICS_BACKEND_METAL "build metal backend" OFF)
 option (GRAPHICS_BACKEND_DIRECT3D12 "build directx12 backend" OFF)
 option (GRAPHICS_BACKEND_VULKAN "build vulkan backend" OFF)
