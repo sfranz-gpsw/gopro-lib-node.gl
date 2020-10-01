@@ -21,6 +21,11 @@
 #
 
 from .cmp import CompareSceneBase, get_test_decorator
+from PIL import Image
+import os
+import tempfile
+
+TMP_DIR = tempfile.gettempdir()
 
 class _CompareCuePoints(CompareSceneBase):
 
@@ -56,9 +61,17 @@ class _CompareCuePoints(CompareSceneBase):
         y = min(max(y, 0), height - 1)
         return [x, y]
 
-    def get_out_data(self):
+    def get_out_data(self, debug = False, debug_func = ''):
         cpoints = []
+        debug_index = 0
         for (width, height, capture_buffer) in self.render_frames():
+            if debug:
+                _MODE = "RGBA"
+                img = Image.frombuffer(_MODE, (width, height), capture_buffer, 'raw', _MODE, 0, 1)
+                filename = os.path.normpath(f"{TMP_DIR}/pynodegl_tests/{debug_func}_{debug_index}.png")
+                print("writing to file: " + filename)
+                img.save(filename)
+                debug_index += 1
             frame_cpoints = {}
             for point_name, (x, y) in self._points.items():
                 pix_x, pix_y = self._pos_to_px((x, y), width, height)

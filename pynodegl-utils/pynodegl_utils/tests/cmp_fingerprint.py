@@ -23,7 +23,10 @@
 from PIL import Image
 
 from .cmp import CompareSceneBase, get_test_decorator
+import os
+import tempfile
 
+TMP_DIR = tempfile.gettempdir()
 
 _HSIZE = 8
 _HNBITS = _HSIZE * _HSIZE * 2
@@ -73,11 +76,17 @@ class _CompareFingerprints(CompareSceneBase):
             hashes.append(comp_hash)
         return hashes
 
-    def get_out_data(self):
+    def get_out_data(self, debug = False, debug_func = ''):
         hashes = []
+        debug_index = 0
         for (width, height, capture_buffer) in self.render_frames():
             # TODO: png output for debug?
             img = Image.frombuffer(_MODE, (width, height), capture_buffer, 'raw', _MODE, 0, 1)
+            if debug:
+                filename = os.path.normpath(f"{TMP_DIR}/pynodegl_tests/{debug_func}_{debug_index}.png")
+                print("writing to file: "+filename)
+                img.save(filename)
+                debug_index += 1
             img = img.resize((_HSIZE + 1, _HSIZE + 1), resample=Image.LANCZOS)
             data = img.tobytes()
             frame_hashes = self._get_plane_hashes(data)

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.6.2, 2020-09-30T08:58:15. -->
+<!-- Written by QtCreator 4.6.2, 2020-10-01T11:52:42. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -359,6 +359,7 @@
      <value type="QString">BACKEND=ngfx</value>
      <value type="QString">PYTHONPATH=../pynodegl:../pynodegl-utils</value>
      <value type="QString">PATH=/home/jmoguillansky/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/jmoguillansky/Documents/2020/Git/external/VulkanSDK//1.2.131.2/x86_64/bin</value>
+     <value type="QString">DEBUG=on</value>
     </valuelist>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">pyshell</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
@@ -693,7 +694,7 @@
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguation.Title">shader_tools</value>
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.Arguments"></value>
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.UserWorkingDirectory"></value>
-    <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.UserWorkingDirectory.default">/home/jmoguillansky/Documents/2020/Git/gopro-lib-node.gl/cmake-build-debug/shader-tools</value>
+    <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.UserWorkingDirectory.default"></value>
     <value type="int" key="PE.EnvironmentAspect.Base">2</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">shader_tools</value>
