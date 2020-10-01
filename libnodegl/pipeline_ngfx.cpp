@@ -156,8 +156,6 @@ int ngli_pipeline_ngfx_bind_resources(struct pipeline *s, const struct pipeline_
             return NGL_ERROR_MEMORY;
     }
 
-    upload_uniforms(s);
-
     return 0;
 }
 int ngli_pipeline_ngfx_update_attribute(struct pipeline *s, int index, struct buffer *buffer) {
@@ -221,6 +219,8 @@ void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instanc
     struct gctx_ngfx *gctx_ngfx = (struct gctx_ngfx *)s->gctx;
     CommandBuffer *cmd_buf = gctx_ngfx->cur_command_buffer;
 
+    upload_uniforms(s);
+
     ngli_gctx_ngfx_begin_render_pass(s->gctx);
 
     bind_pipeline(s);
@@ -234,6 +234,8 @@ void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instanc
 void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices, int indices_format, int nb_indices, int nb_instances) {
     struct gctx_ngfx *gctx_ngfx = (struct gctx_ngfx *)s->gctx;
     CommandBuffer *cmd_buf = gctx_ngfx->cur_command_buffer;
+
+    upload_uniforms(s);
 
     ngli_gctx_ngfx_begin_render_pass(s->gctx);
 
@@ -251,6 +253,8 @@ void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices,
 void ngli_pipeline_ngfx_dispatch(struct pipeline *s, int nb_group_x, int nb_group_y, int nb_group_z) {
     struct gctx_ngfx *gctx_ngfx = (struct gctx_ngfx *)s->gctx;
     CommandBuffer *cmd_buf = gctx_ngfx->cur_command_buffer;
+
+    upload_uniforms(s);
 
     ngli_gctx_ngfx_begin_render_pass(s->gctx);
 
