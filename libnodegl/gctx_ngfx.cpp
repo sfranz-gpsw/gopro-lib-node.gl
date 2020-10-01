@@ -111,7 +111,6 @@ static int ngfx_resize(struct gctx *s, int width, int height, const int *viewpor
 
 static int ngfx_pre_draw(struct gctx *s, double t)
 {
-    TODO();
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     s_priv->cur_command_buffer = s_priv->graphics_context->drawCommandBuffer();
     s_priv->cur_command_buffer->begin();
@@ -120,14 +119,15 @@ static int ngfx_pre_draw(struct gctx *s, double t)
 
 static int ngfx_post_draw(struct gctx *s, double t)
 {
-    TODO();
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     s_priv->cur_command_buffer->end();
     return 0;
 }
 
 static void ngfx_wait_idle(struct gctx *s)
-{ TODO();
+{
+    gctx_ngfx *s_priv = (gctx_ngfx *)s;
+    s_priv->graphics->waitIdle(s_priv->cur_command_buffer);
 }
 
 static void ngfx_destroy(struct gctx *s)
