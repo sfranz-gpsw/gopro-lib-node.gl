@@ -34,6 +34,9 @@ struct gctx_ngfx {
     ngfx::GraphicsContext* graphicsContext = nullptr;
     ngfx::Graphics* graphics = nullptr;
     ngfx::CommandBuffer* cur_command_buffer = nullptr;
+    int viewport[4];
+    int scissor[4];
+    float clear_color[4];
 };
 
 void ngli_gctx_ngfx_begin_render_pass(struct gctx *s);

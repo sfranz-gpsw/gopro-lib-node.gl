@@ -52,6 +52,20 @@ static int ngfx_init(struct gctx *s)
 {
     const ngl_config *config = &s->config;
     gctx_ngfx *ctx = (gctx_ngfx *)s;
+
+    const int *viewport = config->viewport;
+    if (viewport[2] > 0 && viewport[3] > 0) {
+        ngli_gctx_set_viewport(s, viewport);
+    } else {
+        const int default_viewport[] = {0, 0, config->width, config->height};
+        ngli_gctx_set_viewport(s, default_viewport);
+    }
+
+    const int scissor[] = {0, 0, config->width, config->height};
+    ngli_gctx_set_scissor(s, scissor);
+
+    ngli_gctx_set_clear_color(s, config->clear_color);
+
     if (config->offscreen) {
         ctx->default_rendertarget_desc.nb_colors = 1;
         ctx->default_rendertarget_desc.colors[0].format = NGLI_FORMAT_R8G8B8A8_UNORM;
@@ -146,27 +160,39 @@ static const struct rendertarget_desc *ngfx_get_default_rendertarget_desc(struct
 }
 
 static void ngfx_set_viewport(struct gctx *s, const int *viewport)
-{ TODO();
+{
+    struct gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
+    memcpy(s_priv->viewport, viewport, sizeof(s_priv->viewport));
 }
 
 static void ngfx_get_viewport(struct gctx *s, int *viewport)
-{ TODO();
+{
+    struct gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
+    memcpy(viewport, &s_priv->viewport, sizeof(s_priv->viewport));
 }
 
 static void ngfx_set_scissor(struct gctx *s, const int *scissor)
-{ TODO();
+{
+    struct gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
+    memcpy(&s_priv->scissor, scissor, sizeof(s_priv->scissor));
 }
 
 static void ngfx_get_scissor(struct gctx *s, int *scissor)
-{ TODO();
+{
+    struct gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
+    memcpy(scissor, &s_priv->scissor, sizeof(s_priv->scissor));
 }
 
 static void ngfx_set_clear_color(struct gctx *s, const float *color)
-{ TODO();
+{
+    struct gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
+    memcpy(s_priv->clear_color, color, sizeof(s_priv->clear_color));
 }
 
 static void ngfx_get_clear_color(struct gctx *s, float *color)
-{ TODO();
+{
+    struct gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
+    memcpy(color, &s_priv->clear_color, sizeof(s_priv->clear_color));
 }
 
 static void ngfx_clear_color(struct gctx *s)
@@ -181,6 +207,7 @@ static void ngfx_clear_depth_stencil(struct gctx *s)
 
 static void ngfx_invalidate_depth_stencil(struct gctx *s)
 { TODO();
+
 }
 
 static void ngfx_flush(struct gctx *s)
@@ -204,9 +231,11 @@ void ngli_gctx_ngfx_begin_render_pass(struct gctx *s)
     Graphics *graphics = s_priv->graphics;
     CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
 #if 0 //TODO
-    graphics->beginRenderPass(cmd_buf, s_priv->render_pass, framebuffer, clear_color, clear_depth, clear_stencil);
-    graphics->setViewport(cmd_buf, vp_rect);
-    graphics->setScissor(cmd_buf, scissor_rect);
+    graphics->beginRenderPass(cmd_buf, s_priv->render_pass, framebuffer, s_priv->clear_color);
+    int* vp = s_priv->viewport;
+    graphics->setViewport(cmd_buf, { vp[0], vp[1], uint32_t(vp[2]), uint32_t(vp[3]) });
+    int *sr = s_priv->scissor;
+    graphics->setScissor(cmd_buf, { sr[0], sr[1], uint32_t(sr[2]), uint32_t(sr[3]) });
 #endif
 }
 
