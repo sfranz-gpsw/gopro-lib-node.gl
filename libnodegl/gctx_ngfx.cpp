@@ -30,6 +30,7 @@
 #include "log.h"
 #include "math_utils.h"
 #include "format.h"
+#include <glm/gtc/type_ptr.hpp>
 using namespace std;
 using namespace ngfx;
 
@@ -252,13 +253,14 @@ void ngli_gctx_ngfx_begin_render_pass(struct gctx *s)
     gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
     Graphics *graphics = s_priv->graphics;
     CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
-#if 0
-    graphics->beginRenderPass(cmd_buf, s_priv->render_pass, framebuffer, s_priv->clear_color);
+    TODO("set correct render pass and framebuffer");
+    RenderPass *render_pass = s_priv->graphics_context->defaultOffscreenRenderPass;
+    Framebuffer *framebuffer = s_priv->output_framebuffer;
+    graphics->beginRenderPass(cmd_buf, render_pass, framebuffer, glm::make_vec4(s_priv->clear_color));
     int* vp = s_priv->viewport;
     graphics->setViewport(cmd_buf, { vp[0], vp[1], uint32_t(vp[2]), uint32_t(vp[3]) });
     int *sr = s_priv->scissor;
     graphics->setScissor(cmd_buf, { sr[0], sr[1], uint32_t(sr[2]), uint32_t(sr[3]) });
-#endif
 }
 
 void ngli_gctx_ngfx_end_render_pass(struct gctx *s)
@@ -266,9 +268,7 @@ void ngli_gctx_ngfx_end_render_pass(struct gctx *s)
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     Graphics *graphics = s_priv->graphics;
     CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
-#if 0
     graphics->endRenderPass(cmd_buf);
-#endif
 }
 
 extern "C" const struct gctx_class ngli_gctx_ngfx = {
