@@ -72,11 +72,11 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
         renderPassConfig.numSamples = std::max(rt_desc.colors[0].samples, 1);
         TODO("set renderPassConfig.offscreen");
         renderPassConfig.offscreen = true;
-        state.renderPass = gctx->graphicsContext->getRenderPass(renderPassConfig);
-        pipeline->gp = GraphicsPipeline::create(gctx->graphicsContext, state, program->vs, program->fs, PIXELFORMAT_UNDEFINED, PIXELFORMAT_UNDEFINED);
+        state.renderPass = gctx->graphics_context->getRenderPass(renderPassConfig);
+        pipeline->gp = GraphicsPipeline::create(gctx->graphics_context, state, program->vs, program->fs, PIXELFORMAT_UNDEFINED, PIXELFORMAT_UNDEFINED);
     }
     else if (params->type == NGLI_PIPELINE_TYPE_COMPUTE) {
-        pipeline->cp = ComputePipeline::create(gctx->graphicsContext, program->cs);
+        pipeline->cp = ComputePipeline::create(gctx->graphics_context, program->cs);
     }
     return 0;
 }

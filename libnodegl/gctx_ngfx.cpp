@@ -36,15 +36,6 @@ using namespace ngfx;
 static struct gctx *ngfx_create(const struct ngl_config *config)
 {
     gctx_ngfx* ctx = new gctx_ngfx;
-    ctx->graphicsContext = GraphicsContext::create("NGLApplication", true);
-    if (config->offscreen) {
-        Surface surface(config->width, config->height, true);
-        ctx->graphicsContext->setSurface(&surface);
-    }
-    else {
-        TODO("create window surface or use existing handle");
-    }
-    ctx->graphics = Graphics::create(ctx->graphicsContext);
     return (struct gctx *)ctx;
 }
 
@@ -52,6 +43,33 @@ static int ngfx_init(struct gctx *s)
 {
     const ngl_config *config = &s->config;
     gctx_ngfx *ctx = (gctx_ngfx *)s;
+
+    ctx->graphics_context = GraphicsContext::create("NGLApplication", true);
+    if (config->offscreen) {
+        Surface surface(config->width, config->height, true);
+        ctx->graphics_context->setSurface(&surface);
+    }
+    else {
+        TODO("create window surface or use existing handle");
+    }
+    ctx->graphics = Graphics::create(ctx->graphics_context);
+    bool enable_depth_stencil = true;
+
+    if (!config->offscreen) {
+        TODO("create window surface");
+    }
+    else {
+        uint32_t size = config->width * config->height * 4;
+        ctx->output_texture = ngfx::Texture::create(ctx->graphics_context, ctx->graphics, nullptr, PIXELFORMAT_RGBA8_UNORM, size, config->width, config->height, 1, 1,
+                ImageUsageFlags(IMAGE_USAGE_SAMPLED_BIT | IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_COLOR_ATTACHMENT_BIT));
+        std::vector<ngfx::Framebuffer::Attachment> attachments = { { ctx->output_texture } };
+        if (enable_depth_stencil) {
+            ctx->depth_texture = ngfx::Texture::create(ctx->graphics_context, ctx->graphics, nullptr, ctx->graphics_context->depthFormat, size, config->width, config->height, 1, 1,
+                IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+            attachments.push_back({ ctx->depth_texture });
+        }
+        ctx->output_framebuffer = Framebuffer::create(ctx->graphics_context->device, ctx->graphics_context->defaultOffscreenRenderPass, attachments, config->width, config->height);
+    }
 
     const int *viewport = config->viewport;
     if (viewport[2] > 0 && viewport[3] > 0) {
@@ -71,7 +89,7 @@ static int ngfx_init(struct gctx *s)
         ctx->default_rendertarget_desc.colors[0].format = NGLI_FORMAT_R8G8B8A8_UNORM;
         ctx->default_rendertarget_desc.colors[0].samples = config->samples;
         ctx->default_rendertarget_desc.colors[0].resolve = config->samples > 0 ? 1 : 0;
-        ctx->default_rendertarget_desc.depth_stencil.format = ctx->graphicsContext->depthFormat;
+        ctx->default_rendertarget_desc.depth_stencil.format = ctx->graphics_context->depthFormat;
         ctx->default_rendertarget_desc.depth_stencil.samples = config->samples;
         ctx->default_rendertarget_desc.depth_stencil.resolve = 0;
     } else {
@@ -79,7 +97,7 @@ static int ngfx_init(struct gctx *s)
         ctx->default_rendertarget_desc.colors[0].format = NGLI_FORMAT_B8G8R8A8_UNORM;
         ctx->default_rendertarget_desc.colors[0].samples = config->samples;
         ctx->default_rendertarget_desc.colors[0].resolve = config->samples > 0 ? 1 : 0;
-        ctx->default_rendertarget_desc.depth_stencil.format = ctx->graphicsContext->depthFormat;
+        ctx->default_rendertarget_desc.depth_stencil.format = ctx->graphics_context->depthFormat;
         ctx->default_rendertarget_desc.depth_stencil.samples = config->samples;
     }
     return 0;
@@ -94,7 +112,7 @@ static int ngfx_pre_draw(struct gctx *s, double t)
 {
     TODO();
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
-    s_priv->cur_command_buffer = s_priv->graphicsContext->drawCommandBuffer();
+    s_priv->cur_command_buffer = s_priv->graphics_context->drawCommandBuffer();
     s_priv->cur_command_buffer->begin();
     return 0;
 }
@@ -114,8 +132,12 @@ static void ngfx_wait_idle(struct gctx *s)
 static void ngfx_destroy(struct gctx *s)
 {
     gctx_ngfx* ctx = new gctx_ngfx;
-    delete ctx->graphicsContext;
+
+    if (ctx->output_framebuffer) delete ctx->output_framebuffer;
+    if (ctx->depth_texture) delete ctx->depth_texture;
+    if (ctx->output_texture) delete ctx->output_texture;
     delete ctx->graphics;
+    delete ctx->graphics_context;
     delete ctx;
 
 }
@@ -230,7 +252,7 @@ void ngli_gctx_ngfx_begin_render_pass(struct gctx *s)
     gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
     Graphics *graphics = s_priv->graphics;
     CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
-#if 0 //TODO
+#if 0
     graphics->beginRenderPass(cmd_buf, s_priv->render_pass, framebuffer, s_priv->clear_color);
     int* vp = s_priv->viewport;
     graphics->setViewport(cmd_buf, { vp[0], vp[1], uint32_t(vp[2]), uint32_t(vp[3]) });
@@ -244,7 +266,7 @@ void ngli_gctx_ngfx_end_render_pass(struct gctx *s)
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     Graphics *graphics = s_priv->graphics;
     CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
-#if 0 //TODO
+#if 0
     graphics->endRenderPass(cmd_buf);
 #endif
 }

@@ -76,7 +76,7 @@ int ngli_texture_ngfx_init(struct texture *s,
     uint32_t depth = (p->type == NGLI_TEXTURE_TYPE_3D) ? p->depth : 1;
     uint32_t array_layers = (p->type == NGLI_TEXTURE_TYPE_CUBE) ? 6 : 1;
     uint32_t size = s->bytes_per_pixel * p->width * p->height * depth * array_layers;
-    s_priv->v = Texture::create(ctx->graphicsContext, ctx->graphics,
+    s_priv->v = Texture::create(ctx->graphics_context, ctx->graphics,
         nullptr, to_ngfx_format(p->format), size, p->width, p->height, depth, array_layers,
         image_usage_flags, to_ngfx_texture_type(p->type), gen_mipmaps,
         to_ngfx_filter(p->min_filter), to_ngfx_filter(p->mag_filter),

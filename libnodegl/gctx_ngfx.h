@@ -31,12 +31,14 @@
 struct gctx_ngfx {
     struct gctx parent;
     struct rendertarget_desc default_rendertarget_desc;
-    ngfx::GraphicsContext* graphicsContext = nullptr;
+    ngfx::GraphicsContext* graphics_context = nullptr;
     ngfx::Graphics* graphics = nullptr;
     ngfx::CommandBuffer* cur_command_buffer = nullptr;
     int viewport[4];
     int scissor[4];
     float clear_color[4];
+    ngfx::Texture *output_texture = nullptr, *depth_texture = nullptr;
+    ngfx::Framebuffer *output_framebuffer = nullptr;
 };
 
 void ngli_gctx_ngfx_begin_render_pass(struct gctx *s);

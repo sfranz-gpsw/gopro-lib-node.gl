@@ -55,9 +55,9 @@ static string compileShader(string src, const string& ext) {
 int ngli_program_ngfx_init(struct program *s, const char *vertex, const char *fragment, const char *compute) {
     gctx_ngfx *gctx = (gctx_ngfx  *)s->gctx;
     program_ngfx* program = (program_ngfx*)s;
-    if (vertex) program->vs = VertexShaderModule::create(gctx->graphicsContext->device, compileShader(vertex, ".vert")).release();
-    if (fragment) program->fs = FragmentShaderModule::create(gctx->graphicsContext->device, compileShader(fragment, ".frag")).release();
-    if (compute) program->cs = ComputeShaderModule::create(gctx->graphicsContext->device, compileShader(compute, ".comp")).release();
+    if (vertex) program->vs = VertexShaderModule::create(gctx->graphics_context->device, compileShader(vertex, ".vert")).release();
+    if (fragment) program->fs = FragmentShaderModule::create(gctx->graphics_context->device, compileShader(fragment, ".frag")).release();
+    if (compute) program->cs = ComputeShaderModule::create(gctx->graphics_context->device, compileShader(compute, ".comp")).release();
     return 0;
 }
 void ngli_program_ngfx_freep(struct program **sp) {
