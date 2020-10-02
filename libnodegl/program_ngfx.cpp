@@ -55,7 +55,7 @@ struct ShaderCompiler {
         fs::create_directory(tmpDir);
         string tmpFile = tmpDir + "/" + "tmp" + ext;
         FileUtil::writeFile(tmpFile, src);
-        string outDir = fs::temp_directory_path();
+        string outDir = tmpDir;
         glslFiles = { tmpFile };
         spvFiles = shaderTools.compileShaders(glslFiles, outDir, "glsl", "", ShaderTools::PATCH_SHADER_LAYOUTS_GLSL);
         spvMapFiles = shaderTools.generateShaderMaps(glslFiles, outDir, "glsl");
