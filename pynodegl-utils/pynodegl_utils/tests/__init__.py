@@ -123,6 +123,7 @@ def run():
     tester = func.tester
 
     test_func = _gen_map.get(gen_opt, _run_test_default)
+    print(func_name + ' start')
     err = test_func(func_name, tester, ref_filepath, debug = debug_opt)
     if err:
         sys.stderr.write('\n'.join(err) + '\n')
