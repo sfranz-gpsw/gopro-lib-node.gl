@@ -51,6 +51,8 @@ static int ngfx_init(struct gctx *s)
 #ifdef ENABLE_RENDERDOC_CAPTURE
     if (DEBUG_CAPTURE) init_renderdoc();
 #endif
+    /* FIXME */
+    s->features = -1;
     ctx->graphics_context = GraphicsContext::create("NGLApplication", true);
 #ifdef ENABLE_RENDERDOC_CAPTURE
     if (DEBUG_CAPTURE) begin_renderdoc_capture(); //&((ngfx::VKGraphicsContext*)ctx->graphics_context)->vkDevice);
