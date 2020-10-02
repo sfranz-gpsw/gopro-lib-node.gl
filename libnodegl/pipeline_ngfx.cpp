@@ -36,6 +36,18 @@
 using namespace ngfx;
 auto to_ngfx_topology = ngli_topology_get_ngfx_topology;
 
+static int build_attribute_descs(pipeline *s, const pipeline_desc_params *params)
+{
+    for (int i = 0; i < params->nb_attributes; i++) {
+        const struct pipeline_attribute_desc *pipeline_attribute_desc = &params->attributes_desc[i];
+
+        if (!ngli_darray_push(&s->attribute_descs, pipeline_attribute_desc))
+            return NGL_ERROR_MEMORY;
+    }
+
+    return 0;
+}
+
 struct pipeline *ngli_pipeline_ngfx_create(struct gctx *gctx)
 {
     pipeline_ngfx *s = (pipeline_ngfx*)ngli_calloc(1, sizeof(*s));
@@ -66,6 +78,9 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
     gctx_ngfx* gctx = (gctx_ngfx*)pipeline->parent.gctx;
 
     if (params->type == NGLI_PIPELINE_TYPE_GRAPHICS) {
+        int ret = build_attribute_descs(s, params);
+        if (ret < 0)
+            return ret;
         GraphicsPipeline::State state;
         auto& rt_desc = params->graphics.rt_desc;
         GraphicsContext::RenderPassConfig renderPassConfig;

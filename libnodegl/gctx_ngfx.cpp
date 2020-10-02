@@ -132,6 +132,10 @@ static int ngfx_post_draw(struct gctx *s, double t)
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     s_priv->cur_command_buffer->end();
     s_priv->graphics_context->queue->submit(s_priv->cur_command_buffer);
+    if (s->config.offscreen && s->config.capture_buffer) {
+        uint32_t size = s->config.width * s->config.height * 4;
+        s_priv->output_texture->download(s->config.capture_buffer, size);
+    }
     return 0;
 }
 
