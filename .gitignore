@@ -16,3 +16,4 @@ pynodegl-utils/build
 pynodegl-utils/dist/*.egg
 external/win64
 external/sxplayer-*
+CMakeLists.txt.user

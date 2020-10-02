@@ -70,6 +70,7 @@ int ngli_texture_ngfx_init(struct texture *s,
                            const struct texture_params *p) {
     struct texture_ngfx *s_priv = (struct texture_ngfx *)s;
     struct gctx_ngfx *ctx = (struct gctx_ngfx *)s->gctx;
+    s->params = *p;
     s->bytes_per_pixel = get_bpp(p->format);
     bool gen_mipmaps = p->mipmap_filter != NGLI_MIPMAP_FILTER_NONE;
     uint32_t image_usage_flags = ImageUsageFlags(IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT);

@@ -21,9 +21,20 @@
 
 #include "rendertarget_ngfx.h"
 #include "log.h"
+#include "memory.h"
 
-struct rendertarget *ngli_rendertarget_ngfx_create(struct gctx *gctx) { TODO(); return NULL; }
+struct rendertarget *ngli_rendertarget_ngfx_create(struct gctx *gctx) {
+    rendertarget_ngfx *s = new rendertarget_ngfx;
+    if (!s)
+        return NULL;
+    s->parent.gctx = gctx;
+    return (struct rendertarget *)s;
+}
 int ngli_rendertarget_ngfx_init(struct rendertarget *s, const struct rendertarget_params *params) { TODO(); return 0; }
 void ngli_rendertarget_ngfx_resolve(struct rendertarget *s) { TODO();}
 void ngli_rendertarget_ngfx_read_pixels(struct rendertarget *s, uint8_t *data) { TODO();}
-void ngli_rendertarget_ngfx_freep(struct rendertarget **sp) { TODO();}
+void ngli_rendertarget_ngfx_freep(struct rendertarget **sp) {
+    if (!*sp)
+        return;
+    delete (rendertarget_ngfx*)*sp;
+}
