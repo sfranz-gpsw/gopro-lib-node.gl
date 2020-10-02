@@ -32,7 +32,9 @@
 #include "format.h"
 #include "type.h"
 #include "texture_ngfx.h"
+#include "topology_ngfx.h"
 using namespace ngfx;
+auto to_ngfx_topology = ngli_topology_get_ngfx_topology;
 
 struct pipeline *ngli_pipeline_ngfx_create(struct gctx *gctx)
 {
@@ -73,6 +75,7 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
         TODO("remove renderPassConfig.offscreen param");
         renderPassConfig.offscreen = true;
         state.renderPass = gctx->graphics_context->getRenderPass(renderPassConfig);
+        state.primitiveTopology = to_ngfx_topology(s->graphics.topology);
         pipeline->gp = GraphicsPipeline::create(gctx->graphics_context, state, program->vs, program->fs, PIXELFORMAT_UNDEFINED, PIXELFORMAT_UNDEFINED);
     }
     else if (params->type == NGLI_PIPELINE_TYPE_COMPUTE) {

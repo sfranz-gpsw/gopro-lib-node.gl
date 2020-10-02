@@ -33,6 +33,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #ifdef ENABLE_RENDERDOC_CAPTURE
 #include "renderdoc_utils.h"
+static bool DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != nullptr);
 #endif
 using namespace std;
 using namespace ngfx;
@@ -48,11 +49,11 @@ static int ngfx_init(struct gctx *s)
     const ngl_config *config = &s->config;
     gctx_ngfx *ctx = (gctx_ngfx *)s;
 #ifdef ENABLE_RENDERDOC_CAPTURE
-    init_renderdoc();
+    if (DEBUG_CAPTURE) init_renderdoc();
 #endif
     ctx->graphics_context = GraphicsContext::create("NGLApplication", true);
 #ifdef ENABLE_RENDERDOC_CAPTURE
-    begin_renderdoc_capture(); //&((ngfx::VKGraphicsContext*)ctx->graphics_context)->vkDevice);
+    if (DEBUG_CAPTURE) begin_renderdoc_capture(); //&((ngfx::VKGraphicsContext*)ctx->graphics_context)->vkDevice);
 #endif
     if (config->offscreen) {
         Surface surface(config->width, config->height, true);
@@ -122,6 +123,7 @@ static int ngfx_pre_draw(struct gctx *s, double t)
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     s_priv->cur_command_buffer = s_priv->graphics_context->drawCommandBuffer();
     s_priv->cur_command_buffer->begin();
+    s_priv->output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     return 0;
 }
 
@@ -149,7 +151,7 @@ static void ngfx_destroy(struct gctx *s)
     delete ctx->graphics_context;
     delete ctx;
 #ifdef ENABLE_RENDERDOC_CAPTURE
-    end_renderdoc_capture();
+    if (DEBUG_CAPTURE) end_renderdoc_capture();
 #endif
 }
 
