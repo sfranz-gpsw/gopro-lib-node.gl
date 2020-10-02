@@ -47,6 +47,7 @@ struct rtt_priv {
     int height;
 
     struct rendertarget *rt;
+    struct rendertarget *rt2;
     struct texture *depth;
 
     struct texture *ms_colors[NGLI_MAX_COLOR_ATTACHMENTS];
@@ -308,6 +309,18 @@ static int rtt_prefetch(struct ngl_node *node)
     if (ret < 0)
         return ret;
 
+    struct rendertarget_params rt2_params = rt_params;
+    for (int i = 0; i < rt2_params.nb_colors; i++)
+        rt2_params.colors[i].op_load = NGLI_LOAD_OP_LOAD;
+    rt2_params.depth_stencil.op_load = NGLI_LOAD_OP_LOAD;
+
+    s->rt2 = ngli_rendertarget_create(gctx);
+    if (!s->rt2)
+        return NGL_ERROR_MEMORY;
+    ret = ngli_rendertarget_init(s->rt2, &rt2_params);
+    if (ret < 0)
+        return ret;
+
     if (s->vflip) {
         /* flip vertically the color and depth textures so the coordinates
          * match how the uv coordinates system works */
@@ -371,6 +384,13 @@ static void rtt_draw(struct ngl_node *node)
     struct rendertarget *prev_rt = ngli_gctx_get_rendertarget(gctx);
     ngli_gctx_set_rendertarget(gctx, rt);
 
+    struct rendertarget *prev_rendertargets[2];
+    prev_rendertargets[0] = ctx->current_rendertargets[0];
+    prev_rendertargets[1] = ctx->current_rendertargets[1];
+
+    ctx->current_rendertargets[0] = s->rt;
+    ctx->current_rendertargets[1] = s->rt2;
+
     ngli_node_draw(s->child);
 
     if (s->samples > 0)
@@ -378,6 +398,9 @@ static void rtt_draw(struct ngl_node *node)
 
     ngli_gctx_set_rendertarget(gctx, prev_rt);
     ngli_gctx_set_viewport(gctx, prev_vp);
+
+    ctx->current_rendertargets[0] = prev_rendertargets[0];
+    ctx->current_rendertargets[1] = prev_rendertargets[1];
 
     if (s->use_clear_color)
         ngli_gctx_set_clear_color(gctx, prev_clear_color);

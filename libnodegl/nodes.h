@@ -83,6 +83,7 @@ struct ngl_ctx {
     struct rnode *rnode_pos;
     struct ngl_node *scene;
     struct ngl_config config;
+    struct rendertarget *current_rendertargets[2];
     struct darray modelview_matrix_stack;
     struct darray projection_matrix_stack;
     struct darray activitycheck_nodes;
