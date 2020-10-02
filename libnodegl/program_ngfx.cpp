@@ -51,8 +51,8 @@ struct ShaderCompiler {
     }
     string compile(string src, const string& ext) {
         //patch source bindings
-        tmpDir = string(fs::temp_directory_path()) + "/" + to_string(ProcessUtil::getPID());
-        fs::create_directory(tmpDir);
+        tmpDir = string(fs::temp_directory_path()) + "/" + "nodegl" + "/" + to_string(ProcessUtil::getPID());
+        fs::create_directories(tmpDir);
         string tmpFile = tmpDir + "/" + "tmp" + ext;
         FileUtil::writeFile(tmpFile, src);
         string outDir = tmpDir;
