@@ -19,12 +19,16 @@
  * under the License.
  */
 
-#pragma once
-#include <regex>
+#include "ProcessUtil.h"
+#ifdef _WIN32
+#else
+#include <unistd.h>
+#endif
+using namespace ngfx;
 
-namespace ngfx {
-class RegexUtil {
-public:
-    static std::vector<std::smatch> findAll(const std::regex& p, std::string contents);
-};
+int ProcessUtil::getPID() {
+#ifdef _WIN32
+#else
+    return getpid();
+#endif
 }

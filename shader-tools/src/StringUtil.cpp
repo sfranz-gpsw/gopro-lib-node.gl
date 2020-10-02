@@ -1,5 +1,6 @@
 #include "StringUtil.h"
 using namespace std;
+using namespace ngfx;
 
 string StringUtil::toLower(const string& str) {
     string r = str;

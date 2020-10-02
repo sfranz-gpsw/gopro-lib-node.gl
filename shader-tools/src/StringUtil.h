@@ -22,7 +22,9 @@
 #pragma once
 #include <string>
 
+namespace ngfx {
 class StringUtil {
 public:
     static std::string toLower(const std::string& str);
 };
+}

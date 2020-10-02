@@ -26,6 +26,7 @@
 #include "graphics/ShaderModule.h"
 #include "graphics/ShaderTools.h"
 #include "FileUtil.h"
+#include "ProcessUtil.h"
 #include "gctx_ngfx.h"
 #include <filesystem>
 using namespace ngfx;
@@ -41,23 +42,44 @@ struct program *ngli_program_ngfx_create(struct gctx *gctx) {
     return (struct program *)s;
 }
 
-static string compileShader(string src, const string& ext) {
-    //patch source bindings
-    string tmpFile = string(fs::temp_directory_path()) + "/" + "tmp" + ext;
-    FileUtil::writeFile(tmpFile, src);
-    string outDir = fs::temp_directory_path();
-    auto glslFiles = { tmpFile };
-    auto spvFiles = shaderTools.compileShaders(glslFiles, outDir, "glsl", "", ShaderTools::PATCH_SHADER_LAYOUTS_GLSL);
-    auto spvMapFiles = shaderTools.generateShaderMaps(glslFiles, outDir, "glsl");
-    return FileUtil::splitExt(spvFiles[0])[0];
-}
+struct ShaderCompiler {
+    ~ShaderCompiler() {
+        for (const string& path : glslFiles) fs::remove(path);
+        for (const string& path : spvFiles) fs::remove(path);
+        for (const string& path : spvMapFiles) fs::remove(path);
+        fs::remove(tmpDir);
+    }
+    string compile(string src, const string& ext) {
+        //patch source bindings
+        tmpDir = string(fs::temp_directory_path()) + "/" + to_string(ProcessUtil::getPID());
+        fs::create_directory(tmpDir);
+        string tmpFile = tmpDir + "/" + "tmp" + ext;
+        FileUtil::writeFile(tmpFile, src);
+        string outDir = fs::temp_directory_path();
+        glslFiles = { tmpFile };
+        spvFiles = shaderTools.compileShaders(glslFiles, outDir, "glsl", "", ShaderTools::PATCH_SHADER_LAYOUTS_GLSL);
+        spvMapFiles = shaderTools.generateShaderMaps(glslFiles, outDir, "glsl");
+        return FileUtil::splitExt(spvFiles[0])[0];
+    }
+    string tmpDir;
+    std::vector<string> glslFiles, spvFiles, spvMapFiles;
+};
 
 int ngli_program_ngfx_init(struct program *s, const char *vertex, const char *fragment, const char *compute) {
     gctx_ngfx *gctx = (gctx_ngfx  *)s->gctx;
     program_ngfx* program = (program_ngfx*)s;
-    if (vertex) program->vs = VertexShaderModule::create(gctx->graphics_context->device, compileShader(vertex, ".vert")).release();
-    if (fragment) program->fs = FragmentShaderModule::create(gctx->graphics_context->device, compileShader(fragment, ".frag")).release();
-    if (compute) program->cs = ComputeShaderModule::create(gctx->graphics_context->device, compileShader(compute, ".comp")).release();
+    if (vertex) {
+        ShaderCompiler sc;
+        program->vs = VertexShaderModule::create(gctx->graphics_context->device, sc.compile(vertex, ".vert")).release();
+    }
+    if (fragment) {
+        ShaderCompiler sc;
+        program->fs = FragmentShaderModule::create(gctx->graphics_context->device, sc.compile(fragment, ".frag")).release();
+    }
+    if (compute) {
+        ShaderCompiler sc;
+        program->cs = ComputeShaderModule::create(gctx->graphics_context->device, sc.compile(compute, ".comp")).release();
+    }
     return 0;
 }
 void ngli_program_ngfx_freep(struct program **sp) {

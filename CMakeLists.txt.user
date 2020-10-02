@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.6.2, 2020-10-02T08:06:48. -->
+<!-- Written by QtCreator 4.6.2, 2020-10-02T10:21:39. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -359,9 +359,7 @@
      <value type="QString">BACKEND=ngfx</value>
      <value type="QString">PYTHONPATH=../pynodegl:../pynodegl-utils</value>
      <value type="QString">PATH=/home/jmoguillansky/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/jmoguillansky/Documents/2020/Git/external/VulkanSDK//1.2.131.2/x86_64/bin</value>
-     <value type="QString">DEBUG=on</value>
      <value type="QString">LD_LIBRARY_PATH=/home/jmoguillansky/Downloads/renderdoc_1.7/lib</value>
-     <value type="QString">DEBUG_CAPTURE=on</value>
     </valuelist>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">pyshell</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>

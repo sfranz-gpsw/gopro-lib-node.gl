@@ -21,6 +21,7 @@
 
 #include "RegexUtil.h"
 using namespace std;
+using namespace ngfx;
 
 vector<smatch> RegexUtil::findAll(const regex& p, string contents) {
     vector<smatch> matches;

@@ -20,11 +20,10 @@
  */
 
 #pragma once
-#include <regex>
 
 namespace ngfx {
-class RegexUtil {
+class ProcessUtil {
 public:
-    static std::vector<std::smatch> findAll(const std::regex& p, std::string contents);
+    static int getPID();
 };
 }

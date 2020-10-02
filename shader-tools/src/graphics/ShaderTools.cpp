@@ -548,6 +548,7 @@ int ShaderTools::generateShaderMapGLSL(const string& file, string outDir, vector
     if (!FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
     auto reflectData = json::parse(readFile(inFileName));
+    fs::remove(inFileName);
     string contents = parseReflectionData(reflectData, ext);
 
     ofstream outFile(outFileName);
@@ -570,6 +571,7 @@ int ShaderTools::generateShaderMapMSL(const string& file, string outDir, vector<
     if (!FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
     auto reflectData = json::parse(readFile(inFileName));
+    fs::remove(inFileName);
     string contents = parseReflectionData(reflectData, ext);
 
     ofstream outFile(outFileName);
@@ -592,6 +594,7 @@ int ShaderTools::generateShaderMapHLSL(const string& file, string outDir, vector
     if (!FileUtil::srcFileChanged(inFileName, outFileName)) return 0;
 
     auto reflectData = json::parse(readFile(inFileName));
+    fs::remove(inFileName);
     string contents = parseReflectionData(reflectData, ext);
 
     ofstream outFile(outFileName);
