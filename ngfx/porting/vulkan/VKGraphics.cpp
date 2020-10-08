@@ -96,9 +96,8 @@ void VKGraphics::bindVertexBuffer(CommandBuffer* commandBuffer, Buffer* buffer, 
     VkDeviceSize offsets[] = { 0 };
     VK_TRACE(vkCmdBindVertexBuffers(vk(commandBuffer)->v, location, 1, &vk(buffer)->v, offsets));
 }
-void VKGraphics::bindIndexBuffer(CommandBuffer* commandBuffer, Buffer* buffer) {
+void VKGraphics::bindIndexBuffer(CommandBuffer* commandBuffer, Buffer* buffer, IndexFormat indexFormat) {
     VkDeviceSize offset = 0;
-    IndexFormat indexFormat = (buffer->stride == sizeof(uint16_t) ? INDEXFORMAT_UINT16 : INDEXFORMAT_UINT32);
     VK_TRACE(vkCmdBindIndexBuffer(vk(commandBuffer)->v, vk(buffer)->v, offset, VkIndexType(indexFormat)));
 }
 static void bindBufferFN0(CommandBuffer* commandBuffer, Buffer* buffer, uint32_t set, Pipeline* currentPipeline,

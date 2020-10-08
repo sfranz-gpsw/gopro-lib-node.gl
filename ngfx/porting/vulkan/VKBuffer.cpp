@@ -129,10 +129,8 @@ void VKBuffer::unmap() {
     VK_TRACE(vkUnmapMemory(device, memory));
 }
 
-Buffer* Buffer::create(GraphicsContext* ctx, const void* data, uint32_t size, uint32_t stride,
-        BufferUsageFlags usageFlags) {
+Buffer* Buffer::create(GraphicsContext* ctx, const void* data, uint32_t size, BufferUsageFlags usageFlags) {
     VKBuffer* vkBuffer = new VKBuffer();
     vkBuffer->create(vk(ctx), data, size, usageFlags);
-    vkBuffer->stride = stride;
     return vkBuffer;
 }

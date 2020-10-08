@@ -22,22 +22,22 @@
 #include "graphics/Buffer.h"
 
 namespace ngfx {
-    static Buffer* createVertexBuffer(GraphicsContext* ctx, const void* data, uint32_t size, uint32_t stride) {
-        return Buffer::create(ctx, data, size, stride, BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    static Buffer* createVertexBuffer(GraphicsContext* ctx, const void* data, uint32_t size) {
+        return Buffer::create(ctx, data, size, BUFFER_USAGE_VERTEX_BUFFER_BIT);
     }
     template <typename T> static inline Buffer* createVertexBuffer(GraphicsContext* ctx, const std::vector<T> &v) {
-        return createVertexBuffer(ctx, v.data(), uint32_t(v.size() * sizeof(v[0])), sizeof(T));
+        return createVertexBuffer(ctx, v.data(), uint32_t(v.size() * sizeof(v[0])));
     }
     static Buffer* createIndexBuffer(GraphicsContext* ctx, const void* data, uint32_t size, uint32_t stride  = sizeof(uint32_t)) {
-        return Buffer::create(ctx, data, size, stride, BUFFER_USAGE_INDEX_BUFFER_BIT);
+        return Buffer::create(ctx, data, size, BUFFER_USAGE_INDEX_BUFFER_BIT);
     }
     template <typename T> static inline Buffer* createIndexBuffer(GraphicsContext* ctx, const std::vector<T>& v, uint32_t stride = sizeof(uint32_t)) {
-        return createIndexBuffer(ctx, v.data(), uint32_t(v.size() * sizeof(v[0])), stride);
+        return createIndexBuffer(ctx, v.data(), uint32_t(v.size() * sizeof(v[0])));
     }
     static Buffer* createUniformBuffer(GraphicsContext* ctx, const void* data, uint32_t size) {
-        return Buffer::create(ctx, data, size, 0, BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+        return Buffer::create(ctx, data, size, BUFFER_USAGE_UNIFORM_BUFFER_BIT);
     }
     static Buffer* createStorageBuffer(GraphicsContext* ctx, const void* data, uint32_t size) {
-        return Buffer::create(ctx, data, size, 0, BUFFER_USAGE_STORAGE_BUFFER_BIT);
+        return Buffer::create(ctx, data, size, BUFFER_USAGE_STORAGE_BUFFER_BIT);
     }
 };

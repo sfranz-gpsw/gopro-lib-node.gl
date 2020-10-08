@@ -29,17 +29,15 @@ namespace ngfx {
 
     class Buffer {
     public:
-        static Buffer* create(GraphicsContext* ctx, const void* data, uint32_t size, uint32_t stride,
-                BufferUsageFlags usageFlags);
-        template <typename T> static inline Buffer* create(GraphicsContext* ctx, const std::vector<T> &v, uint32_t stride,
+        static Buffer* create(GraphicsContext* ctx, const void* data, uint32_t size, BufferUsageFlags usageFlags);
+        template <typename T> static inline Buffer* create(GraphicsContext* ctx, const std::vector<T> &v,
                 BufferUsageFlags usageFlags) {
-            return create(ctx, v.data(), uint32_t(v.size() * sizeof(v[0])), stride);
+            return create(ctx, v.data(), uint32_t(v.size() * sizeof(v[0])));
         }
         virtual ~Buffer() {}
         virtual void* map() = 0;
         virtual void unmap() = 0;
         virtual void upload(const void* data, uint32_t size, uint32_t offset = 0) = 0;
         virtual void download(void* data, uint32_t size, uint32_t offset = 0) = 0;
-        uint32_t stride = 0;
     };
 };

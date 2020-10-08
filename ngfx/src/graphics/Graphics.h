@@ -41,7 +41,7 @@ namespace ngfx {
         virtual void endRenderPass(CommandBuffer* commandBuffer) = 0;
 
         virtual void bindVertexBuffer(CommandBuffer* commandBuffer, Buffer* buffer, uint32_t location) = 0;
-        virtual void bindIndexBuffer(CommandBuffer* commandBuffer, Buffer* buffer) = 0;
+        virtual void bindIndexBuffer(CommandBuffer* commandBuffer, Buffer* buffer, IndexFormat indexFormat = INDEXFORMAT_UINT32) = 0;
         virtual void bindUniformBuffer(CommandBuffer* commandBuffer, Buffer* buffer, uint32_t binding, ShaderStageFlags shaderStageFlags) = 0;
         virtual void bindStorageBuffer(CommandBuffer* commandBuffer, Buffer* buffer, uint32_t binding, ShaderStageFlags shaderStageFlags) = 0;
         virtual void bindComputePipeline(CommandBuffer* cmdBuffer, ComputePipeline* computePipeline) = 0;

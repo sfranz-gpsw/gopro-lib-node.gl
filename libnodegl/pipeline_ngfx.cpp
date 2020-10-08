@@ -33,8 +33,18 @@
 #include "type.h"
 #include "texture_ngfx.h"
 #include "topology_ngfx.h"
+#include <map>
 using namespace ngfx;
 auto to_ngfx_topology = ngli_topology_get_ngfx_topology;
+
+static IndexFormat get_ngfx_index_format(int indices_format)
+{
+    static const std::map<int, IndexFormat> index_format_map = {
+        { NGLI_FORMAT_R16_UNORM, INDEXFORMAT_UINT16 },
+        { NGLI_FORMAT_R32_UINT,  INDEXFORMAT_UINT32 }
+    };
+    return index_format_map.at(indices_format);
+}
 
 static int build_attribute_descs(pipeline *s, const pipeline_desc_params *params)
 {
@@ -63,7 +73,7 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
     s->program  = params->program;
 
     ngli_assert(ngli_darray_count(&s->uniform_descs) == 0);
-    LOG(INFO, "%p %p %p", s->texture_descs.data, s->buffer_descs.data, s->attribute_descs.data);
+    LOG(WARNING, "%p %p %p", s->texture_descs.data, s->buffer_descs.data, s->attribute_descs.data);
     ngli_darray_init(&s->texture_descs, sizeof(struct pipeline_texture_desc), 0);
     ngli_darray_init(&s->buffer_descs,  sizeof(struct pipeline_buffer_desc), 0);
     ngli_darray_init(&s->attribute_descs, sizeof(struct pipeline_attribute_desc), 0);
@@ -262,8 +272,7 @@ void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices,
     bind_buffers(cmd_buf, s);
     bind_textures(cmd_buf, s);
 
-    TODO("pass stride as param to bind index buffer");
-    gctx_ngfx->graphics->bindIndexBuffer(cmd_buf, ((buffer_ngfx *)indices)->v);
+    gctx_ngfx->graphics->bindIndexBuffer(cmd_buf, ((buffer_ngfx *)indices)->v, get_ngfx_index_format(indices_format));
     gctx_ngfx->graphics->drawIndexed(cmd_buf, nb_indices, nb_instances);
 
     ngli_gctx_ngfx_end_render_pass(s->gctx);
