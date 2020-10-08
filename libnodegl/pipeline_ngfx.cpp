@@ -249,6 +249,7 @@ void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instanc
 
     upload_uniforms(s);
 
+    //TODO: move to higher-level
     ngli_gctx_ngfx_begin_render_pass(s->gctx);
 
     bind_pipeline(s);
@@ -257,7 +258,6 @@ void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instanc
     bind_textures(cmd_buf, s);
     gctx_ngfx->graphics->draw(cmd_buf, nb_vertices, nb_instances);
 
-    ngli_gctx_ngfx_end_render_pass(s->gctx);
 }
 void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices, int indices_format, int nb_indices, int nb_instances) {
     struct gctx_ngfx *gctx_ngfx = (struct gctx_ngfx *)s->gctx;
@@ -265,6 +265,7 @@ void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices,
 
     upload_uniforms(s);
 
+    //TODO: move to higher-level
     ngli_gctx_ngfx_begin_render_pass(s->gctx);
 
     bind_pipeline(s);
@@ -275,7 +276,6 @@ void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices,
     gctx_ngfx->graphics->bindIndexBuffer(cmd_buf, ((buffer_ngfx *)indices)->v, get_ngfx_index_format(indices_format));
     gctx_ngfx->graphics->drawIndexed(cmd_buf, nb_indices, nb_instances);
 
-    ngli_gctx_ngfx_end_render_pass(s->gctx);
 }
 void ngli_pipeline_ngfx_dispatch(struct pipeline *s, int nb_group_x, int nb_group_y, int nb_group_z) {
     struct gctx_ngfx *gctx_ngfx = (struct gctx_ngfx *)s->gctx;
@@ -283,6 +283,7 @@ void ngli_pipeline_ngfx_dispatch(struct pipeline *s, int nb_group_x, int nb_grou
 
     upload_uniforms(s);
 
+    //TODO: move to higher-level
     ngli_gctx_ngfx_begin_render_pass(s->gctx);
 
     bind_pipeline(s);
@@ -294,6 +295,7 @@ void ngli_pipeline_ngfx_dispatch(struct pipeline *s, int nb_group_x, int nb_grou
     int threads_per_group_x = 1, threads_per_group_y = 1, threads_per_group_z = 1;
     gctx_ngfx->graphics->dispatch(cmd_buf, nb_group_x, nb_group_y, nb_group_z, threads_per_group_x, threads_per_group_y, threads_per_group_z);
 
+    //TODO: move to higher-level
     ngli_gctx_ngfx_end_render_pass(s->gctx);
 }
 void ngli_pipeline_ngfx_freep(struct pipeline **sp) {

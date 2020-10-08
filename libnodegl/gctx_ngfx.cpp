@@ -132,6 +132,9 @@ static int ngfx_pre_draw(struct gctx *s, double t)
 static int ngfx_post_draw(struct gctx *s, double t)
 {
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
+
+    ngli_gctx_ngfx_end_render_pass(s);
+
     s_priv->cur_command_buffer->end();
     s_priv->graphics_context->queue->submit(s_priv->cur_command_buffer);
     if (s->config.offscreen && s->config.capture_buffer) {
@@ -269,6 +272,10 @@ static int ngfx_get_preferred_depth_stencil_format(struct gctx *s)
 void ngli_gctx_ngfx_begin_render_pass(struct gctx *s)
 {
     gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
+
+    if (s_priv->render_pass_state == 1)
+        return;
+
     Graphics *graphics = s_priv->graphics;
     CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
     TODO("set correct render pass and framebuffer");
@@ -279,6 +286,8 @@ void ngli_gctx_ngfx_begin_render_pass(struct gctx *s)
     graphics->setViewport(cmd_buf, { vp[0], vp[1], uint32_t(vp[2]), uint32_t(vp[3]) });
     int *sr = s_priv->scissor;
     graphics->setScissor(cmd_buf, { sr[0], sr[1], uint32_t(sr[2]), uint32_t(sr[3]) });
+
+    s_priv->render_pass_state = 1;
 }
 
 void ngli_gctx_ngfx_end_render_pass(struct gctx *s)
@@ -286,7 +295,13 @@ void ngli_gctx_ngfx_end_render_pass(struct gctx *s)
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     Graphics *graphics = s_priv->graphics;
     CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
+
+    if (s_priv->render_pass_state != 1)
+        return;
+
     graphics->endRenderPass(cmd_buf);
+
+    s_priv->render_pass_state = 0;
 }
 
 extern "C" const struct gctx_class ngli_gctx_ngfx = {

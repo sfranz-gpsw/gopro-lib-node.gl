@@ -39,6 +39,7 @@ struct gctx_ngfx {
     float clear_color[4];
     ngfx::Texture *output_texture = nullptr, *depth_texture = nullptr;
     ngfx::Framebuffer *output_framebuffer = nullptr;
+    int render_pass_state = 0;
 };
 
 void ngli_gctx_ngfx_begin_render_pass(struct gctx *s);
