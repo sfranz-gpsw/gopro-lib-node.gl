@@ -47,9 +47,9 @@ void VKGraphicsPipeline::create(VKGraphicsContext* ctx, const State &state,
     };
     blendAttachmentState.resize(state.numColorAttachments);
     for (auto& pState : blendAttachmentState) pState = {
-        state.blendEnable, state.blendSrcFactor, state.blendDstFactor,
-        state.blendOp, state.blendSrcFactor, state.blendDstFactor,
-        state.blendOp, state.colorWriteMask
+        state.blendEnable, state.srcColorBlendFactor, state.dstColorBlendFactor,
+        state.colorBlendOp, state.srcColorBlendFactor, state.dstColorBlendFactor,
+        state.alphaBlendOp, state.colorWriteMask
     };
     colorBlendState = {
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, nullptr, 0,
@@ -130,7 +130,9 @@ GraphicsPipeline* GraphicsPipeline::create(GraphicsContext* graphicsContext, con
     VKGraphicsPipeline* vkGraphicsPipeline = new VKGraphicsPipeline();
     VKGraphicsPipeline::State vkState = {
         VkPrimitiveTopology(state.primitiveTopology), VkPolygonMode(state.polygonMode),
-        state.blendEnable, VkBlendFactor(state.blendSrcFactor), VkBlendFactor(state.blendDstFactor), VkBlendOp(state.blendOp),
+        state.blendEnable, VkBlendFactor(state.srcColorBlendFactor), VkBlendFactor(state.dstColorBlendFactor),
+        VkBlendFactor(state.srcAlphaBlendFactor), VkBlendFactor(state.dstAlphaBlendFactor),
+        VkBlendOp(state.colorBlendOp), VkBlendOp(state.alphaBlendOp),
         VkColorComponentFlags(state.colorWriteMask),
         VkCullModeFlags(state.cullModeFlags), VkFrontFace(state.frontFace), state.lineWidth,
         state.depthTestEnable, state.depthWriteEnable, vk(state.renderPass)->v,

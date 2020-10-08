@@ -34,9 +34,11 @@ namespace ngfx {
             VkPrimitiveTopology primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
             VkPolygonMode polygonMode = VK_POLYGON_MODE_FILL;
             VkBool32 blendEnable = VK_FALSE;
-            VkBlendFactor blendSrcFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-            VkBlendFactor blendDstFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-            VkBlendOp blendOp = VK_BLEND_OP_ADD;
+            VkBlendFactor srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+            VkBlendFactor dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            VkBlendFactor srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+            VkBlendFactor dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            VkBlendOp colorBlendOp = VK_BLEND_OP_ADD, alphaBlendOp = VK_BLEND_OP_ADD;
             VkColorComponentFlags colorWriteMask =
                 VK_COLOR_COMPONENT_R_BIT |
                 VK_COLOR_COMPONENT_G_BIT |

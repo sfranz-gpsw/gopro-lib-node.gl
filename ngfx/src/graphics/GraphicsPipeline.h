@@ -36,9 +36,11 @@ namespace ngfx {
             PrimitiveTopology primitiveTopology = PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
             PolygonMode polygonMode = POLYGON_MODE_FILL;
             bool blendEnable = false;
-            BlendFactor blendSrcFactor = BLEND_FACTOR_SRC_ALPHA;
-            BlendFactor blendDstFactor = BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-            BlendOp blendOp = BLEND_OP_ADD;
+            BlendFactor srcColorBlendFactor = BLEND_FACTOR_SRC_ALPHA;
+            BlendFactor dstColorBlendFactor = BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            BlendFactor srcAlphaBlendFactor = BLEND_FACTOR_SRC_ALPHA;
+            BlendFactor dstAlphaBlendFactor = BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            BlendOp colorBlendOp = BLEND_OP_ADD, alphaBlendOp = BLEND_OP_ADD;
             ColorComponentFlags colorWriteMask =
                 COLOR_COMPONENT_R_BIT |
                 COLOR_COMPONENT_G_BIT |

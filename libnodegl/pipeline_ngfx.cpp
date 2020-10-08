@@ -46,6 +46,36 @@ static IndexFormat get_ngfx_index_format(int indices_format)
     return index_format_map.at(indices_format);
 }
 
+static const BlendFactor get_ngfx_blend_factor(int blend_factor)
+{
+    static const std::map<int, BlendFactor> blend_factor_map = {
+        { NGLI_BLEND_FACTOR_ZERO                , BLEND_FACTOR_ZERO },
+        { NGLI_BLEND_FACTOR_ONE                 , BLEND_FACTOR_ONE },
+        { NGLI_BLEND_FACTOR_SRC_COLOR           , BLEND_FACTOR_SRC_COLOR },
+        { NGLI_BLEND_FACTOR_ONE_MINUS_SRC_COLOR , BLEND_FACTOR_ONE_MINUS_SRC_COLOR },
+        { NGLI_BLEND_FACTOR_DST_COLOR           , BLEND_FACTOR_DST_COLOR },
+        { NGLI_BLEND_FACTOR_ONE_MINUS_DST_COLOR , BLEND_FACTOR_ONE_MINUS_DST_COLOR },
+        { NGLI_BLEND_FACTOR_SRC_ALPHA           , BLEND_FACTOR_SRC_ALPHA },
+        { NGLI_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA , BLEND_FACTOR_ONE_MINUS_SRC_ALPHA },
+        { NGLI_BLEND_FACTOR_DST_ALPHA           , BLEND_FACTOR_DST_ALPHA },
+        { NGLI_BLEND_FACTOR_ONE_MINUS_DST_ALPHA , BLEND_FACTOR_ONE_MINUS_DST_ALPHA }
+    };
+
+    return blend_factor_map.at(blend_factor);
+}
+
+static BlendOp get_ngfx_blend_op(int blend_op)
+{
+    static const std::map<int, BlendOp> blend_op_map = {
+        { NGLI_BLEND_OP_ADD              , BLEND_OP_ADD },
+        { NGLI_BLEND_OP_SUBTRACT         , BLEND_OP_SUBTRACT },
+        { NGLI_BLEND_OP_REVERSE_SUBTRACT , BLEND_OP_REVERSE_SUBTRACT },
+        { NGLI_BLEND_OP_MIN              , BLEND_OP_MIN },
+        { NGLI_BLEND_OP_MAX              , BLEND_OP_MAX },
+    };
+    return blend_op_map.at(blend_op);
+}
+
 static int build_attribute_descs(pipeline *s, const pipeline_desc_params *params)
 {
     for (int i = 0; i < params->nb_attributes; i++) {
@@ -85,6 +115,8 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
 
     program_ngfx* program = (program_ngfx*)params->program;
     pipeline_ngfx* pipeline = (pipeline_ngfx*)s;
+    pipeline_graphics *graphics = &s->graphics;
+    graphicstate *gs = &graphics->state;
     gctx_ngfx* gctx = (gctx_ngfx*)pipeline->parent.gctx;
 
     if (params->type == NGLI_PIPELINE_TYPE_GRAPHICS) {
@@ -101,6 +133,15 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
         renderPassConfig.offscreen = true;
         state.renderPass = gctx->graphics_context->getRenderPass(renderPassConfig);
         state.primitiveTopology = to_ngfx_topology(s->graphics.topology);
+
+        state.blendEnable = gs->blend;
+        state.colorBlendOp = get_ngfx_blend_op(gs->blend_op);
+        state.srcColorBlendFactor = get_ngfx_blend_factor(gs->blend_src_factor);
+        state.dstColorBlendFactor = get_ngfx_blend_factor(gs->blend_dst_factor);
+        state.alphaBlendOp = get_ngfx_blend_op(gs->blend_op_a);
+        state.srcAlphaBlendFactor = get_ngfx_blend_factor(gs->blend_src_factor_a);
+        state.dstAlphaBlendFactor = get_ngfx_blend_factor(gs->blend_dst_factor_a);
+
         pipeline->gp = GraphicsPipeline::create(gctx->graphics_context, state, program->vs, program->fs, PIXELFORMAT_UNDEFINED, PIXELFORMAT_UNDEFINED);
     }
     else if (params->type == NGLI_PIPELINE_TYPE_COMPUTE) {
