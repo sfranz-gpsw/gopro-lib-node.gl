@@ -65,6 +65,27 @@ int ngli_gctx_resize(struct gctx *s, int width, int height, const int *viewport)
     return class->resize(s, width, height, viewport);
 }
 
+int ngli_gctx_update(struct gctx *s, struct ngl_node *scene, double t)
+{
+    const struct gctx_class *class = s->class;
+
+    int ret = class->pre_update(s, t);
+    if (ret < 0)
+        goto end;
+
+    if (scene) {
+        LOG(DEBUG, "update scene %s @ t=%f", scene->label, t);
+        ngli_node_update(scene, t);
+    }
+
+end:;
+    int end_ret = class->post_update(s, t);
+    if (end_ret < 0)
+        return end_ret;
+
+    return ret;
+}
+
 int ngli_gctx_draw(struct gctx *s, struct ngl_node *scene, double t)
 {
     const struct gctx_class *class = s->class;

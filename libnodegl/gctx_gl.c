@@ -341,6 +341,16 @@ static int gl_resize(struct gctx *s, int width, int height, const int *viewport)
     return 0;
 }
 
+static int gl_pre_update(struct gctx *s, double t)
+{
+    return 0;
+}
+
+static int gl_post_update(struct gctx *s, double t)
+{
+    return 0;
+}
+
 static int gl_pre_draw(struct gctx *s, double t)
 {
     struct gctx_gl *s_priv = (struct gctx_gl *)s;
@@ -562,6 +572,8 @@ const struct gctx_class ngli_gctx_gl = {
     .create       = gl_create,
     .init         = gl_init,
     .resize       = gl_resize,
+    .pre_update   = gl_pre_update,
+    .post_update  = gl_post_update,
     .pre_draw     = gl_pre_draw,
     .post_draw    = gl_post_draw,
     .destroy      = gl_destroy,
@@ -639,6 +651,8 @@ const struct gctx_class ngli_gctx_gles = {
     .create       = gl_create,
     .init         = gl_init,
     .resize       = gl_resize,
+    .pre_update   = gl_pre_update,
+    .post_update  = gl_post_update,
     .pre_draw     = gl_pre_draw,
     .post_draw    = gl_post_draw,
     .destroy      = gl_destroy,
