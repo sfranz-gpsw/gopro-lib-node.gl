@@ -678,9 +678,10 @@ int ngli_texture_vk_generate_mipmap(struct texture *s)
     ngli_assert(!(params->usage & NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY));
 
     VkCommandBuffer command_buffer;
-    if (gctx_vk->cur_command_buffer)
+    if (gctx_vk->cur_command_buffer) {
         command_buffer = gctx_vk->cur_command_buffer;
-    else {
+        ngli_gctx_vk_end_render_pass(s->gctx);
+    } else {
         int ret = ngli_gctx_vk_begin_transient_command(s->gctx, &command_buffer);
         if (ret < 0)
             return ret;
