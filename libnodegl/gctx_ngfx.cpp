@@ -30,7 +30,7 @@
 #include "log.h"
 #include "math_utils.h"
 #include "format.h"
-#include "format_ngfx.h"
+#include "util_ngfx.h"
 #include <glm/gtc/type_ptr.hpp>
 #ifdef ENABLE_RENDERDOC_CAPTURE
 #include "renderdoc_utils.h"
@@ -281,8 +281,9 @@ void ngli_gctx_ngfx_begin_render_pass(struct gctx *s)
 
     Graphics *graphics = s_priv->graphics;
     CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
-    TODO("set correct render pass and framebuffer");
-    RenderPass *render_pass = s_priv->graphics_context->defaultOffscreenRenderPass;
+
+    RenderPass *render_pass = get_render_pass(s_priv->graphics_context, s_priv->default_rendertarget_desc);
+
     Framebuffer *framebuffer = s_priv->output_framebuffer;
     graphics->beginRenderPass(cmd_buf, render_pass, framebuffer, glm::make_vec4(s_priv->clear_color));
     int* vp = s_priv->viewport;

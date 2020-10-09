@@ -25,38 +25,9 @@
 #include <map>
 #include "graphics/Texture.h"
 #include "gctx_ngfx.h"
-#include "format_ngfx.h"
+#include "util_ngfx.h"
 using namespace ngfx;
 using namespace std;
-
-static FilterMode to_ngfx_filter(int filter) {
-    static const map<int, ngfx::FilterMode> filter_map = {
-        { NGLI_FILTER_NEAREST, FILTER_NEAREST },
-        { NGLI_FILTER_LINEAR, FILTER_LINEAR }
-    };
-    return filter_map.at(filter);
-}
-
-static FilterMode to_ngfx_mip_filter(int filter) {
-    static const map<int, ngfx::FilterMode> mip_filter_map = {
-        { NGLI_MIPMAP_FILTER_NEAREST, FILTER_NEAREST},
-        { NGLI_MIPMAP_FILTER_LINEAR, FILTER_LINEAR }
-    };
-    return mip_filter_map.at(filter);
-}
-
-static inline uint32_t get_bpp(int format) {
-    return ngli_format_get_bytes_per_pixel(format);
-}
-
-static TextureType to_ngfx_texture_type(int type) {
-    static const map<int, TextureType> texture_type_map = {
-        { NGLI_TEXTURE_TYPE_2D, TEXTURE_TYPE_2D },
-        { NGLI_TEXTURE_TYPE_3D, TEXTURE_TYPE_3D },
-        { NGLI_TEXTURE_TYPE_CUBE, TEXTURE_TYPE_CUBE }
-    };
-    return texture_type_map.at(type);
-}
 
 struct texture *ngli_texture_ngfx_create(struct gctx *gctx) {
     texture_ngfx *s = (texture_ngfx*)ngli_calloc(1, sizeof(*s));
@@ -80,8 +51,8 @@ int ngli_texture_ngfx_init(struct texture *s,
     s_priv->v = Texture::create(ctx->graphics_context, ctx->graphics,
         nullptr, to_ngfx_format(p->format), size, p->width, p->height, depth, array_layers,
         image_usage_flags, to_ngfx_texture_type(p->type), gen_mipmaps,
-        to_ngfx_filter(p->min_filter), to_ngfx_filter(p->mag_filter),
-        gen_mipmaps ? to_ngfx_mip_filter(p->mipmap_filter) : FILTER_NEAREST,
+        to_ngfx_filter_mode(p->min_filter), to_ngfx_filter_mode(p->mag_filter),
+        gen_mipmaps ? to_ngfx_mip_filter_mode(p->mipmap_filter) : FILTER_NEAREST,
         p->samples == 0 ? 1 : p->samples
     );
     return 0;
