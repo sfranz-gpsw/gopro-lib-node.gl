@@ -74,6 +74,7 @@ struct gctx_vk {
     struct darray wait_stages;
     struct darray signal_semaphores;
 
+    struct rendertarget *default_rendertargets[2];
     struct rendertarget_desc default_rendertarget_desc;
     int viewport[4];
     int scissor[4];

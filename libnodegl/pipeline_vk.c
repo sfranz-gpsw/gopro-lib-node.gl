@@ -750,6 +750,7 @@ int ngli_pipeline_vk_update_texture(struct pipeline *s, int index, struct textur
     struct pipeline_texture *pipeline_texture = &pairs[index];
     pipeline_texture->texture = texture;
 
+    ngli_gctx_vk_end_render_pass(s->gctx);
     ngli_texture_vk_transition_layout(texture, VK_IMAGE_LAYOUT_GENERAL);
 
     struct texture_vk *texture_vk = (struct texture_vk *)texture;
@@ -796,9 +797,6 @@ void ngli_pipeline_vk_draw(struct pipeline *s, int nb_vertices, int nb_instances
 
     VkCommandBuffer cmd_buf = gctx_vk->cur_command_buffer;
 
-    ngli_gctx_vk_commit_render_pass(s->gctx);
-
-    vkCmdBindPipeline(cmd_buf, s_priv->bind_point, s_priv->pipeline);
 
     struct texture_desc *pairs = ngli_darray_data(&s->texture_descs);
     for (int i = 0; i < ngli_darray_count(&s->texture_descs); i++) {
@@ -807,6 +805,10 @@ void ngli_pipeline_vk_draw(struct pipeline *s, int nb_vertices, int nb_instances
             continue;
         ngli_texture_vk_transition_layout(texture->texture, VK_IMAGE_LAYOUT_GENERAL);
     }
+
+    ngli_gctx_vk_commit_render_pass(s->gctx);
+
+    vkCmdBindPipeline(cmd_buf, s_priv->bind_point, s_priv->pipeline);
 
     if (s_priv->desc_sets)
         vkCmdBindDescriptorSets(cmd_buf, s_priv->bind_point, s_priv->pipeline_layout,
@@ -864,9 +866,6 @@ void ngli_pipeline_vk_draw_indexed(struct pipeline *s, struct buffer *indices, i
 
     VkCommandBuffer cmd_buf = gctx_vk->cur_command_buffer;
 
-    ngli_gctx_vk_commit_render_pass(s->gctx);
-
-    vkCmdBindPipeline(cmd_buf, s_priv->bind_point, s_priv->pipeline);
 
     struct texture_desc *pairs = ngli_darray_data(&s->texture_descs);
     for (int i = 0; i < ngli_darray_count(&s->texture_descs); i++) {
@@ -875,6 +874,10 @@ void ngli_pipeline_vk_draw_indexed(struct pipeline *s, struct buffer *indices, i
             continue;
         ngli_texture_vk_transition_layout(texture->texture, VK_IMAGE_LAYOUT_GENERAL);
     }
+
+    ngli_gctx_vk_commit_render_pass(s->gctx);
+
+    vkCmdBindPipeline(cmd_buf, s_priv->bind_point, s_priv->pipeline);
 
     if (s_priv->desc_sets)
         vkCmdBindDescriptorSets(cmd_buf, s_priv->bind_point, s_priv->pipeline_layout,

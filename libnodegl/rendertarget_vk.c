@@ -47,7 +47,7 @@ int ngli_vk_create_renderpass(struct gctx *s, const struct rendertarget_desc *de
         descs[nb_descs] = (VkAttachmentDescription) {
             .format         = format,
             .samples        = ngli_vk_get_sample_count(desc->colors[i].samples),
-            .loadOp         = conservative ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
             .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
             .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -95,9 +95,9 @@ int ngli_vk_create_renderpass(struct gctx *s, const struct rendertarget_desc *de
         descs[nb_descs] = (VkAttachmentDescription) {
             .format         = format,
             .samples        = ngli_vk_get_sample_count(desc->depth_stencil.samples),
-            .loadOp         = conservative ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
-            .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
             .initialLayout  = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
             .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
@@ -278,6 +278,12 @@ int ngli_rendertarget_vk_init(struct rendertarget *s, const struct rendertarget_
         if (vkret != VK_SUCCESS)
             return -1;
         s_priv->nb_attachments++;
+        s_priv->clear_values[s_priv->nb_clear_values] = (VkClearValue) {
+            .color = {
+                .float32 = {0.0f, 0.0f, 0.0f, 0.0f},
+            },
+        };
+        s_priv->nb_clear_values++;
 
         if (attachment->resolve_target) {
             const struct texture_vk *texture_vk = (struct texture_vk *)attachment->resolve_target;
@@ -297,6 +303,7 @@ int ngli_rendertarget_vk_init(struct rendertarget *s, const struct rendertarget_
             if (vkret != VK_SUCCESS)
                 return -1;
             s_priv->nb_attachments++;
+            s_priv->nb_clear_values++;
         }
     }
 
@@ -321,6 +328,14 @@ int ngli_rendertarget_vk_init(struct rendertarget *s, const struct rendertarget_
             return -1;
         s_priv->nb_attachments++;
 
+        s_priv->clear_values[s_priv->nb_clear_values] = (VkClearValue) {
+            .depthStencil = {
+                .depth = 1.0f,
+                .stencil = 0,
+            },
+        };
+        s_priv->nb_clear_values++;
+
         if (attachment->resolve_target) {
             struct texture_vk *resolve_target_vk = (struct texture_vk *)attachment->resolve_target;
             VkImageViewCreateInfo view_info = {
@@ -338,6 +353,7 @@ int ngli_rendertarget_vk_init(struct rendertarget *s, const struct rendertarget_
             if (vkret != VK_SUCCESS)
                 return -1;
             s_priv->nb_attachments++;
+            s_priv->nb_clear_values++;
         }
     }
 

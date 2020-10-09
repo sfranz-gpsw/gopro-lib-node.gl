@@ -216,7 +216,11 @@ static VkResult create_swapchain_resources(struct gctx *s)
             .height = s_priv->extent.height,
             .nb_colors = 1,
             .colors[0].attachment = *wrapped_texture,
+            .colors[0].op_load = NGLI_LOAD_OP_LOAD,
+            .colors[0].op_store = NGLI_STORE_OP_STORE,
             .depth_stencil.attachment = *depth_texture,
+            .depth_stencil.op_load = NGLI_LOAD_OP_LOAD,
+            .depth_stencil.op_store = NGLI_STORE_OP_STORE,
         };
 
         if (config->samples) {
@@ -499,7 +503,11 @@ static VkResult create_offscreen_resources(struct gctx *s)
             .height = config->height,
             .nb_colors = 1,
             .colors[0].attachment = *ms_texture,
+            .colors[0].op_load = NGLI_LOAD_OP_LOAD,
+            .colors[0].op_store = NGLI_STORE_OP_STORE,
             .depth_stencil.attachment = *depth_texture,
+            .depth_stencil.op_load = NGLI_LOAD_OP_LOAD,
+            .depth_stencil.op_store = NGLI_STORE_OP_STORE,
             .readable = 1,
         };
 
@@ -651,7 +659,6 @@ static int vk_init(struct gctx *s)
 
     ngli_gctx_set_clear_color(s, config->clear_color);
 
-
     if (config->offscreen) {
         s_priv->default_rendertarget_desc.nb_colors = 1;
         s_priv->default_rendertarget_desc.colors[0].format = NGLI_FORMAT_R8G8B8A8_UNORM;
@@ -671,6 +678,9 @@ static int vk_init(struct gctx *s)
 
     struct rendertarget **rts = ngli_darray_data(&s_priv->rts);
     ngli_gctx_set_rendertarget(s, rts[s_priv->frame_index]);
+
+    s_priv->default_rendertargets[0] = rts[s_priv->frame_index];
+    s_priv->default_rendertargets[1] = rts[s_priv->frame_index];
 
     return 0;
 }
@@ -810,7 +820,9 @@ static int vk_pre_draw(struct gctx *s, double t)
     ngli_gctx_set_rendertarget(s, rt);
     ngli_gctx_clear_color(s);
     ngli_gctx_clear_depth_stencil(s);
-    ngli_gctx_clear_depth_stencil(s);
+
+    s_priv->default_rendertargets[0] = rt;
+    s_priv->default_rendertargets[1] = rt;
 
     return 0;
 }
@@ -844,6 +856,9 @@ done:
     /* Reset cur_command_buffer so updating resources will use a transient
      * command buffer */
     s_priv->cur_command_buffer = VK_NULL_HANDLE;
+
+    s_priv->default_rendertargets[0] = NULL;
+    s_priv->default_rendertargets[1] = NULL;
 
     return ret;
 }
@@ -994,8 +1009,8 @@ void ngli_gctx_vk_commit_render_pass(struct gctx *s)
             .extent.width = rt->width,
             .extent.height = rt->height,
         },
-        .clearValueCount = 0,
-        .pClearValues = NULL,
+        .clearValueCount = rt_vk->nb_clear_values,
+        .pClearValues = rt_vk->clear_values,
     };
     vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
     s_priv->render_pass_state = 1;
@@ -1015,8 +1030,6 @@ void ngli_gctx_vk_end_render_pass(struct gctx *s)
 
 static void vk_set_rendertarget(struct gctx *s, struct rendertarget *rt)
 {
-    /* FIXME */
-    int conservative = 0;
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
     if (s_priv->render_pass && rt != s_priv->rendertarget) {
         VkCommandBuffer cmd_buf = s_priv->cur_command_buffer;
@@ -1027,7 +1040,7 @@ static void vk_set_rendertarget(struct gctx *s, struct rendertarget *rt)
     s_priv->rendertarget = rt;
     if (rt) {
         struct rendertarget_vk *rt_vk = (struct rendertarget_vk*)rt;
-        s_priv->render_pass = conservative ? rt_vk->conservative_render_pass : rt_vk->render_pass;
+        s_priv->render_pass = rt_vk->render_pass;
     } else {
         s_priv->render_pass = NULL;
     }
@@ -1038,6 +1051,12 @@ static struct rendertarget *vk_get_rendertarget(struct gctx *s)
 {
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
     return s_priv->rendertarget;
+}
+
+static struct rendertarget **vk_get_default_rendertargets(struct gctx *s)
+{
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+    return s_priv->default_rendertargets;
 }
 
 static const struct rendertarget_desc *vk_get_default_rendertarget_desc(struct gctx *s)
@@ -1155,11 +1174,6 @@ static void vk_clear_depth_stencil(struct gctx *s)
     vkCmdClearAttachments(cmd_buf, 1, &clear_attachments, 1, &clear_rect);
 }
 
-static void vk_invalidate_depth_stencil(struct gctx *s)
-{
-    /* TODO: it needs change of API to implement this feature on Vulkan */
-}
-
 static void vk_flush(struct gctx *s)
 {
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
@@ -1228,6 +1242,7 @@ const struct gctx_class ngli_gctx_vk = {
 
     .set_rendertarget         = vk_set_rendertarget,
     .get_rendertarget         = vk_get_rendertarget,
+    .get_default_rendertargets = vk_get_default_rendertargets,
     .get_default_rendertarget_desc = vk_get_default_rendertarget_desc,
     .set_viewport             = vk_set_viewport,
     .get_viewport             = vk_get_viewport,
@@ -1237,7 +1252,6 @@ const struct gctx_class ngli_gctx_vk = {
     .get_clear_color          = vk_get_clear_color,
     .clear_color              = vk_clear_color,
     .clear_depth_stencil      = vk_clear_depth_stencil,
-    .invalidate_depth_stencil = vk_invalidate_depth_stencil,
     .get_preferred_depth_format= vk_get_preferred_depth_format,
     .get_preferred_depth_stencil_format=vk_get_preferred_depth_stencil_format,
     .flush                    = vk_flush,

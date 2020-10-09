@@ -31,6 +31,8 @@ struct rendertarget_vk {
     VkImageView attachments[2*(NGLI_MAX_COLOR_ATTACHMENTS + 1)];
     VkFramebuffer framebuffer;
     VkRenderPass render_pass;
+    VkClearValue clear_values[2*(NGLI_MAX_COLOR_ATTACHMENTS + 1)];
+    int nb_clear_values;
     VkRenderPass conservative_render_pass;
     VkBuffer staging_buffer;
     int staging_buffer_size;
