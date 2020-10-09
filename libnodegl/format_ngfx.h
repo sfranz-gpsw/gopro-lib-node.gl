@@ -25,12 +25,7 @@
 #include "format.h"
 #include "graphics/GraphicsCore.h"
 
-int ngli_format_get_ngfx_format(int data_format, ngfx::PixelFormat *format);
-
-inline ngfx::PixelFormat to_ngfx_format(int data_format) {
-    ngfx::PixelFormat fmt;
-    ngli_format_get_ngfx_format(data_format, &fmt);
-    return fmt;
-}
+ngfx::PixelFormat to_ngfx_format(int data_format);
+int to_ngli_format(ngfx::PixelFormat format);
 
 #endif

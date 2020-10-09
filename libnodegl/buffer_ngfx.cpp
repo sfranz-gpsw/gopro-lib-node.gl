@@ -40,7 +40,7 @@ int ngli_buffer_ngfx_init(struct buffer *s, int size, int usage)
     struct buffer_ngfx *s_priv = (struct buffer_ngfx *)s;
     s->size = size;
     s->usage = usage;
-    TODO("pass usage flags (e.g. vertex buffer, index buffer, uniform buffer, etc)");
+    //TODO: pass usage flags (e.g. vertex buffer, index buffer, uniform buffer, etc
     s_priv->v = Buffer::create(ctx->graphics_context, NULL, size,
                    BUFFER_USAGE_VERTEX_BUFFER_BIT | BUFFER_USAGE_INDEX_BUFFER_BIT | BUFFER_USAGE_UNIFORM_BUFFER_BIT | BUFFER_USAGE_STORAGE_BUFFER_BIT);
     return 0;

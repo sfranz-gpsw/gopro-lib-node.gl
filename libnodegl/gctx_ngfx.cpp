@@ -30,6 +30,7 @@
 #include "log.h"
 #include "math_utils.h"
 #include "format.h"
+#include "format_ngfx.h"
 #include <glm/gtc/type_ptr.hpp>
 #ifdef ENABLE_RENDERDOC_CAPTURE
 #include "renderdoc_utils.h"
@@ -101,7 +102,7 @@ static int ngfx_init(struct gctx *s)
         ctx->default_rendertarget_desc.colors[0].format = NGLI_FORMAT_R8G8B8A8_UNORM;
         ctx->default_rendertarget_desc.colors[0].samples = config->samples;
         ctx->default_rendertarget_desc.colors[0].resolve = config->samples > 0 ? 1 : 0;
-        ctx->default_rendertarget_desc.depth_stencil.format = ctx->graphics_context->depthFormat;
+        ctx->default_rendertarget_desc.depth_stencil.format = to_ngli_format(ctx->graphics_context->depthFormat);
         ctx->default_rendertarget_desc.depth_stencil.samples = config->samples;
         ctx->default_rendertarget_desc.depth_stencil.resolve = 0;
     } else {
@@ -109,7 +110,7 @@ static int ngfx_init(struct gctx *s)
         ctx->default_rendertarget_desc.colors[0].format = NGLI_FORMAT_B8G8R8A8_UNORM;
         ctx->default_rendertarget_desc.colors[0].samples = config->samples;
         ctx->default_rendertarget_desc.colors[0].resolve = config->samples > 0 ? 1 : 0;
-        ctx->default_rendertarget_desc.depth_stencil.format = ctx->graphics_context->depthFormat;
+        ctx->default_rendertarget_desc.depth_stencil.format = to_ngli_format(ctx->graphics_context->depthFormat);
         ctx->default_rendertarget_desc.depth_stencil.samples = config->samples;
     }
     return 0;
@@ -260,13 +261,15 @@ static void ngfx_flush(struct gctx *s)
 }
 
 static int ngfx_get_preferred_depth_format(struct gctx *s)
-{ TODO();
-    return 0;
+{
+    gctx_ngfx *ctx = (gctx_ngfx *)s;
+    return to_ngli_format(ctx->graphics_context->depthFormat);
 }
 
 static int ngfx_get_preferred_depth_stencil_format(struct gctx *s)
-{ TODO();
-    return 0;
+{
+    gctx_ngfx *ctx = (gctx_ngfx *)s;
+    return to_ngli_format(ctx->graphics_context->depthFormat);
 }
 
 void ngli_gctx_ngfx_begin_render_pass(struct gctx *s)

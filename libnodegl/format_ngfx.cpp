@@ -25,8 +25,33 @@
 using namespace ngfx;
 using namespace std;
 
-int ngli_format_get_ngfx_format(int data_format, PixelFormat *format)
+int to_ngli_format(PixelFormat format)
 {
+    static const map<PixelFormat, int> format_map = {
+        { PIXELFORMAT_UNDEFINED     , NGLI_FORMAT_UNDEFINED            },
+        { PIXELFORMAT_R8_UNORM      , NGLI_FORMAT_R8_UNORM             },
+        { PIXELFORMAT_RG8_UNORM     , NGLI_FORMAT_R8G8_UNORM           },
+        { PIXELFORMAT_RGBA8_UNORM   , NGLI_FORMAT_R8G8B8A8_UNORM       },
+        { PIXELFORMAT_R16_UINT      , NGLI_FORMAT_R16_UINT             },
+        { PIXELFORMAT_RG16_UINT     , NGLI_FORMAT_R16G16_UINT          },
+        { PIXELFORMAT_RGBA16_UINT   , NGLI_FORMAT_R16G16B16A16_UINT    },
+        { PIXELFORMAT_R16_SFLOAT    , NGLI_FORMAT_R16_SFLOAT           },
+        { PIXELFORMAT_RG16_SFLOAT   , NGLI_FORMAT_R16G16_SFLOAT        },
+        { PIXELFORMAT_RGBA16_SFLOAT , NGLI_FORMAT_R16G16B16A16_SFLOAT  },
+        { PIXELFORMAT_R32_UINT      , NGLI_FORMAT_R32_UINT             },
+        { PIXELFORMAT_RG32_UINT     , NGLI_FORMAT_R32G32_UINT          },
+        { PIXELFORMAT_RGBA32_UINT   , NGLI_FORMAT_R32G32B32A32_UINT    },
+        { PIXELFORMAT_R32_SFLOAT    , NGLI_FORMAT_R32_SFLOAT           },
+        { PIXELFORMAT_RG32_SFLOAT   , NGLI_FORMAT_R32G32_SFLOAT        },
+        { PIXELFORMAT_RGBA32_SFLOAT , NGLI_FORMAT_R32G32B32A32_SFLOAT  },
+        { PIXELFORMAT_BGRA8_UNORM   , NGLI_FORMAT_B8G8R8A8_UNORM       },
+        { PIXELFORMAT_D16_UNORM     , NGLI_FORMAT_D16_UNORM            },
+        { PIXELFORMAT_D24_UNORM_S8  , NGLI_FORMAT_D24_UNORM_S8_UINT    }
+    };
+    return format_map.at(format);
+}
+
+ngfx::PixelFormat to_ngfx_format(int format) {
     static const map<int, PixelFormat> format_map = {
         { NGLI_FORMAT_UNDEFINED            , PIXELFORMAT_UNDEFINED },
         { NGLI_FORMAT_R8_UNORM             , PIXELFORMAT_R8_UNORM },
@@ -48,10 +73,6 @@ int ngli_format_get_ngfx_format(int data_format, PixelFormat *format)
         { NGLI_FORMAT_D16_UNORM            , PIXELFORMAT_D16_UNORM },
         { NGLI_FORMAT_D24_UNORM_S8_UINT    , PIXELFORMAT_D24_UNORM_S8 }
     };
-
-    ngli_assert(format);
-    *format = format_map.at(data_format);
-
-    return 0;
+    return format_map.at(format);
 }
 
