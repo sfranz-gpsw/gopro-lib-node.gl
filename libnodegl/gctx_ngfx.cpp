@@ -184,18 +184,35 @@ static void ngfx_transform_projection_matrix(struct gctx *s, float *dst)
 }
 
 static void ngfx_get_rendertarget_uvcoord_matrix(struct gctx *s, float *dst)
-{ TODO();
-
+{
+    static const NGLI_ALIGNED_MAT(matrix) = NGLI_MAT4_IDENTITY;
+    memcpy(dst, matrix, 4 * 4 * sizeof(float));
 }
 
 static void ngfx_set_rendertarget(struct gctx *s, struct rendertarget *rt)
-{ TODO();
+{
+    gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
+    if (s_priv->cur_render_pass && rt != s_priv->cur_rendertarget) {
+        CommandBuffer* cmd_buf = s_priv->cur_command_buffer;
+        if (s_priv->render_pass_state == 1)
+            s_priv->graphics->endRenderPass(cmd_buf);
+    }
+
+    s_priv->cur_rendertarget = rt;
+    if (rt) {
+        rendertarget_ngfx *rt_ngfx = (rendertarget_ngfx*)rt;
+        s_priv->cur_render_pass = rt_ngfx->render_pass;
+    } else {
+        s_priv->cur_render_pass = nullptr;
+    }
+    s_priv->render_pass_state = 0;
 
 }
 
 static struct rendertarget *ngfx_get_rendertarget(struct gctx *s)
-{ TODO();
-    return NULL;
+{
+    gctx_ngfx *s_priv = (gctx_ngfx *)s;
+    return s_priv->cur_rendertarget;
 }
 
 static const struct rendertarget_desc *ngfx_get_default_rendertarget_desc(struct gctx *s)

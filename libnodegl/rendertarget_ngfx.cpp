@@ -65,9 +65,9 @@ int ngli_rendertarget_ngfx_init(struct rendertarget *s, const struct rendertarge
         attachments.push_back({ depth_texture->v });
     }
 
-    s_priv->renderpass = get_render_pass(ctx, rt_desc);
+    s_priv->render_pass = get_render_pass(ctx, rt_desc);
 
-    s_priv->output_framebuffer = Framebuffer::create(ctx->device, s_priv->renderpass, attachments, w, h);
+    s_priv->output_framebuffer = Framebuffer::create(ctx->device, s_priv->render_pass, attachments, w, h);
     return 0;
 }
 void ngli_rendertarget_ngfx_resolve(struct rendertarget *s) {

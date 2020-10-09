@@ -28,7 +28,7 @@
 
 struct rendertarget_ngfx {
     struct rendertarget parent;
-    ngfx::RenderPass *renderpass = nullptr;
+    ngfx::RenderPass *render_pass = nullptr;
     ngfx::Framebuffer *output_framebuffer = nullptr;
 };
 
