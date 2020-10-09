@@ -113,6 +113,16 @@ struct pipeline *ngli_pipeline_ngfx_create(struct gctx *gctx)
     s->parent.gctx = gctx;
     return (struct pipeline *)s;
 }
+
+static std::set<std::string> get_instance_attributes(const pipeline_attribute_desc *attrs, int num_attrs) {
+    std::set<std::string> instance_attrs;
+    for (int j = 0; j<num_attrs; j++) {
+        const auto& attr = attrs[j];
+        if (attr.rate) instance_attrs.insert(attr.name);
+    }
+    return instance_attrs;
+}
+
 int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_params *params)
 {
     s->type     = params->type;
@@ -165,7 +175,13 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
 
         state.cullModeFlags = to_ngfx_cull_mode(gs->cull_mode);
 
-        pipeline->gp = GraphicsPipeline::create(gctx->graphics_context, state, program->vs, program->fs, PIXELFORMAT_UNDEFINED, PIXELFORMAT_UNDEFINED);
+        pipeline->gp = GraphicsPipeline::create(
+            gctx->graphics_context,
+            state,
+            program->vs, program->fs,
+            PIXELFORMAT_UNDEFINED, PIXELFORMAT_UNDEFINED,
+            get_instance_attributes(params->attributes_desc, params->nb_attributes)
+        );
     }
     else if (params->type == NGLI_PIPELINE_TYPE_COMPUTE) {
         pipeline->cp = ComputePipeline::create(gctx->graphics_context, program->cs);
