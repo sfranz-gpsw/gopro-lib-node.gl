@@ -166,8 +166,8 @@ static void ngfx_destroy(struct gctx *s)
 }
 
 static int ngfx_transform_cull_mode(struct gctx *s, int cull_mode)
-{ TODO();
-    return 0;
+{
+    return cull_mode;
 }
 
 static void ngfx_transform_projection_matrix(struct gctx *s, float *dst)

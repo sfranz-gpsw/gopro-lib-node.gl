@@ -83,6 +83,16 @@ static ColorComponentFlags to_ngfx_color_mask(int color_write_mask)
          | (color_write_mask & NGLI_COLOR_COMPONENT_A_BIT ? VK_COLOR_COMPONENT_A_BIT : 0);
 }
 
+static CullModeFlags to_ngfx_cull_mode(int cull_mode)
+{
+    static std::map<int, CullModeFlags> cull_mode_map = {
+        { NGLI_CULL_MODE_NONE          , CULL_MODE_NONE },
+        { NGLI_CULL_MODE_FRONT_BIT     , CULL_MODE_FRONT_BIT },
+        { NGLI_CULL_MODE_BACK_BIT      , CULL_MODE_BACK_BIT },
+    };
+    return cull_mode_map.at(cull_mode);
+}
+
 static int build_attribute_descs(pipeline *s, const pipeline_desc_params *params)
 {
     for (int i = 0; i < params->nb_attributes; i++) {
@@ -131,6 +141,7 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
         if (ret < 0)
             return ret;
         GraphicsPipeline::State state;
+
         auto& rt_desc = params->graphics.rt_desc;
         GraphicsContext::RenderPassConfig renderPassConfig;
         renderPassConfig.enableDepthStencil = rt_desc.depth_stencil.format != NGLI_FORMAT_UNDEFINED;
@@ -139,6 +150,7 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
         TODO("remove renderPassConfig.offscreen param");
         renderPassConfig.offscreen = true;
         state.renderPass = gctx->graphics_context->getRenderPass(renderPassConfig);
+
         state.primitiveTopology = to_ngfx_topology(s->graphics.topology);
 
         state.blendEnable = gs->blend;
@@ -150,6 +162,8 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
         state.dstAlphaBlendFactor = to_ngfx_blend_factor(gs->blend_dst_factor_a);
 
         state.colorWriteMask = to_ngfx_color_mask(gs->color_write_mask);
+
+        state.cullModeFlags = to_ngfx_cull_mode(gs->cull_mode);
 
         pipeline->gp = GraphicsPipeline::create(gctx->graphics_context, state, program->vs, program->fs, PIXELFORMAT_UNDEFINED, PIXELFORMAT_UNDEFINED);
     }
