@@ -25,5 +25,5 @@
 #include "graphics/GraphicsCore.h"
 #include "topology.h"
 
-ngfx::PrimitiveTopology ngli_topology_get_ngfx_topology(int topology);
+ngfx::PrimitiveTopology to_ngfx_topology(int topology);
 #endif

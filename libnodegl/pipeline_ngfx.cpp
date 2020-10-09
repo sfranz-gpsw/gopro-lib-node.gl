@@ -35,9 +35,8 @@
 #include "topology_ngfx.h"
 #include <map>
 using namespace ngfx;
-auto to_ngfx_topology = ngli_topology_get_ngfx_topology;
 
-static IndexFormat get_ngfx_index_format(int indices_format)
+static IndexFormat to_ngfx_index_format(int indices_format)
 {
     static const std::map<int, IndexFormat> index_format_map = {
         { NGLI_FORMAT_R16_UNORM, INDEXFORMAT_UINT16 },
@@ -46,7 +45,7 @@ static IndexFormat get_ngfx_index_format(int indices_format)
     return index_format_map.at(indices_format);
 }
 
-static const BlendFactor get_ngfx_blend_factor(int blend_factor)
+static const BlendFactor to_ngfx_blend_factor(int blend_factor)
 {
     static const std::map<int, BlendFactor> blend_factor_map = {
         { NGLI_BLEND_FACTOR_ZERO                , BLEND_FACTOR_ZERO },
@@ -64,7 +63,7 @@ static const BlendFactor get_ngfx_blend_factor(int blend_factor)
     return blend_factor_map.at(blend_factor);
 }
 
-static BlendOp get_ngfx_blend_op(int blend_op)
+static BlendOp to_ngfx_blend_op(int blend_op)
 {
     static const std::map<int, BlendOp> blend_op_map = {
         { NGLI_BLEND_OP_ADD              , BLEND_OP_ADD },
@@ -74,6 +73,14 @@ static BlendOp get_ngfx_blend_op(int blend_op)
         { NGLI_BLEND_OP_MAX              , BLEND_OP_MAX },
     };
     return blend_op_map.at(blend_op);
+}
+
+static ColorComponentFlags to_ngfx_color_mask(int color_write_mask)
+{
+    return (color_write_mask & NGLI_COLOR_COMPONENT_R_BIT ? VK_COLOR_COMPONENT_R_BIT : 0)
+         | (color_write_mask & NGLI_COLOR_COMPONENT_G_BIT ? VK_COLOR_COMPONENT_G_BIT : 0)
+         | (color_write_mask & NGLI_COLOR_COMPONENT_B_BIT ? VK_COLOR_COMPONENT_B_BIT : 0)
+         | (color_write_mask & NGLI_COLOR_COMPONENT_A_BIT ? VK_COLOR_COMPONENT_A_BIT : 0);
 }
 
 static int build_attribute_descs(pipeline *s, const pipeline_desc_params *params)
@@ -135,12 +142,14 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
         state.primitiveTopology = to_ngfx_topology(s->graphics.topology);
 
         state.blendEnable = gs->blend;
-        state.colorBlendOp = get_ngfx_blend_op(gs->blend_op);
-        state.srcColorBlendFactor = get_ngfx_blend_factor(gs->blend_src_factor);
-        state.dstColorBlendFactor = get_ngfx_blend_factor(gs->blend_dst_factor);
-        state.alphaBlendOp = get_ngfx_blend_op(gs->blend_op_a);
-        state.srcAlphaBlendFactor = get_ngfx_blend_factor(gs->blend_src_factor_a);
-        state.dstAlphaBlendFactor = get_ngfx_blend_factor(gs->blend_dst_factor_a);
+        state.colorBlendOp = to_ngfx_blend_op(gs->blend_op);
+        state.srcColorBlendFactor = to_ngfx_blend_factor(gs->blend_src_factor);
+        state.dstColorBlendFactor = to_ngfx_blend_factor(gs->blend_dst_factor);
+        state.alphaBlendOp = to_ngfx_blend_op(gs->blend_op_a);
+        state.srcAlphaBlendFactor = to_ngfx_blend_factor(gs->blend_src_factor_a);
+        state.dstAlphaBlendFactor = to_ngfx_blend_factor(gs->blend_dst_factor_a);
+
+        state.colorWriteMask = to_ngfx_color_mask(gs->color_write_mask);
 
         pipeline->gp = GraphicsPipeline::create(gctx->graphics_context, state, program->vs, program->fs, PIXELFORMAT_UNDEFINED, PIXELFORMAT_UNDEFINED);
     }
@@ -314,7 +323,7 @@ void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices,
     bind_buffers(cmd_buf, s);
     bind_textures(cmd_buf, s);
 
-    gctx_ngfx->graphics->bindIndexBuffer(cmd_buf, ((buffer_ngfx *)indices)->v, get_ngfx_index_format(indices_format));
+    gctx_ngfx->graphics->bindIndexBuffer(cmd_buf, ((buffer_ngfx *)indices)->v, to_ngfx_index_format(indices_format));
     gctx_ngfx->graphics->drawIndexed(cmd_buf, nb_indices, nb_instances);
 
 }

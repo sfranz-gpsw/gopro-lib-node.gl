@@ -32,7 +32,7 @@ static const map<uint32_t, PrimitiveTopology> ngfx_primitive_topology_map = {
     { NGLI_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP , PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP },
 };
 
-PrimitiveTopology ngli_topology_get_ngfx_topology(int topology)
+PrimitiveTopology to_ngfx_topology(int topology)
 {
     return ngfx_primitive_topology_map.at(topology);
 }
