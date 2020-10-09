@@ -24,9 +24,12 @@
 
 #include "glincludes.h"
 #include "rendertarget.h"
+#include "graphics/Framebuffer.h"
 
 struct rendertarget_ngfx {
     struct rendertarget parent;
+    ngfx::RenderPass *renderpass = nullptr;
+    ngfx::Framebuffer *output_framebuffer = nullptr;
 };
 
 struct rendertarget *ngli_rendertarget_ngfx_create(struct gctx *gctx);
