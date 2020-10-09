@@ -89,6 +89,9 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
     graphicstate *gs = &graphics->state;
     gctx_ngfx* gctx = (gctx_ngfx*)pipeline->parent.gctx;
 
+    const struct rendertarget_desc *rt_desc = &graphics->rt_desc;
+    const struct attachment_desc *attachment_desc = &rt_desc->colors[0];
+
     if (params->type == NGLI_PIPELINE_TYPE_GRAPHICS) {
         int ret = build_attribute_descs(s, params);
         if (ret < 0)
@@ -110,6 +113,8 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
         state.colorWriteMask = to_ngfx_color_mask(gs->color_write_mask);
 
         state.cullModeFlags = to_ngfx_cull_mode(gs->cull_mode);
+
+        state.numSamples = std::max(attachment_desc->samples, 1);
 
         pipeline->gp = GraphicsPipeline::create(
             gctx->graphics_context,
