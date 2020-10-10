@@ -216,11 +216,11 @@ static VkResult create_swapchain_resources(struct gctx *s)
             .height = s_priv->extent.height,
             .nb_colors = 1,
             .colors[0].attachment = *wrapped_texture,
-            .colors[0].op_load = NGLI_LOAD_OP_LOAD,
-            .colors[0].op_store = NGLI_STORE_OP_STORE,
+            .colors[0].load_op = NGLI_LOAD_OP_LOAD,
+            .colors[0].store_op = NGLI_STORE_OP_STORE,
             .depth_stencil.attachment = *depth_texture,
-            .depth_stencil.op_load = NGLI_LOAD_OP_LOAD,
-            .depth_stencil.op_store = NGLI_STORE_OP_STORE,
+            .depth_stencil.load_op = NGLI_LOAD_OP_LOAD,
+            .depth_stencil.store_op = NGLI_STORE_OP_STORE,
         };
 
         if (config->samples) {
@@ -503,11 +503,11 @@ static VkResult create_offscreen_resources(struct gctx *s)
             .height = config->height,
             .nb_colors = 1,
             .colors[0].attachment = *ms_texture,
-            .colors[0].op_load = NGLI_LOAD_OP_LOAD,
-            .colors[0].op_store = NGLI_STORE_OP_STORE,
+            .colors[0].load_op = NGLI_LOAD_OP_LOAD,
+            .colors[0].store_op = NGLI_STORE_OP_STORE,
             .depth_stencil.attachment = *depth_texture,
-            .depth_stencil.op_load = NGLI_LOAD_OP_LOAD,
-            .depth_stencil.op_store = NGLI_STORE_OP_STORE,
+            .depth_stencil.load_op = NGLI_LOAD_OP_LOAD,
+            .depth_stencil.store_op = NGLI_STORE_OP_STORE,
             .readable = 1,
         };
 
