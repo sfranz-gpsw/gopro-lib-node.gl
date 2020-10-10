@@ -37,8 +37,10 @@ struct gctx_ngfx {
     int viewport[4];
     int scissor[4];
     float clear_color[4];
-    ngfx::Texture *output_texture = nullptr, *depth_texture = nullptr;
-    ngfx::Framebuffer *output_framebuffer = nullptr;
+    struct {
+        texture *color_texture = nullptr, *depth_texture = nullptr;
+        rendertarget *rt = nullptr;
+    } offscreen_resources;
 
     rendertarget *cur_rendertarget = nullptr;
     ngfx::RenderPass *cur_render_pass = nullptr;

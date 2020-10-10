@@ -76,3 +76,14 @@ ngfx::PixelFormat to_ngfx_format(int format) {
     return format_map.at(format);
 }
 
+bool is_depth_format(int format)
+{
+    switch (format) {
+    case NGLI_FORMAT_D16_UNORM:
+    case NGLI_FORMAT_D24_UNORM_S8_UINT:
+        return 1;
+    default:
+        return 0;
+    }
+}
+

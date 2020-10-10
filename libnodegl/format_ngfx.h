@@ -25,7 +25,8 @@
 #include "format.h"
 #include "graphics/GraphicsCore.h"
 
-ngfx::PixelFormat to_ngfx_format(int data_format);
+ngfx::PixelFormat to_ngfx_format(int format);
 int to_ngli_format(ngfx::PixelFormat format);
+bool is_depth_format(int format);
 
 #endif

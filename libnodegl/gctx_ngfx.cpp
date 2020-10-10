@@ -45,6 +45,57 @@ static struct gctx *ngfx_create(const struct ngl_config *config)
     return (struct gctx *)ctx;
 }
 
+static int create_offscreen_resources(struct gctx *s) {
+    gctx_ngfx *ctx = (gctx_ngfx *)s;
+    const ngl_config *config = &s->config;
+    bool enable_depth_stencil = true;
+
+    auto &color_texture = ctx->offscreen_resources.color_texture;
+    color_texture = ngli_texture_create(s);
+    texture_params color_texture_params = NGLI_TEXTURE_PARAM_DEFAULTS;
+    color_texture_params.width = config->width;
+    color_texture_params.height = config->height;
+    color_texture_params.format = NGLI_FORMAT_R8G8B8A8_UNORM;
+    color_texture_params.samples = config->samples;
+    //TODO: set usage flags
+
+    ngli_texture_init(color_texture, &color_texture_params);
+
+    auto &depth_texture = ctx->offscreen_resources.depth_texture;
+    if (enable_depth_stencil) {
+        depth_texture = ngli_texture_create(s);
+        texture_params depth_texture_params = NGLI_TEXTURE_PARAM_DEFAULTS;
+        depth_texture_params.width = config->width;
+        depth_texture_params.height = config->height;
+        depth_texture_params.format = to_ngli_format(ctx->graphics_context->depthFormat);
+        depth_texture_params.samples = config->samples;
+        depth_texture_params.usage = NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY; //TODO: update NGLI usage flags
+        ngli_texture_init(depth_texture, &depth_texture_params);
+    }
+
+    rendertarget_params rt_params = {};
+    rt_params.width = config->width;
+    rt_params.height = config->height;
+    rt_params.samples = config->samples;
+    rt_params.nb_colors = 1;
+    rt_params.colors[0].attachment = color_texture;
+    rt_params.depth_stencil.attachment = depth_texture,
+    rt_params.readable = 1;
+
+    auto &rt = ctx->offscreen_resources.rt;
+    rt = ngli_rendertarget_create(s);
+    if (!rt)
+        return NGL_ERROR_MEMORY;
+
+    int ret = ngli_rendertarget_init(rt, &rt_params);
+    if (ret < 0)
+        return ret;
+
+    ctx->cur_rendertarget = rt;
+
+    return 0;
+}
+
 static int ngfx_init(struct gctx *s)
 {
     const ngl_config *config = &s->config;
@@ -66,22 +117,14 @@ static int ngfx_init(struct gctx *s)
         TODO("create window surface or use existing handle");
     }
     ctx->graphics = Graphics::create(ctx->graphics_context);
-    bool enable_depth_stencil = true;
+
+    //TODO: use rendertarget (ngli_rendertarget_init)
 
     if (!config->offscreen) {
         TODO("create window surface");
     }
     else {
-        uint32_t size = config->width * config->height * 4;
-        ctx->output_texture = ngfx::Texture::create(ctx->graphics_context, ctx->graphics, nullptr, PIXELFORMAT_RGBA8_UNORM, size, config->width, config->height, 1, 1,
-                ImageUsageFlags(IMAGE_USAGE_SAMPLED_BIT | IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_COLOR_ATTACHMENT_BIT));
-        std::vector<ngfx::Framebuffer::Attachment> attachments = { { ctx->output_texture } };
-        if (enable_depth_stencil) {
-            ctx->depth_texture = ngfx::Texture::create(ctx->graphics_context, ctx->graphics, nullptr, ctx->graphics_context->depthFormat, size, config->width, config->height, 1, 1,
-                IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
-            attachments.push_back({ ctx->depth_texture });
-        }
-        ctx->output_framebuffer = Framebuffer::create(ctx->graphics_context->device, ctx->graphics_context->defaultOffscreenRenderPass, attachments, config->width, config->height);
+        create_offscreen_resources(s);
     }
 
     const int *viewport = config->viewport;
@@ -126,7 +169,8 @@ static int ngfx_pre_draw(struct gctx *s, double t)
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     s_priv->cur_command_buffer = s_priv->graphics_context->drawCommandBuffer();
     s_priv->cur_command_buffer->begin();
-    s_priv->output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    auto &output_texture = ((texture_ngfx *)s_priv->offscreen_resources.color_texture)->v;
+    output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     return 0;
 }
 
@@ -140,7 +184,8 @@ static int ngfx_post_draw(struct gctx *s, double t)
     s_priv->graphics_context->queue->submit(s_priv->cur_command_buffer);
     if (s->config.offscreen && s->config.capture_buffer) {
         uint32_t size = s->config.width * s->config.height * 4;
-        s_priv->output_texture->download(s->config.capture_buffer, size);
+        auto &output_texture = ((texture_ngfx *)s_priv->offscreen_resources.color_texture)->v;
+        output_texture->download(s->config.capture_buffer, size);
     }
     return 0;
 }
@@ -154,9 +199,10 @@ static void ngfx_wait_idle(struct gctx *s)
 static void ngfx_destroy(struct gctx *s)
 {
     gctx_ngfx* ctx = new gctx_ngfx;
-    if (ctx->output_framebuffer) delete ctx->output_framebuffer;
-    if (ctx->depth_texture) delete ctx->depth_texture;
-    if (ctx->output_texture) delete ctx->output_texture;
+    auto output_color_texture = ((texture *)ctx->offscreen_resources.color_texture);
+    auto output_depth_texture = ((texture *)ctx->offscreen_resources.depth_texture);
+    if (output_depth_texture) ngli_texture_freep(&output_depth_texture);
+    if (output_color_texture) ngli_texture_freep(&output_color_texture);
     delete ctx->graphics;
     delete ctx->graphics_context;
     delete ctx;
@@ -298,10 +344,10 @@ void ngli_gctx_ngfx_begin_render_pass(struct gctx *s)
 
     Graphics *graphics = s_priv->graphics;
     CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
+    auto rt = (rendertarget_ngfx *)s_priv->cur_rendertarget;
+    RenderPass *render_pass = rt->render_pass;
 
-    RenderPass *render_pass = get_render_pass(s_priv->graphics_context, s_priv->default_rendertarget_desc);
-
-    Framebuffer *framebuffer = s_priv->output_framebuffer;
+    Framebuffer *framebuffer = rt->output_framebuffer;
     graphics->beginRenderPass(cmd_buf, render_pass, framebuffer, glm::make_vec4(s_priv->clear_color));
     int* vp = s_priv->viewport;
     graphics->setViewport(cmd_buf, { vp[0], vp[1], uint32_t(vp[2]), uint32_t(vp[3]) });

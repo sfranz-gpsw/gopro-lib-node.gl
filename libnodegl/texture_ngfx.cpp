@@ -44,7 +44,20 @@ int ngli_texture_ngfx_init(struct texture *s,
     s->params = *p;
     s->bytes_per_pixel = get_bpp(p->format);
     bool gen_mipmaps = p->mipmap_filter != NGLI_MIPMAP_FILTER_NONE;
-    uint32_t image_usage_flags = ImageUsageFlags(IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT);
+    uint32_t image_usage_flags = ImageUsageFlags(IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT);
+
+    //TODO: pass these usage flags from above
+    if (!p->staging) {
+        if (is_depth_format(p->format)) {
+            image_usage_flags |= IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        } else {
+            image_usage_flags |= IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        }
+        if (!(p->usage & NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY)) {
+            image_usage_flags |= IMAGE_USAGE_SAMPLED_BIT;
+        }
+    }
+
     uint32_t depth = (p->type == NGLI_TEXTURE_TYPE_3D) ? p->depth : 1;
     uint32_t array_layers = (p->type == NGLI_TEXTURE_TYPE_CUBE) ? 6 : 1;
     uint32_t size = s->bytes_per_pixel * p->width * p->height * depth * array_layers;
