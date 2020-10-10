@@ -280,7 +280,7 @@ int ngli_rendertarget_vk_init(struct rendertarget *s, const struct rendertarget_
         s_priv->nb_attachments++;
         s_priv->clear_values[s_priv->nb_clear_values] = (VkClearValue) {
             .color = {
-                .float32 = {0.0f, 0.0f, 0.0f, 0.0f},
+                .float32 = {0.0f, 0.0f, 0.0f, 1.0f},
             },
         };
         s_priv->nb_clear_values++;
