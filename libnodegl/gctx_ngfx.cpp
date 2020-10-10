@@ -169,7 +169,8 @@ static int ngfx_pre_draw(struct gctx *s, double t)
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     s_priv->cur_command_buffer = s_priv->graphics_context->drawCommandBuffer();
     s_priv->cur_command_buffer->begin();
-    auto &output_texture = ((texture_ngfx *)s_priv->offscreen_resources.color_texture)->v;
+    auto rt = (rendertarget_ngfx *)s_priv->cur_rendertarget;
+    auto output_texture = rt->output_framebuffer->attachments[0].texture;
     output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     return 0;
 }
@@ -179,6 +180,12 @@ static int ngfx_post_draw(struct gctx *s, double t)
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
 
     ngli_gctx_ngfx_end_render_pass(s);
+
+    auto rt = (rendertarget_ngfx *)s_priv->cur_rendertarget;
+    auto output_texture = rt->output_framebuffer->attachments[0].texture;
+    if (output_texture->imageUsageFlags & IMAGE_USAGE_SAMPLED_BIT) {
+        output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
 
     s_priv->cur_command_buffer->end();
     s_priv->graphics_context->queue->submit(s_priv->cur_command_buffer);
