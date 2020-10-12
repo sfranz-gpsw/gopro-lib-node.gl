@@ -360,7 +360,7 @@ static void rtt_draw(struct ngl_node *node)
 
     struct rendertarget *rt = s->rt;
     struct rendertarget *prev_rt = ngli_gctx_get_rendertarget(gctx);
-    ngli_gctx_set_rendertarget(gctx, rt);
+    ngli_gctx_bind_rendertarget(gctx, rt);
 
     int prev_vp[4] = {0};
     ngli_gctx_get_viewport(gctx, prev_vp);
@@ -379,11 +379,7 @@ static void rtt_draw(struct ngl_node *node)
         ngli_gctx_clear_depth_stencil(gctx);
     }
 
-    ngli_rendertarget_on_begin_pass(rt);
-
     ngli_node_draw(s->child);
-
-    ngli_rendertarget_on_end_pass(rt);
 
     if (s->samples > 0)
         ngli_rendertarget_resolve(rt);
@@ -391,7 +387,7 @@ static void rtt_draw(struct ngl_node *node)
     if (s->invalidate_depth_stencil)
         ngli_gctx_invalidate_depth_stencil(gctx);
 
-    ngli_gctx_set_rendertarget(gctx, prev_rt);
+    ngli_gctx_bind_rendertarget(gctx, prev_rt);
     ngli_gctx_set_viewport(gctx, prev_vp);
 
     if (s->use_clear_color)

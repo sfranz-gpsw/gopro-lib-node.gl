@@ -723,6 +723,8 @@ int ngli_pass_exec(struct pass *s)
         ngli_pipeline_update_uniform(pipeline, fields[NGLI_INFO_FIELD_SAMPLING_MODE].index, &layout);
     }
 
+    ngli_gctx_bind_rendertarget(ctx->gctx, ctx->gctx->default_rendertarget);
+
     if (s->pipeline_type == NGLI_PIPELINE_TYPE_GRAPHICS)
         if (s->indices_buffer)
             ngli_pipeline_draw_indexed(pipeline, s->indices_buffer, s->indices_format, s->nb_indices, s->nb_instances);

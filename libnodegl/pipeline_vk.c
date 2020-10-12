@@ -885,7 +885,7 @@ void ngli_pipeline_vk_draw(struct pipeline *s, int nb_vertices, int nb_instances
 
     vkCmdSetLineWidth(cmd_buf, 1.0f);
 
-    struct rendertarget *rt = gctx_vk->rendertarget;
+    struct rendertarget *rt = s->gctx->cur_rendertarget;
     VkRect2D scissor;
     if (graphics->state.scissor_test) {
         scissor.offset.x = gctx_vk->scissor[0];
@@ -953,7 +953,7 @@ void ngli_pipeline_vk_draw_indexed(struct pipeline *s, struct buffer *indices, i
 
     vkCmdSetLineWidth(cmd_buf, 1.0f);
 
-    struct rendertarget *rt = gctx_vk->rendertarget;
+    struct rendertarget *rt = s->gctx->cur_rendertarget;
     VkRect2D scissor;
     if (graphics->state.scissor_test) {
         scissor.offset.x = gctx_vk->scissor[0];

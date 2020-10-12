@@ -32,7 +32,7 @@
 using namespace ngfx;
 using namespace std;
 namespace fs = std::filesystem;
-static ShaderTools shaderTools(true);
+static ShaderTools shaderTools(false); //true);
 
 struct program *ngli_program_ngfx_create(struct gctx *gctx) {
     program_ngfx *s = (program_ngfx*)ngli_calloc(1, sizeof(*s));

@@ -41,13 +41,6 @@ struct gctx_ngfx {
         texture *color_texture = nullptr, *depth_texture = nullptr;
         rendertarget *rt = nullptr;
     } offscreen_resources;
-
-    rendertarget *cur_rendertarget = nullptr;
-    ngfx::RenderPass *cur_render_pass = nullptr;
-    int render_pass_state = 0;
 };
-
-void ngli_gctx_ngfx_begin_render_pass(struct gctx *s);
-void ngli_gctx_ngfx_end_render_pass(struct gctx *s);
 
 #endif

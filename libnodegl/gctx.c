@@ -59,6 +59,7 @@ struct gctx *ngli_gctx_create(const struct ngl_config *config)
         return NULL;
     s->config = *config;
     s->clazz = class;
+    s->cur_rendertarget = NULL;
     return s;
 }
 
@@ -127,9 +128,9 @@ void ngli_gctx_get_rendertarget_uvcoord_matrix(struct gctx *s, float *dst)
     s->clazz->get_rendertarget_uvcoord_matrix(s, dst);
 }
 
-void ngli_gctx_set_rendertarget(struct gctx *s, struct rendertarget *rt)
+void ngli_gctx_bind_rendertarget(struct gctx *s, struct rendertarget *rt)
 {
-    s->clazz->set_rendertarget(s, rt);
+    s->clazz->bind_rendertarget(s, rt);
 }
 
 struct rendertarget *ngli_gctx_get_rendertarget(struct gctx *s)

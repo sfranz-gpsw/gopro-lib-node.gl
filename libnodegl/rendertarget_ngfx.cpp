@@ -20,6 +20,7 @@
  */
 
 #include "rendertarget_ngfx.h"
+#include <glm/gtc/type_ptr.hpp>
 #include "memory.h"
 #include "gctx_ngfx.h"
 #include "texture_ngfx.h"
@@ -79,14 +80,41 @@ void ngli_rendertarget_ngfx_read_pixels(struct rendertarget *s, uint8_t *data) {
 //TODO: remove
 #include "porting/vulkan/VKTexture.h"
 
-void ngli_rendertarget_ngfx_on_begin_pass(struct rendertarget *s) {
+static void begin_render_pass(rendertarget_ngfx *thiz, struct gctx *s)
+{
+    gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
+
+    Graphics *graphics = s_priv->graphics;
+    CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
+    RenderPass *render_pass = thiz->render_pass;
+
+    Framebuffer *framebuffer = thiz->output_framebuffer;
+    graphics->beginRenderPass(cmd_buf, render_pass, framebuffer, glm::make_vec4(s_priv->clear_color));
+    int* vp = s_priv->viewport;
+    graphics->setViewport(cmd_buf, { vp[0], vp[1], uint32_t(vp[2]), uint32_t(vp[3]) });
+    int *sr = s_priv->scissor;
+    graphics->setScissor(cmd_buf, { sr[0], sr[1], uint32_t(sr[2]), uint32_t(sr[3]) });
+}
+
+static void end_render_pass(rendertarget_ngfx *thiz, struct gctx *s)
+{
+    gctx_ngfx *s_priv = (gctx_ngfx *)s;
+    Graphics *graphics = s_priv->graphics;
+    CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
+
+    graphics->endRenderPass(cmd_buf);
+}
+
+void ngli_rendertarget_ngfx_begin_pass(struct rendertarget *s) {
     rendertarget_ngfx *s_priv = (rendertarget_ngfx *)s;
     gctx_ngfx *ctx = (gctx_ngfx *)s_priv->parent.gctx;
     auto output_texture = s_priv->output_framebuffer->attachments[0].texture;
     LOG("change layout COLOR_ATTACHMENT_OPTIMAL: %p", ((VKTexture*)output_texture)->vkImage.v);
     output_texture->changeLayout(ctx->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    begin_render_pass((rendertarget_ngfx *)s, s->gctx);
 }
-void ngli_rendertarget_ngfx_on_end_pass(struct rendertarget *s) {
+void ngli_rendertarget_ngfx_end_pass(struct rendertarget *s) {
+    end_render_pass((rendertarget_ngfx *)s, s->gctx);
     rendertarget_ngfx *s_priv = (rendertarget_ngfx *)s;
     gctx_ngfx *ctx = (gctx_ngfx *)s_priv->parent.gctx;
     auto output_texture = s_priv->output_framebuffer->attachments[0].texture;

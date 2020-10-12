@@ -62,7 +62,6 @@ struct gctx_vk {
     struct darray depth_textures;
     struct darray rts;
 
-    struct rendertarget *rendertarget;
     VkRenderPass render_pass;
     int render_pass_state;
 

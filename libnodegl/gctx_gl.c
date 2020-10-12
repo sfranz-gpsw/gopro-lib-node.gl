@@ -189,7 +189,7 @@ static int offscreen_rendertarget_init(struct gctx *s)
 
     s_priv->capture_func = ios_capture ? capture_ios : capture_default;
 
-    ngli_gctx_set_rendertarget(s, s_priv->rt);
+    ngli_gctx_bind_rendertarget(s, s_priv->rt);
     const int vp[4] = {0, 0, config->width, config->height};
     ngli_gctx_set_viewport(s, vp);
 
@@ -395,7 +395,7 @@ static void gl_get_rendertarget_uvcoord_matrix(struct gctx *s, float *dst)
     memcpy(dst, matrix, 4 * 4 * sizeof(float));
 }
 
-static void gl_set_rendertarget(struct gctx *s, struct rendertarget *rt)
+static void gl_bind_rendertarget(struct gctx *s, struct rendertarget *rt)
 {
     struct gctx_gl *s_priv = (struct gctx_gl *)s;
     struct glcontext *gl = s_priv->glcontext;
@@ -539,7 +539,7 @@ const struct gctx_class ngli_gctx_gl = {
     .transform_projection_matrix      = gl_transform_projection_matrix,
     .get_rendertarget_uvcoord_matrix  = gl_get_rendertarget_uvcoord_matrix,
 
-    .set_rendertarget         = gl_set_rendertarget,
+    .bind_rendertarget         = gl_bind_rendertarget,
     .get_rendertarget         = gl_get_rendertarget,
     .get_default_rendertarget_desc = gl_get_default_rendertarget_desc,
     .set_viewport             = gl_set_viewport,
@@ -611,7 +611,7 @@ const struct gctx_class ngli_gctx_gles = {
     .transform_projection_matrix      = gl_transform_projection_matrix,
     .get_rendertarget_uvcoord_matrix  = gl_get_rendertarget_uvcoord_matrix,
 
-    .set_rendertarget         = gl_set_rendertarget,
+    .bind_rendertarget         = gl_bind_rendertarget,
     .get_rendertarget         = gl_get_rendertarget,
     .get_default_rendertarget_desc = gl_get_default_rendertarget_desc,
     .set_viewport             = gl_set_viewport,

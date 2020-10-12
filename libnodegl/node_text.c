@@ -34,6 +34,7 @@
 #include "type.h"
 #include "topology.h"
 #include "utils.h"
+#include "gctx.h"
 
 struct pipeline_subdesc {
     struct pgcraft *crafter;
@@ -673,6 +674,8 @@ static void text_draw(struct ngl_node *node)
 
     struct pipeline_desc *descs = ngli_darray_data(&s->pipeline_descs);
     struct pipeline_desc *desc = &descs[ctx->rnode_pos->id];
+
+    ngli_gctx_bind_rendertarget(ctx->gctx, ctx->gctx->default_rendertarget);
 
     struct pipeline_subdesc *bg_desc = &desc->bg;
     ngli_pipeline_update_uniform(bg_desc->pipeline, bg_desc->modelview_matrix_index, modelview_matrix);

@@ -50,7 +50,7 @@ struct gctx_class {
     void (*transform_projection_matrix)(struct gctx *s, float *dst);
     void (*get_rendertarget_uvcoord_matrix)(struct gctx *s, float *dst);
 
-    void (*set_rendertarget)(struct gctx *s, struct rendertarget *rt);
+    void (*bind_rendertarget)(struct gctx *s, struct rendertarget *rt);
     struct rendertarget *(*get_rendertarget)(struct gctx *s);
     const struct rendertarget_desc *(*get_default_rendertarget_desc)(struct gctx *s);
     void (*set_viewport)(struct gctx *s, const int *viewport);
@@ -124,6 +124,8 @@ struct gctx {
     int version;
     int features;
     struct limits limits;
+    struct rendertarget *cur_rendertarget;
+    struct rendertarget *default_rendertarget;
 };
 
 struct gctx *ngli_gctx_create(const struct ngl_config *config);
@@ -137,7 +139,7 @@ int ngli_gctx_transform_cull_mode(struct gctx *s, int cull_mode);
 void ngli_gctx_transform_projection_matrix(struct gctx *s, float *dst);
 void ngli_gctx_get_rendertarget_uvcoord_matrix(struct gctx *s, float *dst);
 
-void ngli_gctx_set_rendertarget(struct gctx *s, struct rendertarget *rt);
+void ngli_gctx_bind_rendertarget(struct gctx *s, struct rendertarget *rt);
 struct rendertarget *ngli_gctx_get_rendertarget(struct gctx *s);
 const struct rendertarget_desc *ngli_gctx_get_default_rendertarget_desc(struct gctx *s);
 

@@ -31,7 +31,6 @@
 #include "math_utils.h"
 #include "format.h"
 #include "util_ngfx.h"
-#include <glm/gtc/type_ptr.hpp>
 #ifdef ENABLE_RENDERDOC_CAPTURE
 #include "renderdoc_utils.h"
 static bool DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != nullptr);
@@ -59,11 +58,8 @@ static int create_offscreen_resources(struct gctx *s) {
     color_texture_params.samples = config->samples;
     color_texture_params.usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT | NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT |
         NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT;
-    //TODO: set usage flags
 
-    LOG(WARNING, ">> ngli_texture_init color_texture");
     ngli_texture_init(color_texture, &color_texture_params);
-    LOG(WARNING, "<< ngli_texture_init color_texture");
 
     auto &depth_texture = ctx->offscreen_resources.depth_texture;
     if (enable_depth_stencil) {
@@ -75,9 +71,7 @@ static int create_offscreen_resources(struct gctx *s) {
         depth_texture_params.samples = config->samples;
         depth_texture_params.usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT | NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT |
             NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-        LOG(WARNING, ">> ngli_texture_init depth_texture");
         ngli_texture_init(depth_texture, &depth_texture_params);
-        LOG(WARNING, "<< ngli_texture_init depth_texture");
     }
 
     rendertarget_params rt_params = {};
@@ -98,7 +92,7 @@ static int create_offscreen_resources(struct gctx *s) {
     if (ret < 0)
         return ret;
 
-    ctx->cur_rendertarget = rt;
+    s->default_rendertarget = rt;
 
     return 0;
 }
@@ -176,16 +170,14 @@ static int ngfx_pre_draw(struct gctx *s, double t)
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     s_priv->cur_command_buffer = s_priv->graphics_context->drawCommandBuffer();
     s_priv->cur_command_buffer->begin();
-    ngli_rendertarget_ngfx_on_begin_pass(s_priv->cur_rendertarget);
+    ngli_gctx_bind_rendertarget(s, nullptr);
     return 0;
 }
 
 static int ngfx_post_draw(struct gctx *s, double t)
 {
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
-    ngli_gctx_ngfx_end_render_pass(s);
-    ngli_rendertarget_ngfx_on_end_pass(s_priv->cur_rendertarget);
-
+    ngli_gctx_bind_rendertarget(s, nullptr);
     s_priv->cur_command_buffer->end();
     s_priv->graphics_context->queue->submit(s_priv->cur_command_buffer);
     if (s->config.offscreen && s->config.capture_buffer) {
@@ -241,24 +233,18 @@ static void ngfx_get_rendertarget_uvcoord_matrix(struct gctx *s, float *dst)
     memcpy(dst, matrix, 4 * 4 * sizeof(float));
 }
 
-static void ngfx_set_rendertarget(struct gctx *s, struct rendertarget *rt)
+static void ngfx_bind_rendertarget(struct gctx *s, struct rendertarget *rt)
 {
-    gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
-    s_priv->cur_rendertarget = rt;
-    if (rt) {
-        rendertarget_ngfx *rt_ngfx = (rendertarget_ngfx*)rt;
-        s_priv->cur_render_pass = rt_ngfx->render_pass;
-    } else {
-        s_priv->cur_render_pass = nullptr;
+    if (s->cur_rendertarget != rt) {
+        if (s->cur_rendertarget) ngli_rendertarget_end_pass(s->cur_rendertarget);
+        if (rt) ngli_rendertarget_begin_pass(rt);
     }
-    s_priv->render_pass_state = 0;
-
+    s->cur_rendertarget = rt;
 }
 
 static struct rendertarget *ngfx_get_rendertarget(struct gctx *s)
 {
-    gctx_ngfx *s_priv = (gctx_ngfx *)s;
-    return s_priv->cur_rendertarget;
+    return s->cur_rendertarget;
 }
 
 static const struct rendertarget_desc *ngfx_get_default_rendertarget_desc(struct gctx *s)
@@ -335,42 +321,6 @@ static int ngfx_get_preferred_depth_stencil_format(struct gctx *s)
     return to_ngli_format(ctx->graphics_context->depthFormat);
 }
 
-void ngli_gctx_ngfx_begin_render_pass(struct gctx *s)
-{
-    gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
-
-    if (s_priv->render_pass_state == 1)
-        return;
-
-    Graphics *graphics = s_priv->graphics;
-    CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
-    auto rt = (rendertarget_ngfx *)s_priv->cur_rendertarget;
-    RenderPass *render_pass = rt->render_pass;
-
-    Framebuffer *framebuffer = rt->output_framebuffer;
-    graphics->beginRenderPass(cmd_buf, render_pass, framebuffer, glm::make_vec4(s_priv->clear_color));
-    int* vp = s_priv->viewport;
-    graphics->setViewport(cmd_buf, { vp[0], vp[1], uint32_t(vp[2]), uint32_t(vp[3]) });
-    int *sr = s_priv->scissor;
-    graphics->setScissor(cmd_buf, { sr[0], sr[1], uint32_t(sr[2]), uint32_t(sr[3]) });
-
-    s_priv->render_pass_state = 1;
-}
-
-void ngli_gctx_ngfx_end_render_pass(struct gctx *s)
-{
-    gctx_ngfx *s_priv = (gctx_ngfx *)s;
-    Graphics *graphics = s_priv->graphics;
-    CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
-
-    if (s_priv->render_pass_state != 1)
-        return;
-
-    graphics->endRenderPass(cmd_buf);
-
-    s_priv->render_pass_state = 0;
-}
-
 extern "C" const struct gctx_class ngli_gctx_ngfx = {
     .name         = "NGFX",
     .create       = ngfx_create,
@@ -385,7 +335,7 @@ extern "C" const struct gctx_class ngli_gctx_ngfx = {
     .transform_projection_matrix = ngfx_transform_projection_matrix,
     .get_rendertarget_uvcoord_matrix = ngfx_get_rendertarget_uvcoord_matrix,
 
-    .set_rendertarget         = ngfx_set_rendertarget,
+    .bind_rendertarget         = ngfx_bind_rendertarget,
     .get_rendertarget         = ngfx_get_rendertarget,
     .get_default_rendertarget_desc = ngfx_get_default_rendertarget_desc,
     .set_viewport             = ngfx_set_viewport,
@@ -435,8 +385,8 @@ extern "C" const struct gctx_class ngli_gctx_ngfx = {
     .rendertarget_init          = ngli_rendertarget_ngfx_init,
     .rendertarget_resolve       = ngli_rendertarget_ngfx_resolve,
     .rendertarget_read_pixels   = ngli_rendertarget_ngfx_read_pixels,
-    .rendertarget_on_begin_pass = ngli_rendertarget_ngfx_on_begin_pass,
-    .rendertarget_on_end_pass   = ngli_rendertarget_ngfx_on_end_pass,
+    .rendertarget_on_begin_pass = ngli_rendertarget_ngfx_begin_pass,
+    .rendertarget_on_end_pass   = ngli_rendertarget_ngfx_end_pass,
     .rendertarget_freep         = ngli_rendertarget_ngfx_freep,
 
     .swapchain_create         = ngli_swapchain_ngfx_create,

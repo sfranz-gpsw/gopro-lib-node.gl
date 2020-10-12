@@ -177,7 +177,7 @@ int ngli_hwconv_convert_image(struct hwconv *hwconv, const struct image *image)
 
     struct rendertarget *rt = hwconv->rt;
     struct rendertarget *prev_rt = ngli_gctx_get_rendertarget(gctx);
-    ngli_gctx_set_rendertarget(gctx, rt);
+    ngli_gctx_bind_rendertarget(gctx, rt);
 
     int prev_vp[4] = {0};
     ngli_gctx_get_viewport(gctx, prev_vp);
@@ -222,7 +222,7 @@ int ngli_hwconv_convert_image(struct hwconv *hwconv, const struct image *image)
 
     ngli_pipeline_draw(hwconv->pipeline, 4, 1);
 
-    ngli_gctx_set_rendertarget(gctx, prev_rt);
+    ngli_gctx_bind_rendertarget(gctx, prev_rt);
     ngli_gctx_set_viewport(gctx, prev_vp);
 
     return 0;

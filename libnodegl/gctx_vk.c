@@ -418,7 +418,7 @@ static int vk_init(struct gctx *s)
     }
 
     struct rendertarget **rts = ngli_darray_data(&s_priv->rts);
-    ngli_gctx_set_rendertarget(s, rts[s_priv->frame_index]);
+    ngli_gctx_bind_rendertarget(s, rts[s_priv->frame_index]);
 
     return 0;
 }
@@ -484,7 +484,7 @@ static int vk_pre_draw(struct gctx *s, double t)
         return -1;
     s_priv->cur_command_buffer_state = 1;
 
-    ngli_gctx_set_rendertarget(s, rt);
+    ngli_gctx_bind_rendertarget(s, rt);
     ngli_gctx_clear_color(s);
     ngli_gctx_clear_depth_stencil(s);
     ngli_gctx_clear_depth_stencil(s);
@@ -665,14 +665,14 @@ static void vk_get_rendertarget_uvcoord_matrix(struct gctx *s, float *dst)
 void ngli_gctx_vk_begin_render_pass(struct gctx *s)
 {
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
-    struct rendertarget *rt = s_priv->rendertarget;
-    struct rendertarget_vk *rt_vk = (struct rendertarget_vk *)s_priv->rendertarget;
+    struct rendertarget *rt = s->cur_rendertarget;
+    struct rendertarget_vk *rt_vk = (struct rendertarget_vk *)rt;
 
     if (s_priv->render_pass_state == 1)
         return;
 
-    if (s_priv->rendertarget) {
-        struct rendertarget_params *params = &s_priv->rendertarget->params;
+    if (rt) {
+        struct rendertarget_params *params = &rt->params;
         for (int i = 0; i < params->nb_colors; i++)
             ngli_texture_vk_transition_layout(params->colors[i].attachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
@@ -719,18 +719,18 @@ void ngli_gctx_vk_end_render_pass(struct gctx *s)
     s_priv->render_pass_state = 0;
 }
 
-static void vk_set_rendertarget(struct gctx *s, struct rendertarget *rt)
+static void vk_bind_rendertarget(struct gctx *s, struct rendertarget *rt)
 {
     /* FIXME */
     int conservative = 0;
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
-    if (s_priv->render_pass && rt != s_priv->rendertarget) {
+    if (s_priv->render_pass && rt != s->cur_rendertarget) {
         VkCommandBuffer cmd_buf = s_priv->cur_command_buffer;
         if (s_priv->render_pass_state == 1)
             vkCmdEndRenderPass(cmd_buf);
     }
 
-    s_priv->rendertarget = rt;
+    s->cur_rendertarget = rt;
     if (rt) {
         struct rendertarget_vk *rt_vk = (struct rendertarget_vk*)rt;
         s_priv->render_pass = conservative ? rt_vk->conservative_render_pass : rt_vk->render_pass;
@@ -742,8 +742,7 @@ static void vk_set_rendertarget(struct gctx *s, struct rendertarget *rt)
 
 static struct rendertarget *vk_get_rendertarget(struct gctx *s)
 {
-    struct gctx_vk *s_priv = (struct gctx_vk *)s;
-    return s_priv->rendertarget;
+    return s->cur_rendertarget;
 }
 
 static const struct rendertarget_desc *vk_get_default_rendertarget_desc(struct gctx *s)
@@ -791,7 +790,7 @@ static void vk_get_clear_color(struct gctx *s, float *color)
 static void vk_clear_color(struct gctx *s)
 {
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
-    struct rendertarget *rt = s_priv->rendertarget;
+    struct rendertarget *rt = s->cur_rendertarget;
 
     ngli_gctx_vk_begin_render_pass(s);
 
@@ -827,10 +826,10 @@ static void vk_clear_color(struct gctx *s)
 static void vk_clear_depth_stencil(struct gctx *s)
 {
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
-    struct rendertarget *rt = s_priv->rendertarget;
+    struct rendertarget *rt = s->cur_rendertarget;
 
-    if (s_priv->rendertarget) {
-        struct rendertarget_params *params = &s_priv->rendertarget->params;
+    if (rt) {
+        struct rendertarget_params *params = &rt->params;
         if (!params->depth_stencil.attachment)
             return;
     }
@@ -1046,7 +1045,7 @@ const struct gctx_class ngli_gctx_vk = {
     .transform_projection_matrix = vk_transform_projection_matrix,
     .get_rendertarget_uvcoord_matrix = vk_get_rendertarget_uvcoord_matrix,
 
-    .set_rendertarget         = vk_set_rendertarget,
+    .bind_rendertarget         = vk_bind_rendertarget,
     .get_rendertarget         = vk_get_rendertarget,
     .get_default_rendertarget_desc = vk_get_default_rendertarget_desc,
     .set_viewport             = vk_set_viewport,

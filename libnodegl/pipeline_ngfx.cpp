@@ -73,7 +73,6 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
     s->program  = params->program;
 
     ngli_assert(ngli_darray_count(&s->uniform_descs) == 0);
-    LOG("%p %p %p", s->texture_descs.data, s->buffer_descs.data, s->attribute_descs.data);
     ngli_darray_init(&s->texture_descs, sizeof(struct pipeline_texture_desc), 0);
     ngli_darray_init(&s->buffer_descs,  sizeof(struct pipeline_buffer_desc), 0);
     ngli_darray_init(&s->attribute_descs, sizeof(struct pipeline_attribute_desc), 0);
@@ -271,9 +270,6 @@ void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instanc
 
     upload_uniforms(s);
 
-    //TODO: move to higher-level
-    ngli_gctx_ngfx_begin_render_pass(s->gctx);
-
     bind_pipeline(s);
     bind_vertex_buffers(cmd_buf, s);
     bind_buffers(cmd_buf, s);
@@ -286,9 +282,6 @@ void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices,
     CommandBuffer *cmd_buf = gctx_ngfx->cur_command_buffer;
 
     upload_uniforms(s);
-
-    //TODO: move to higher-level
-    ngli_gctx_ngfx_begin_render_pass(s->gctx);
 
     bind_pipeline(s);
     bind_vertex_buffers(cmd_buf, s);
@@ -305,9 +298,6 @@ void ngli_pipeline_ngfx_dispatch(struct pipeline *s, int nb_group_x, int nb_grou
 
     upload_uniforms(s);
 
-    //TODO: move to higher-level
-    ngli_gctx_ngfx_begin_render_pass(s->gctx);
-
     bind_pipeline(s);
     bind_vertex_buffers(cmd_buf, s);
     bind_buffers(cmd_buf, s);
@@ -317,8 +307,6 @@ void ngli_pipeline_ngfx_dispatch(struct pipeline *s, int nb_group_x, int nb_grou
     int threads_per_group_x = 1, threads_per_group_y = 1, threads_per_group_z = 1;
     gctx_ngfx->graphics->dispatch(cmd_buf, nb_group_x, nb_group_y, nb_group_z, threads_per_group_x, threads_per_group_y, threads_per_group_z);
 
-    //TODO: move to higher-level
-    ngli_gctx_ngfx_end_render_pass(s->gctx);
 }
 void ngli_pipeline_ngfx_freep(struct pipeline **sp) {
     if (!*sp)
