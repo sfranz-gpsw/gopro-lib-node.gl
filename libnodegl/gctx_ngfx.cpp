@@ -27,7 +27,7 @@
 #include "swapchain_ngfx.h"
 #include "texture_ngfx.h"
 #include "memory.h"
-//#include "log.h"
+#include "log.h"
 #include "math_utils.h"
 #include "format.h"
 #include "util_ngfx.h"
@@ -36,7 +36,6 @@
 #include "renderdoc_utils.h"
 static bool DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != nullptr);
 #endif
-#include "porting/vulkan/VKTexture.h"
 using namespace std;
 using namespace ngfx;
 
@@ -62,9 +61,9 @@ static int create_offscreen_resources(struct gctx *s) {
         NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT;
     //TODO: set usage flags
 
-    LOG(">> ngli_texture_init color_texture");
+    LOG(WARNING, ">> ngli_texture_init color_texture");
     ngli_texture_init(color_texture, &color_texture_params);
-    LOG("<< ngli_texture_init color_texture");
+    LOG(WARNING, "<< ngli_texture_init color_texture");
 
     auto &depth_texture = ctx->offscreen_resources.depth_texture;
     if (enable_depth_stencil) {
@@ -76,9 +75,9 @@ static int create_offscreen_resources(struct gctx *s) {
         depth_texture_params.samples = config->samples;
         depth_texture_params.usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT | NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT |
             NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-        LOG(">> ngli_texture_init depth_texture");
+        LOG(WARNING, ">> ngli_texture_init depth_texture");
         ngli_texture_init(depth_texture, &depth_texture_params);
-        LOG("<< ngli_texture_init depth_texture");
+        LOG(WARNING, "<< ngli_texture_init depth_texture");
     }
 
     rendertarget_params rt_params = {};
@@ -177,25 +176,15 @@ static int ngfx_pre_draw(struct gctx *s, double t)
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     s_priv->cur_command_buffer = s_priv->graphics_context->drawCommandBuffer();
     s_priv->cur_command_buffer->begin();
-    auto rt = (rendertarget_ngfx *)s_priv->cur_rendertarget;
-    auto output_texture = rt->output_framebuffer->attachments[0].texture;
-    LOG("change layout COLOR_ATTACHMENT_OPTIMAL: %x", ((VKTexture*)output_texture)->vkImage.v);
-    output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    ngli_rendertarget_ngfx_on_begin_pass(s_priv->cur_rendertarget);
     return 0;
 }
 
 static int ngfx_post_draw(struct gctx *s, double t)
 {
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
-
     ngli_gctx_ngfx_end_render_pass(s);
-
-    auto rt = (rendertarget_ngfx *)s_priv->cur_rendertarget;
-    auto output_texture = rt->output_framebuffer->attachments[0].texture;
-    if (output_texture->imageUsageFlags & IMAGE_USAGE_SAMPLED_BIT) {
-        LOG("change layout SHADER_READ_ONLY_OPTIMAL: %x", ((VKTexture*)output_texture)->vkImage.v);
-        output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    }
+    ngli_rendertarget_ngfx_on_end_pass(s_priv->cur_rendertarget);
 
     s_priv->cur_command_buffer->end();
     s_priv->graphics_context->queue->submit(s_priv->cur_command_buffer);
@@ -448,11 +437,13 @@ extern "C" const struct gctx_class ngli_gctx_ngfx = {
     .program_init   = ngli_program_ngfx_init,
     .program_freep  = ngli_program_ngfx_freep,
 
-    .rendertarget_create      = ngli_rendertarget_ngfx_create,
-    .rendertarget_init        = ngli_rendertarget_ngfx_init,
-    .rendertarget_resolve     = ngli_rendertarget_ngfx_resolve,
-    .rendertarget_read_pixels = ngli_rendertarget_ngfx_read_pixels,
-    .rendertarget_freep       = ngli_rendertarget_ngfx_freep,
+    .rendertarget_create        = ngli_rendertarget_ngfx_create,
+    .rendertarget_init          = ngli_rendertarget_ngfx_init,
+    .rendertarget_resolve       = ngli_rendertarget_ngfx_resolve,
+    .rendertarget_read_pixels   = ngli_rendertarget_ngfx_read_pixels,
+    .rendertarget_on_begin_pass = ngli_rendertarget_ngfx_on_begin_pass,
+    .rendertarget_on_end_pass   = ngli_rendertarget_ngfx_on_end_pass,
+    .rendertarget_freep         = ngli_rendertarget_ngfx_freep,
 
     .swapchain_create         = ngli_swapchain_ngfx_create,
     .swapchain_destroy        = ngli_swapchain_ngfx_destroy,

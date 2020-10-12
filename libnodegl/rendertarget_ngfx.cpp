@@ -20,7 +20,6 @@
  */
 
 #include "rendertarget_ngfx.h"
-#include "log.h"
 #include "memory.h"
 #include "gctx_ngfx.h"
 #include "texture_ngfx.h"
@@ -76,6 +75,28 @@ void ngli_rendertarget_ngfx_resolve(struct rendertarget *s) {
 void ngli_rendertarget_ngfx_read_pixels(struct rendertarget *s, uint8_t *data) {
 
 }
+
+//TODO: remove
+#include "porting/vulkan/VKTexture.h"
+
+void ngli_rendertarget_ngfx_on_begin_pass(struct rendertarget *s) {
+    rendertarget_ngfx *s_priv = (rendertarget_ngfx *)s;
+    gctx_ngfx *ctx = (gctx_ngfx *)s_priv->parent.gctx;
+    auto output_texture = s_priv->output_framebuffer->attachments[0].texture;
+    LOG("change layout COLOR_ATTACHMENT_OPTIMAL: %p", ((VKTexture*)output_texture)->vkImage.v);
+    output_texture->changeLayout(ctx->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+}
+void ngli_rendertarget_ngfx_on_end_pass(struct rendertarget *s) {
+    rendertarget_ngfx *s_priv = (rendertarget_ngfx *)s;
+    gctx_ngfx *ctx = (gctx_ngfx *)s_priv->parent.gctx;
+    auto output_texture = s_priv->output_framebuffer->attachments[0].texture;
+    if (output_texture->imageUsageFlags & IMAGE_USAGE_SAMPLED_BIT) {
+        LOG("change layout SHADER_READ_ONLY_OPTIMAL: %p", ((VKTexture*)output_texture)->vkImage.v);
+        output_texture->changeLayout(ctx->cur_command_buffer, IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
+}
+
+
 void ngli_rendertarget_ngfx_freep(struct rendertarget **sp) {
     if (!*sp)
         return;

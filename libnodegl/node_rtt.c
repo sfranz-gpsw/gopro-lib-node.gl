@@ -353,6 +353,7 @@ static int rtt_update(struct ngl_node *node, double t)
 
 static void rtt_draw(struct ngl_node *node)
 {
+    LOG(WARNING, ">> rtt_draw");
     struct ngl_ctx *ctx = node->ctx;
     struct gctx *gctx = ctx->gctx;
     struct rtt_priv *s = node->priv_data;
@@ -378,7 +379,11 @@ static void rtt_draw(struct ngl_node *node)
         ngli_gctx_clear_depth_stencil(gctx);
     }
 
+    //ngli_rendertarget_on_begin_pass(rt);
+
     ngli_node_draw(s->child);
+
+    //ngli_rendertarget_on_end_pass(rt);
 
     if (s->samples > 0)
         ngli_rendertarget_resolve(rt);
@@ -398,6 +403,7 @@ static void rtt_draw(struct ngl_node *node)
         if (ngli_texture_has_mipmap(texture))
             ngli_texture_generate_mipmap(texture);
     }
+    LOG(WARNING, "<< rtt_draw");
 }
 
 static void rtt_release(struct ngl_node *node)

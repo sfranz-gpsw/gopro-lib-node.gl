@@ -101,6 +101,8 @@ struct gctx_class {
     int (*rendertarget_init)(struct rendertarget *s, const struct rendertarget_params *params);
     void (*rendertarget_resolve)(struct rendertarget *s);
     void (*rendertarget_read_pixels)(struct rendertarget *s, uint8_t *data);
+    void (*rendertarget_on_begin_pass)(struct rendertarget *s);
+    void (*rendertarget_on_end_pass)(struct rendertarget *s);
     void (*rendertarget_freep)(struct rendertarget **sp);
 
     int (*swapchain_create)(struct gctx *gctx);

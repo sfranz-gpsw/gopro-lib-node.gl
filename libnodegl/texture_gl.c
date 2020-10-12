@@ -439,7 +439,6 @@ int ngli_texture_gl_upload(struct texture *s, const uint8_t *data, int linesize)
     struct texture_gl *s_priv = (struct texture_gl *)s;
     struct gctx_gl *gctx_gl = (struct gctx_gl *)s->gctx;
     struct glcontext *gl = gctx_gl->glcontext;
-    const struct texture_params *params = &s->params;
 
     /* texture with external storage (including wrapped textures and render
      * buffers) cannot update their content with this function */

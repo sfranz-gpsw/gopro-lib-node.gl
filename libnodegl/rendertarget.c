@@ -42,6 +42,16 @@ void ngli_rendertarget_read_pixels(struct rendertarget *s, uint8_t *data)
     s->gctx->clazz->rendertarget_read_pixels(s, data);
 }
 
+void ngli_rendertarget_on_begin_pass(struct rendertarget *s)
+{
+    s->gctx->clazz->rendertarget_on_begin_pass(s);
+}
+
+void ngli_rendertarget_on_end_pass(struct rendertarget *s)
+{
+    s->gctx->clazz->rendertarget_on_end_pass(s);
+}
+
 void ngli_rendertarget_freep(struct rendertarget **sp)
 {
     if (!*sp)
