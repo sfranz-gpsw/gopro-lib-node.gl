@@ -696,7 +696,7 @@ int ngli_pass_exec(struct pass *s)
     if (s->pipeline_type == NGLI_PIPELINE_TYPE_GRAPHICS) {
         if (ctx->bind_current_rendertarget) {
             struct gctx *gctx = ctx->gctx;
-            ngli_gctx_set_rendertarget(gctx, ctx->current_rendertarget);
+            ngli_gctx_begin_render_pass(gctx, ctx->current_rendertarget);
             ctx->bind_current_rendertarget = 0;
         }
 
