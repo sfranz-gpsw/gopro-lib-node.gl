@@ -37,6 +37,7 @@ struct texture_gl {
     GLint format;
     GLint internal_format;
     GLenum format_type;
+    int is_attachment;
 };
 
 struct texture *ngli_texture_gl_create(struct gctx *gctx);

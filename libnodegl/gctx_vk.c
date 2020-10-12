@@ -233,7 +233,8 @@ static VkResult create_offscreen_resources(struct gctx *s)
         texture_params.height = config->height;
         texture_params.format = vk->preferred_depth_stencil_format;
         texture_params.samples = config->samples;
-        texture_params.usage = NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY;
+        texture_params.usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT |
+                NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT | NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
         ret = ngli_texture_init(*depth_texture, &texture_params);
         if (ret < 0)
@@ -943,7 +944,8 @@ static int vk_create_swapchain_resources(struct gctx *s)
             .width = s_priv->extent.width,
             .height = s_priv->extent.height,
             .external_storage = 1,
-            .usage = NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY,
+            .usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT |
+                    NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT | NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT,
         };
 
         int ret = ngli_texture_vk_wrap(*wrapped_texture, &params, s_priv->images[i], VK_IMAGE_LAYOUT_UNDEFINED);
@@ -968,7 +970,9 @@ static int vk_create_swapchain_resources(struct gctx *s)
             .width = s_priv->extent.width,
             .height = s_priv->extent.height,
             .samples = config->samples,
-            .usage = NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY,
+            .usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT |
+                NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT | NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT |
+                NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
         };
 
         ret = ngli_texture_vk_init(*depth_texture, &depth_params);
@@ -989,7 +993,9 @@ static int vk_create_swapchain_resources(struct gctx *s)
             texture_params.height = s_priv->extent.height;
             texture_params.format = NGLI_FORMAT_B8G8R8A8_UNORM;
             texture_params.samples = config->samples;
-            texture_params.usage = NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY;
+            texture_params.usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT |
+                    NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT | NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT |
+                    NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT;
 
             struct texture **ms_texture = ngli_darray_push(&s_priv->ms_textures, NULL);
             if (!ms_texture)

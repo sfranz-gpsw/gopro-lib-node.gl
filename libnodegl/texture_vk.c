@@ -281,6 +281,8 @@ int ngli_texture_vk_init(struct texture *s,
     struct gctx_vk *gctx_vk = (struct gctx_vk *)s->gctx;
     struct vkcontext *vk = gctx_vk->vkcontext;
     struct texture_vk *s_priv = (struct texture_vk *)s;
+    s_priv->is_attachment = (params->usage & NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT) ||
+            (params->usage & NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
     s->params = *params;
 
@@ -306,7 +308,7 @@ int ngli_texture_vk_init(struct texture *s,
             features |= VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
         }
 
-        if (!(params->usage & NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY)) {
+        if (!s_priv->is_attachment) {
             usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
             features |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
 
@@ -328,15 +330,15 @@ int ngli_texture_vk_init(struct texture *s,
         ngli_assert(0);
     }
 
-    if (!params->staging && !(params->usage & NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY)) {
+    if (!params->staging && !s_priv->is_attachment) {
         if (supported_features & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)
             features |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
     }
 
     if ((supported_features & features) != features) {
         LOG(ERROR, "unsupported format %d, supported features: 0x%x, requested features: 0x%x "
-            "(staging=%d, attachment_only=%d)", s_priv->format, supported_features, features,
-            params->staging, params->usage & NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY);
+            "(staging=%d, is_attachment=%d)", s_priv->format, supported_features, features,
+            params->staging, s_priv->is_attachment);
         return -1;
     }
 
@@ -467,7 +469,7 @@ int ngli_texture_vk_init(struct texture *s,
     if (res != VK_SUCCESS)
         return NGL_ERROR_EXTERNAL;
 
-    if (!(params->usage & NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY)) {
+    if (!(params->usage & s_priv->is_attachment)) {
         const int bytes_per_pixel = ngli_format_get_bytes_per_pixel(params->format);
         s_priv->staging_buffer_size = s->params.width * s->params.height * depth * bytes_per_pixel * s_priv->array_layers;
 
@@ -598,7 +600,7 @@ int ngli_texture_vk_upload(struct texture *s, const uint8_t *data, int linesize)
 
     /* texture with external storage (including wrapped textures and render
      * buffers) cannot update their content with this function */
-    ngli_assert(!s->external_storage && !(params->usage & NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY));
+    ngli_assert(!s->external_storage && !s_priv->is_attachment);
 
     if (!data)
         return 0;
@@ -675,7 +677,7 @@ int ngli_texture_vk_generate_mipmap(struct texture *s)
     const struct texture_params *params = &s->params;
     struct texture_vk *s_priv = (struct texture_vk *)s;
 
-    ngli_assert(!(params->usage & NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY));
+    ngli_assert(!s_priv->is_attachment);
 
     VkCommandBuffer command_buffer;
     if (gctx_vk->cur_command_buffer)

@@ -127,7 +127,8 @@ static int offscreen_rendertarget_init(struct gctx *s)
         params.format = NGLI_FORMAT_R8G8B8A8_UNORM;
         params.width = config->width;
         params.height = config->height;
-        params.usage = NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY;
+        params.usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT |
+            NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT | NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT;
         s_priv->color = ngli_texture_create(s);
         if (!s_priv->color)
             return NGL_ERROR_MEMORY;
@@ -141,7 +142,8 @@ static int offscreen_rendertarget_init(struct gctx *s)
         params.format = NGLI_FORMAT_R8G8B8A8_UNORM;
         params.width = config->width;
         params.height = config->height;
-        params.usage = NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY;
+        params.usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT |
+                NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT | NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT;
         params.samples = config->samples;
         s_priv->ms_color = ngli_texture_create(s);
         if (!s_priv->ms_color)
@@ -156,7 +158,8 @@ static int offscreen_rendertarget_init(struct gctx *s)
     attachment_params.width = config->width;
     attachment_params.height = config->height;
     attachment_params.samples = config->samples;
-    attachment_params.usage = NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY;
+    attachment_params.usage = NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT | NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT |
+        NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     s_priv->depth = ngli_texture_create(s);
     if (!s_priv->depth)
         return NGL_ERROR_MEMORY;

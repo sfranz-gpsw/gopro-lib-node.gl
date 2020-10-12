@@ -40,6 +40,7 @@ struct texture_vk {
     VkBuffer staging_buffer;
     VkDeviceSize staging_buffer_size;
     VkDeviceMemory staging_buffer_memory;
+    int is_attachment;
 };
 
 struct texture *ngli_texture_vk_create(struct gctx *gctx);

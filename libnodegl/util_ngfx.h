@@ -35,6 +35,7 @@ ngfx::BlendFactor to_ngfx_blend_factor(int blend_factor);
 ngfx::BlendOp to_ngfx_blend_op(int blend_op);
 ngfx::ColorComponentFlags to_ngfx_color_mask(int color_write_mask);
 ngfx::CullModeFlags to_ngfx_cull_mode(int cull_mode);
+ngfx::ImageUsageFlags to_ngfx_image_usage_flags(int usage_flags);
 ngfx::RenderPass* get_render_pass(ngfx::GraphicsContext* ctx, const rendertarget_desc &rt_desc);
 
 inline uint32_t get_bpp(int format) {

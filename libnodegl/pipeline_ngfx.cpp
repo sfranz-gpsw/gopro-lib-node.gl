@@ -20,7 +20,6 @@
  */
 
 #include "pipeline_ngfx.h"
-#include "log.h"
 #include "memory.h"
 #include "graphics/Graphics.h"
 #include "compute/ComputePipeline.h"
@@ -33,6 +32,7 @@
 #include "type.h"
 #include "texture_ngfx.h"
 #include "util_ngfx.h"
+#include "porting/vulkan/VKTexture.h"
 #include <map>
 using namespace ngfx;
 
@@ -73,7 +73,7 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
     s->program  = params->program;
 
     ngli_assert(ngli_darray_count(&s->uniform_descs) == 0);
-    LOG(WARNING, "%p %p %p", s->texture_descs.data, s->buffer_descs.data, s->attribute_descs.data);
+    LOG("%p %p %p", s->texture_descs.data, s->buffer_descs.data, s->attribute_descs.data);
     ngli_darray_init(&s->texture_descs, sizeof(struct pipeline_texture_desc), 0);
     ngli_darray_init(&s->buffer_descs,  sizeof(struct pipeline_buffer_desc), 0);
     ngli_darray_init(&s->attribute_descs, sizeof(struct pipeline_attribute_desc), 0);
@@ -250,6 +250,7 @@ static void bind_textures(CommandBuffer *cmd_buf, pipeline *s) {
     for (int j = 0; j<nb_textures; j++) {
         const pipeline_texture_desc &texture_desc = *(const pipeline_texture_desc *)ngli_darray_get(&s->texture_descs, j);
         const texture_ngfx *texture = *(const texture_ngfx **)ngli_darray_get(&s->textures, j);
+        LOG("bind texture: %x", ((VKTexture*)texture->v)->vkImage.v);
         gctx_ngfx->graphics->bindTexture(cmd_buf, texture->v, texture_desc.binding);
     }
 }

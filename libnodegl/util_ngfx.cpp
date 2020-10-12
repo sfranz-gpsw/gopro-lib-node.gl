@@ -108,6 +108,23 @@ CullModeFlags to_ngfx_cull_mode(int cull_mode)
     return cull_mode_map.at(cull_mode);
 }
 
+ngfx::ImageUsageFlags to_ngfx_image_usage_flags(int usage_flags) {
+    static std::map<int, ImageUsageFlags> usage_flags_map = {
+        { NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT               , IMAGE_USAGE_TRANSFER_SRC_BIT },
+        { NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT               , IMAGE_USAGE_TRANSFER_DST_BIT },
+        { NGLI_TEXTURE_USAGE_SAMPLED_BIT                    , IMAGE_USAGE_SAMPLED_BIT },
+        { NGLI_TEXTURE_USAGE_STORAGE_BIT                    , IMAGE_USAGE_STORAGE_BIT },
+        { NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT           , IMAGE_USAGE_COLOR_ATTACHMENT_BIT },
+        { NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT   , IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT },
+        { NGLI_TEXTURE_USAGE_TRANSIENT_ATTACHMENT_BIT       , IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT }
+    };
+    int image_usage_flags = 0;
+    for (auto& flag : usage_flags_map) {
+        if (usage_flags & flag.first) image_usage_flags |= flag.second;
+    }
+    return image_usage_flags;
+}
+
 RenderPass* get_render_pass(GraphicsContext* ctx, const rendertarget_desc &rt_desc) {
     GraphicsContext::RenderPassConfig renderPassConfig;
     renderPassConfig.enableDepthStencil = rt_desc.depth_stencil.format != NGLI_FORMAT_UNDEFINED;

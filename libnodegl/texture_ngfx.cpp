@@ -20,10 +20,10 @@
  */
 
 #include "texture_ngfx.h"
-#include "log.h"
 #include "memory.h"
 #include <map>
 #include "graphics/Texture.h"
+#include "porting/vulkan/VKTexture.h"
 #include "gctx_ngfx.h"
 #include "util_ngfx.h"
 using namespace ngfx;
@@ -41,33 +41,24 @@ int ngli_texture_ngfx_init(struct texture *s,
                            const struct texture_params *p) {
     struct texture_ngfx *s_priv = (struct texture_ngfx *)s;
     struct gctx_ngfx *ctx = (struct gctx_ngfx *)s->gctx;
+    auto &gctx = ctx->graphics_context;
     s->params = *p;
     s->bytes_per_pixel = get_bpp(p->format);
     bool gen_mipmaps = p->mipmap_filter != NGLI_MIPMAP_FILTER_NONE;
-    uint32_t image_usage_flags = ImageUsageFlags(IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT);
-
-    //TODO: pass these usage flags from above
-    if (!p->staging) {
-        if (is_depth_format(p->format)) {
-            image_usage_flags |= IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-        } else {
-            image_usage_flags |= IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        }
-        if (!(p->usage & NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY)) {
-            image_usage_flags |= IMAGE_USAGE_SAMPLED_BIT;
-        }
-    }
+    uint32_t image_usage_flags = to_ngfx_image_usage_flags(p->usage);
 
     uint32_t depth = (p->type == NGLI_TEXTURE_TYPE_3D) ? p->depth : 1;
     uint32_t array_layers = (p->type == NGLI_TEXTURE_TYPE_CUBE) ? 6 : 1;
     uint32_t size = s->bytes_per_pixel * p->width * p->height * depth * array_layers;
-    s_priv->v = Texture::create(ctx->graphics_context, ctx->graphics,
+    s_priv->v = Texture::create(gctx, ctx->graphics,
         nullptr, to_ngfx_format(p->format), size, p->width, p->height, depth, array_layers,
         image_usage_flags, to_ngfx_texture_type(p->type), gen_mipmaps,
         to_ngfx_filter_mode(p->min_filter), to_ngfx_filter_mode(p->mag_filter),
         gen_mipmaps ? to_ngfx_mip_filter_mode(p->mipmap_filter) : FILTER_NEAREST,
         p->samples == 0 ? 1 : p->samples
     );
+    LOG("create image: %x", ((VKTexture*)s_priv->v)->vkImage.v);
+
     return 0;
 }
 

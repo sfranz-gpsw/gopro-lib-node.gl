@@ -27,7 +27,7 @@
 #include "swapchain_ngfx.h"
 #include "texture_ngfx.h"
 #include "memory.h"
-#include "log.h"
+//#include "log.h"
 #include "math_utils.h"
 #include "format.h"
 #include "util_ngfx.h"
@@ -36,6 +36,7 @@
 #include "renderdoc_utils.h"
 static bool DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != nullptr);
 #endif
+#include "porting/vulkan/VKTexture.h"
 using namespace std;
 using namespace ngfx;
 
@@ -57,9 +58,13 @@ static int create_offscreen_resources(struct gctx *s) {
     color_texture_params.height = config->height;
     color_texture_params.format = NGLI_FORMAT_R8G8B8A8_UNORM;
     color_texture_params.samples = config->samples;
+    color_texture_params.usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT | NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT |
+        NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT;
     //TODO: set usage flags
 
+    LOG(">> ngli_texture_init color_texture");
     ngli_texture_init(color_texture, &color_texture_params);
+    LOG("<< ngli_texture_init color_texture");
 
     auto &depth_texture = ctx->offscreen_resources.depth_texture;
     if (enable_depth_stencil) {
@@ -69,8 +74,11 @@ static int create_offscreen_resources(struct gctx *s) {
         depth_texture_params.height = config->height;
         depth_texture_params.format = to_ngli_format(ctx->graphics_context->depthFormat);
         depth_texture_params.samples = config->samples;
-        depth_texture_params.usage = NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY; //TODO: update NGLI usage flags
+        depth_texture_params.usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT | NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT |
+            NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        LOG(">> ngli_texture_init depth_texture");
         ngli_texture_init(depth_texture, &depth_texture_params);
+        LOG("<< ngli_texture_init depth_texture");
     }
 
     rendertarget_params rt_params = {};
@@ -171,6 +179,7 @@ static int ngfx_pre_draw(struct gctx *s, double t)
     s_priv->cur_command_buffer->begin();
     auto rt = (rendertarget_ngfx *)s_priv->cur_rendertarget;
     auto output_texture = rt->output_framebuffer->attachments[0].texture;
+    LOG("change layout COLOR_ATTACHMENT_OPTIMAL: %x", ((VKTexture*)output_texture)->vkImage.v);
     output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     return 0;
 }
@@ -184,6 +193,7 @@ static int ngfx_post_draw(struct gctx *s, double t)
     auto rt = (rendertarget_ngfx *)s_priv->cur_rendertarget;
     auto output_texture = rt->output_framebuffer->attachments[0].texture;
     if (output_texture->imageUsageFlags & IMAGE_USAGE_SAMPLED_BIT) {
+        LOG("change layout SHADER_READ_ONLY_OPTIMAL: %x", ((VKTexture*)output_texture)->vkImage.v);
         output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 
