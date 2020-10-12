@@ -208,7 +208,7 @@ static int offscreen_rendertarget_init(struct gctx *s)
 
     s_priv->capture_func = ios_capture ? capture_ios : capture_default;
 
-    ngli_gctx_set_rendertarget(s, s_priv->rts[0]);
+    //ngli_gctx_set_rendertarget(s, s_priv->rts[0]);
     const int vp[4] = {0, 0, config->width, config->height};
     ngli_gctx_set_viewport(s, vp);
 
@@ -356,6 +356,13 @@ static int gl_pre_draw(struct gctx *s, double t)
     struct gctx_gl *s_priv = (struct gctx_gl *)s;
     struct glcontext *gl = s_priv->glcontext;
     const struct ngl_config *config = &s->config;
+
+    if (config->offscreen) {
+        ngli_gctx_begin_render_pass(s, s_priv->rts[0]);
+    } else {
+        ngli_glBindFramebuffer(gl, GL_FRAMEBUFFER, 0);
+    }
+
     const float *color = config->clear_color;
     ngli_glClearColor(gl, color[0], color[1], color[2], color[3]);
     ngli_glClear(gl, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -431,6 +438,51 @@ static void gl_get_rendertarget_uvcoord_matrix(struct gctx *s, float *dst)
         0.0f, 1.0f, 0.0f, 1.0f,
     };
     memcpy(dst, matrix, 4 * 4 * sizeof(float));
+}
+
+static void gl_begin_render_pass(struct gctx *s, struct rendertarget *rt)
+{
+    struct gctx_gl *s_priv = (struct gctx_gl *)s;
+    struct glcontext *gl = s_priv->glcontext;
+
+    if (rt == s_priv->rendertarget)
+        return;
+
+    if (s_priv->rendertarget) {
+        struct rendertarget_gl *rt_gl = (struct rendertarget_gl *)s_priv->rendertarget;
+        if (!(gl->features & NGLI_FEATURE_INVALIDATE_SUBDATA))
+            ngli_glInvalidateFramebuffer(gl, GL_FRAMEBUFFER, rt_gl->nb_invalidate_attachments, rt_gl->invalidate_attachments);
+    }
+
+    struct rendertarget_gl *rt_gl = (struct rendertarget_gl *)rt;
+    const GLuint fbo_id = rt_gl ? rt_gl->id : ngli_glcontext_get_default_framebuffer(gl);
+    ngli_glBindFramebuffer(gl, GL_FRAMEBUFFER, fbo_id);
+
+    if (rt) {
+        const int scissor_test = s_priv->glstate.scissor_test;
+        ngli_glDisable(gl, GL_SCISSOR_TEST);
+        ngli_rendertarget_gl_clear(rt);
+        if (scissor_test)
+            ngli_glEnable(gl, GL_SCISSOR_TEST);
+    }
+
+    s_priv->rendertarget = rt;
+}
+
+static void gl_end_render_pass(struct gctx *s)
+{
+    struct gctx_gl *s_priv = (struct gctx_gl *)s;
+    struct glcontext *gl = s_priv->glcontext;
+
+
+    if (s_priv->rendertarget) {
+        struct rendertarget_gl *rt_gl = (struct rendertarget_gl *)s_priv->rendertarget;
+        ngli_rendertarget_gl_resolve(s_priv->rendertarget);
+        if (!(gl->features & NGLI_FEATURE_INVALIDATE_SUBDATA))
+            ngli_glInvalidateFramebuffer(gl, GL_FRAMEBUFFER, rt_gl->nb_invalidate_attachments, rt_gl->invalidate_attachments);
+    }
+
+    s_priv->rendertarget = NULL;
 }
 
 static void gl_set_rendertarget(struct gctx *s, struct rendertarget *rt)
@@ -587,6 +639,9 @@ const struct gctx_class ngli_gctx_gl = {
     .transform_projection_matrix      = gl_transform_projection_matrix,
     .get_rendertarget_uvcoord_matrix  = gl_get_rendertarget_uvcoord_matrix,
 
+    .begin_render_pass        = gl_begin_render_pass,
+    .end_render_pass          = gl_end_render_pass,
+
     .set_rendertarget         = gl_set_rendertarget,
     .get_rendertarget         = gl_get_rendertarget,
     .get_default_rendertarget_desc = gl_get_default_rendertarget_desc,
@@ -666,6 +721,9 @@ const struct gctx_class ngli_gctx_gles = {
     .transform_cull_mode              = gl_transform_cull_mode,
     .transform_projection_matrix      = gl_transform_projection_matrix,
     .get_rendertarget_uvcoord_matrix  = gl_get_rendertarget_uvcoord_matrix,
+
+    .begin_render_pass        = gl_begin_render_pass,
+    .end_render_pass          = gl_end_render_pass,
 
     .set_rendertarget         = gl_set_rendertarget,
     .get_rendertarget         = gl_get_rendertarget,

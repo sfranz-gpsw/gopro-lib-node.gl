@@ -48,7 +48,11 @@ struct gctx_class {
     void (*transform_projection_matrix)(struct gctx *s, float *dst);
     void (*get_rendertarget_uvcoord_matrix)(struct gctx *s, float *dst);
 
+    void (*begin_render_pass)(struct gctx *s, struct rendertarget *rt);
+    void (*end_render_pass)(struct gctx *s);
+
     void (*set_rendertarget)(struct gctx *s, struct rendertarget *rt);
+
     struct rendertarget *(*get_rendertarget)(struct gctx *s);
     struct rendertarget **(*get_default_rendertargets)(struct gctx *s);
     const struct rendertarget_desc *(*get_default_rendertarget_desc)(struct gctx *s);
@@ -131,6 +135,9 @@ void ngli_gctx_freep(struct gctx **sp);
 int ngli_gctx_transform_cull_mode(struct gctx *s, int cull_mode);
 void ngli_gctx_transform_projection_matrix(struct gctx *s, float *dst);
 void ngli_gctx_get_rendertarget_uvcoord_matrix(struct gctx *s, float *dst);
+
+void ngli_gctx_begin_render_pass(struct gctx *s, struct rendertarget *rt);
+void ngli_gctx_end_render_pass(struct gctx *s);
 
 void ngli_gctx_set_rendertarget(struct gctx *s, struct rendertarget *rt);
 struct rendertarget *ngli_gctx_get_rendertarget(struct gctx *s);
