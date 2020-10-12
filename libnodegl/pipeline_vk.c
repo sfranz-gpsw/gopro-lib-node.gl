@@ -923,8 +923,6 @@ void ngli_pipeline_vk_draw_indexed(struct pipeline *s, struct buffer *indices, i
 
     VkCommandBuffer cmd_buf = gctx_vk->cur_command_buffer;
 
-    ngli_gctx_vk_begin_render_pass(s->gctx);
-
     vkCmdBindPipeline(cmd_buf, s_priv->bind_point, s_priv->pipeline);
 
     struct texture **textures= ngli_darray_data(&s->textures);
@@ -990,8 +988,6 @@ void ngli_pipeline_vk_dispatch(struct pipeline *s, int nb_group_x, int nb_group_
 
     VkCommandBuffer cmd_buf = gctx_vk->cur_command_buffer;
 
-    ngli_gctx_vk_begin_render_pass(s->gctx);
-
     vkCmdBindPipeline(cmd_buf, s_priv->bind_point, s_priv->pipeline);
 
     struct texture **textures = ngli_darray_data(&s->textures);
@@ -1006,7 +1002,6 @@ void ngli_pipeline_vk_dispatch(struct pipeline *s, int nb_group_x, int nb_group_
         vkCmdBindDescriptorSets(cmd_buf, s_priv->bind_point, s_priv->pipeline_layout,
                                 0, 1, &s_priv->desc_sets[gctx_vk->frame_index], 0, NULL);
 
-    ngli_gctx_vk_end_render_pass(s->gctx);
     vkCmdDispatch(cmd_buf, nb_group_x, nb_group_y, nb_group_z);
 }
 

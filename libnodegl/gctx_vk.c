@@ -418,7 +418,7 @@ static int vk_init(struct gctx *s)
     }
 
     struct rendertarget **rts = ngli_darray_data(&s_priv->rts);
-    ngli_gctx_bind_rendertarget(s, rts[s_priv->frame_index]);
+    s->default_rendertarget = *rts;
 
     return 0;
 }
