@@ -385,8 +385,8 @@ extern "C" const struct gctx_class ngli_gctx_ngfx = {
     .rendertarget_init          = ngli_rendertarget_ngfx_init,
     .rendertarget_resolve       = ngli_rendertarget_ngfx_resolve,
     .rendertarget_read_pixels   = ngli_rendertarget_ngfx_read_pixels,
-    .rendertarget_on_begin_pass = ngli_rendertarget_ngfx_begin_pass,
-    .rendertarget_on_end_pass   = ngli_rendertarget_ngfx_end_pass,
+    .rendertarget_begin_pass    = ngli_rendertarget_ngfx_begin_pass,
+    .rendertarget_end_pass      = ngli_rendertarget_ngfx_end_pass,
     .rendertarget_freep         = ngli_rendertarget_ngfx_freep,
 
     .swapchain_create         = ngli_swapchain_ngfx_create,

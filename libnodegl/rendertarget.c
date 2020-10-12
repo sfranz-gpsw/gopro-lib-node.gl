@@ -44,12 +44,12 @@ void ngli_rendertarget_read_pixels(struct rendertarget *s, uint8_t *data)
 
 void ngli_rendertarget_begin_pass(struct rendertarget *s)
 {
-    s->gctx->clazz->rendertarget_on_begin_pass(s);
+    s->gctx->clazz->rendertarget_begin_pass(s);
 }
 
 void ngli_rendertarget_end_pass(struct rendertarget *s)
 {
-    s->gctx->clazz->rendertarget_on_end_pass(s);
+    s->gctx->clazz->rendertarget_end_pass(s);
 }
 
 void ngli_rendertarget_freep(struct rendertarget **sp)

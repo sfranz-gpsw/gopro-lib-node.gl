@@ -62,9 +62,6 @@ struct gctx_vk {
     struct darray depth_textures;
     struct darray rts;
 
-    VkRenderPass render_pass;
-    int render_pass_state;
-
     VkSemaphore *sem_img_avail;
     VkSemaphore *sem_render_finished;
     VkFence *fences;
@@ -79,8 +76,6 @@ struct gctx_vk {
     float clear_color[4];
 };
 
-void ngli_gctx_vk_begin_render_pass(struct gctx *s);
-void ngli_gctx_vk_end_render_pass(struct gctx *s);
 int ngli_gctx_vk_begin_transient_command(struct gctx *s, VkCommandBuffer *command_buffer);
 int ngli_gctx_vk_execute_transient_command(struct gctx *s, VkCommandBuffer command_buffer);
 

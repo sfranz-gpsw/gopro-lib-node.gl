@@ -412,8 +412,6 @@ void ngli_rendertarget_vk_read_pixels(struct rendertarget *s, uint8_t *data)
         return;
     }
 
-    ngli_gctx_vk_end_render_pass(s->gctx);
-
     struct attachment *color = &params->colors[0];
     struct texture *src = color->resolve_target ? color->resolve_target : color->attachment;
     struct texture_vk *src_vk = (struct texture_vk *)src;
@@ -485,6 +483,61 @@ void ngli_rendertarget_vk_read_pixels(struct rendertarget *s, uint8_t *data)
     if (res != VK_SUCCESS)
         return;;
     gctx_vk->cur_command_buffer_state = 1;
+}
+
+static void begin_render_pass(struct rendertarget_vk *rt_vk, struct gctx *s)
+{
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+
+    if (rt_vk) {
+        struct rendertarget_params *params = &rt_vk->parent.params;
+        for (int i = 0; i < params->nb_colors; i++)
+            ngli_texture_vk_transition_layout(params->colors[i].attachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+        if (params->depth_stencil.attachment)
+            ngli_texture_vk_transition_layout(params->depth_stencil.attachment, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+        for (int i = 0; i < params->nb_colors; i++) {
+            struct texture_vk *resolve_target_vk = (struct texture_vk *)params->colors[i].resolve_target;
+            if (resolve_target_vk)
+                resolve_target_vk->image_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        }
+
+        struct texture_vk *resolve_target_vk = (struct texture_vk *)params->depth_stencil.resolve_target;
+        if (resolve_target_vk)
+            resolve_target_vk->image_layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    }
+
+
+    VkCommandBuffer cmd_buf = s_priv->cur_command_buffer;
+    VkRenderPassBeginInfo render_pass_begin_info = {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = rt_vk->render_pass,
+        .framebuffer = rt_vk->framebuffer,
+        .renderArea = {
+            .extent.width = rt_vk->parent.width,
+            .extent.height = rt_vk->parent.height,
+        },
+        .clearValueCount = 0,
+        .pClearValues = NULL,
+    };
+    vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+
+}
+
+static void end_render_pass(struct rendertarget_vk *rt_vk, struct gctx *s)
+{
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+
+    VkCommandBuffer cmd_buf = s_priv->cur_command_buffer;
+    vkCmdEndRenderPass(cmd_buf);
+}
+
+void ngli_rendertarget_vk_begin_pass(struct rendertarget *s) {
+    begin_render_pass((struct rendertarget_vk *)s, s->gctx);
+}
+void ngli_rendertarget_vk_end_pass(struct rendertarget *s) {
+    end_render_pass((struct rendertarget_vk *)s, s->gctx);
 }
 
 void ngli_rendertarget_vk_freep(struct rendertarget **sp)

@@ -855,8 +855,6 @@ void ngli_pipeline_vk_draw(struct pipeline *s, int nb_vertices, int nb_instances
 
     VkCommandBuffer cmd_buf = gctx_vk->cur_command_buffer;
 
-    ngli_gctx_vk_begin_render_pass(s->gctx);
-
     vkCmdBindPipeline(cmd_buf, s_priv->bind_point, s_priv->pipeline);
 
     struct texture **textures= ngli_darray_data(&s->textures);

@@ -59,6 +59,7 @@ static void default_callback(void *arg, int level, const char *filename, int ln,
     fprintf(stream, "%s[%s] %s:%d %s: %s%s\n", color_start,
            log_strs[level], filename, ln, fn, logline,
            color_end);
+    fflush(stdout);
 }
 
 static struct {
