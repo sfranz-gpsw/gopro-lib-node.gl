@@ -244,12 +244,6 @@ static void ngfx_get_rendertarget_uvcoord_matrix(struct gctx *s, float *dst)
 static void ngfx_set_rendertarget(struct gctx *s, struct rendertarget *rt)
 {
     gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
-    if (s_priv->cur_render_pass && rt != s_priv->cur_rendertarget) {
-        CommandBuffer* cmd_buf = s_priv->cur_command_buffer;
-        if (s_priv->render_pass_state == 1)
-            s_priv->graphics->endRenderPass(cmd_buf);
-    }
-
     s_priv->cur_rendertarget = rt;
     if (rt) {
         rendertarget_ngfx *rt_ngfx = (rendertarget_ngfx*)rt;

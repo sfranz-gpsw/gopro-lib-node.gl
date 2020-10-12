@@ -600,7 +600,7 @@ int ngli_texture_vk_upload(struct texture *s, const uint8_t *data, int linesize)
 
     /* texture with external storage (including wrapped textures and render
      * buffers) cannot update their content with this function */
-    ngli_assert(!s->external_storage && !s_priv->is_attachment);
+    ngli_assert(!s->external_storage);
 
     if (!data)
         return 0;
@@ -676,8 +676,6 @@ int ngli_texture_vk_generate_mipmap(struct texture *s)
     struct vkcontext *vk = gctx_vk->vkcontext;
     const struct texture_params *params = &s->params;
     struct texture_vk *s_priv = (struct texture_vk *)s;
-
-    ngli_assert(!s_priv->is_attachment);
 
     VkCommandBuffer command_buffer;
     if (gctx_vk->cur_command_buffer)

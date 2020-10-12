@@ -379,11 +379,11 @@ static void rtt_draw(struct ngl_node *node)
         ngli_gctx_clear_depth_stencil(gctx);
     }
 
-    //ngli_rendertarget_on_begin_pass(rt);
+    ngli_rendertarget_on_begin_pass(rt);
 
     ngli_node_draw(s->child);
 
-    //ngli_rendertarget_on_end_pass(rt);
+    ngli_rendertarget_on_end_pass(rt);
 
     if (s->samples > 0)
         ngli_rendertarget_resolve(rt);
