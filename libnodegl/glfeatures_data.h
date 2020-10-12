@@ -235,6 +235,8 @@ static const struct glfeature {
         .es_version     = 300,
         .funcs_offsets  = (const size_t[]){OFFSET(DrawBuffers),
                                            OFFSET(ReadBuffer),
+                                           OFFSET(ClearBufferfv),
+                                           OFFSET(ClearBufferfi),
                                            -1}
     }, {
         .name           = "row_length",
