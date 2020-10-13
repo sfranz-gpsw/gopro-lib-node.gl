@@ -372,8 +372,6 @@ static void rtt_draw(struct ngl_node *node)
     int sr[4] = {0, 0, s->width, s->height};
     ngli_gctx_set_scissor(gctx, sr);
 
-    ngli_gctx_bind_rendertarget(gctx, rt);
-
     float prev_clear_color[4] = {0};
     if (s->use_clear_color) {
         ngli_gctx_get_clear_color(gctx, prev_clear_color);
@@ -385,6 +383,8 @@ static void rtt_draw(struct ngl_node *node)
         ngli_gctx_clear_depth_stencil(gctx);
     }
 
+    ngli_gctx_bind_rendertarget(gctx, rt);
+
     ngli_node_draw(s->child);
 
     if (s->samples > 0)
@@ -393,12 +393,13 @@ static void rtt_draw(struct ngl_node *node)
     if (s->invalidate_depth_stencil)
         ngli_gctx_invalidate_depth_stencil(gctx);
 
-    ngli_gctx_bind_rendertarget(gctx, prev_rt);
     ngli_gctx_set_viewport(gctx, prev_vp);
     ngli_gctx_set_scissor(gctx, prev_sr);
 
     if (s->use_clear_color)
         ngli_gctx_set_clear_color(gctx, prev_clear_color);
+
+    ngli_gctx_bind_rendertarget(gctx, prev_rt);
 
     for (int i = 0; i < s->nb_color_textures; i++) {
         struct texture_priv *texture_priv = s->color_textures[i]->priv_data;

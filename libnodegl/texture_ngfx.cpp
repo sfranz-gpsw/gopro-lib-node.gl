@@ -79,7 +79,11 @@ int ngli_texture_ngfx_upload(struct texture *s, const uint8_t *data, int linesiz
 int ngli_texture_ngfx_generate_mipmap(struct texture *s) {
     texture_ngfx *texture = (struct texture_ngfx *)s;
     gctx_ngfx *gctx = (gctx_ngfx *)s->gctx;
-    texture->v->generateMipmaps(gctx->cur_command_buffer);
+    CommandBuffer *cmd_buffer = gctx->cur_command_buffer;
+    texture->v->generateMipmaps(cmd_buffer);
+    if (texture->v->imageUsageFlags & IMAGE_USAGE_SAMPLED_BIT) {
+        texture->v->changeLayout(cmd_buffer, IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
     return 0;
 }
 
