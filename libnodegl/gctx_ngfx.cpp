@@ -33,7 +33,7 @@
 #include "util_ngfx.h"
 #ifdef ENABLE_RENDERDOC_CAPTURE
 #include "renderdoc_utils.h"
-static bool DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != nullptr);
+static bool DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != NULL);
 #endif
 using namespace std;
 using namespace ngfx;
@@ -108,7 +108,7 @@ static int ngfx_init(struct gctx *s)
     s->features = -1;
     ctx->graphics_context = GraphicsContext::create("NGLApplication", true);
 #ifdef ENABLE_RENDERDOC_CAPTURE
-    if (DEBUG_CAPTURE) begin_renderdoc_capture(); //&((ngfx::VKGraphicsContext*)ctx->graphics_context)->vkDevice);
+    if (DEBUG_CAPTURE) begin_renderdoc_capture();
 #endif
     if (config->offscreen) {
         Surface surface(config->width, config->height, true);

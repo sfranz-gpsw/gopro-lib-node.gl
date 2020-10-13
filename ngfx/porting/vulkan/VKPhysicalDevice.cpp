@@ -54,7 +54,7 @@ void VKPhysicalDevice::selectDevice(VkInstance instance) {
     // Enumerate devices
     std::vector<VkPhysicalDevice> physicalDevices(gpuCount);
     V(vkEnumeratePhysicalDevices(instance, &gpuCount, physicalDevices.data()));
-    //Select GPU v
+    //Select GPU device
     v = physicalDevices[0];
     std::vector<VkPhysicalDeviceProperties> devicesProperties;
     devicesProperties.resize(physicalDevices.size());

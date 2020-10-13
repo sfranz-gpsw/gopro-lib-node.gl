@@ -61,20 +61,25 @@ int ngli_texture_ngfx_init(struct texture *s,
     return 0;
 }
 
-int ngli_texture_ngfx_has_mipmap(const struct texture *s) { TODO(); return 0; }
+int ngli_texture_ngfx_has_mipmap(const struct texture *s) {
+    return s->params.mipmap_filter != NGLI_MIPMAP_FILTER_NONE;
+}
+
 int ngli_texture_ngfx_match_dimensions(const struct texture *s, int width, int height, int depth) {
     const texture_params *params = &s->params;
     return params->width == width && params->height == height && params->depth == depth;
 }
 
 int ngli_texture_ngfx_upload(struct texture *s, const uint8_t *data, int linesize) {
-    struct texture_ngfx *texture = (struct texture_ngfx *)s;
+    texture_ngfx *texture = (struct texture_ngfx *)s;
     uint32_t size = s->bytes_per_pixel * texture->v->w * texture->v->h * texture->v->d * texture->v->arrayLayers;
     texture->v->upload((void*)data, size, 0, 0, 0, texture->v->w, texture->v->h, texture->v->d, texture->v->arrayLayers);
     return 0;
 }
 int ngli_texture_ngfx_generate_mipmap(struct texture *s) {
-    TODO("Texture::generateMipmaps");
+    texture_ngfx *texture = (struct texture_ngfx *)s;
+    gctx_ngfx *gctx = (gctx_ngfx *)s->gctx;
+    texture->v->generateMipmaps(gctx->cur_command_buffer);
     return 0;
 }
 

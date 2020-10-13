@@ -43,6 +43,10 @@
 #include "swapchain_vk.h"
 #include "util_vk.h"
 #include <limits.h>
+#ifdef ENABLE_RENDERDOC_CAPTURE
+#include "renderdoc_utils.h"
+static bool DEBUG_CAPTURE = false;
+#endif
 
 int ngli_gctx_vk_begin_transient_command(struct gctx *s, VkCommandBuffer *command_buffer)
 {
@@ -292,7 +296,10 @@ static int vk_init(struct gctx *s)
 {
     const struct ngl_config *config = &s->config;
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
-
+#ifdef ENABLE_RENDERDOC_CAPTURE
+    DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != NULL);
+    if (DEBUG_CAPTURE) init_renderdoc();
+#endif
     /* FIXME */
     s->features = -1;
 
@@ -315,6 +322,9 @@ static int vk_init(struct gctx *s)
         ngli_vkcontext_freep(&s_priv->vkcontext);
         return ret;
     }
+#ifdef ENABLE_RENDERDOC_CAPTURE
+    if (DEBUG_CAPTURE) begin_renderdoc_capture();
+#endif
     struct vkcontext *vk = s_priv->vkcontext;
 
     VkPhysicalDeviceLimits *limits = &vk->phy_device_props.limits;
@@ -615,6 +625,9 @@ static void vk_destroy(struct gctx *s)
     ngli_darray_reset(&s_priv->signal_semaphores);
 
     ngli_vkcontext_freep(&s_priv->vkcontext);
+#ifdef ENABLE_RENDERDOC_CAPTURE
+    if (DEBUG_CAPTURE) end_renderdoc_capture();
+#endif
 }
 
 static void vk_wait_idle(struct gctx *s)

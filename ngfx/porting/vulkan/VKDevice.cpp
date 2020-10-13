@@ -25,7 +25,7 @@ using namespace ngfx;
 uint32_t VKDevice::getQueueFamilyIndex(VkQueueFlags queueFlags) {
     auto queueFamilyProperties = vkPhysicalDevice->queueFamilyProperties;
     if (queueFlags & VK_QUEUE_COMPUTE_BIT) {
-        //Try to find dedicated v for compute
+        //Try to find dedicated queue for compute
         for (uint32_t i = 0; i < queueFamilyProperties.size(); i++) {
             auto &props = queueFamilyProperties[i];
             if ((props.queueFlags & queueFlags) && (!(props.queueFlags & VK_QUEUE_GRAPHICS_BIT))) {
@@ -36,7 +36,7 @@ uint32_t VKDevice::getQueueFamilyIndex(VkQueueFlags queueFlags) {
     }
 
     if (queueFlags & VK_QUEUE_TRANSFER_BIT) {
-        //Try to find dedicated v for transfer
+        //Try to find dedicated queue for transfer
         for (uint32_t i = 0; i < queueFamilyProperties.size(); i++) {
             auto &props = queueFamilyProperties[i];
             if ((props.queueFlags & queueFlags) && (!(props.queueFlags & VK_QUEUE_GRAPHICS_BIT)) &&
@@ -47,19 +47,19 @@ uint32_t VKDevice::getQueueFamilyIndex(VkQueueFlags queueFlags) {
         }
     }
 
-    // Return the first v to support the requested flags
+    // Return the first queue to support the requested flags
     for (uint32_t i = 0; i < queueFamilyProperties.size(); i++) {
         if (queueFamilyProperties[i].queueFlags & queueFlags) {
             return i;
             break;
         }
     }
-    ERR("Could not find a matching v family index");
+    ERR("Could not find a matching queue family index");
     return 0;
 }
 
 void VKDevice::getQueueCreateInfos(VkQueueFlags requestedQueueTypes) {
-    // Get v family indices for the requested v family types
+    // Get queue family indices for the requested queue family types
     // Note that the indices may overlap depending on the implementation
     static const float defaultQueuePriority = 0.0f;
     // Graphics v
