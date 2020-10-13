@@ -109,6 +109,9 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
         state.srcAlphaBlendFactor = to_ngfx_blend_factor(gs->blend_src_factor_a);
         state.dstAlphaBlendFactor = to_ngfx_blend_factor(gs->blend_dst_factor_a);
 
+        state.depthTestEnable = gs->depth_test;
+        state.depthWriteEnable = gs->depth_write_mask;
+
         state.colorWriteMask = to_ngfx_color_mask(gs->color_write_mask);
 
         state.cullModeFlags = to_ngfx_cull_mode(gs->cull_mode);
@@ -249,7 +252,6 @@ static void bind_textures(CommandBuffer *cmd_buf, pipeline *s) {
     for (int j = 0; j<nb_textures; j++) {
         const pipeline_texture_desc &texture_desc = *(const pipeline_texture_desc *)ngli_darray_get(&s->texture_descs, j);
         const texture_ngfx *texture = *(const texture_ngfx **)ngli_darray_get(&s->textures, j);
-        LOG("bind texture: %x", ((VKTexture*)texture->v)->vkImage.v);
         gctx_ngfx->graphics->bindTexture(cmd_buf, texture->v, texture_desc.binding);
     }
 }

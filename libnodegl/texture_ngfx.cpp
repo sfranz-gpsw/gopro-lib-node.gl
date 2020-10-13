@@ -20,10 +20,10 @@
  */
 
 #include "texture_ngfx.h"
+#include "log.h"
 #include "memory.h"
 #include <map>
 #include "graphics/Texture.h"
-#include "porting/vulkan/VKTexture.h"
 #include "gctx_ngfx.h"
 #include "util_ngfx.h"
 using namespace ngfx;
@@ -57,7 +57,6 @@ int ngli_texture_ngfx_init(struct texture *s,
         gen_mipmaps ? to_ngfx_mip_filter_mode(p->mipmap_filter) : FILTER_NEAREST,
         p->samples == 0 ? 1 : p->samples
     );
-    LOG("create image: %x", ((VKTexture*)s_priv->v)->vkImage.v);
 
     return 0;
 }
