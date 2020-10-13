@@ -68,6 +68,10 @@ int ngli_rendertarget_ngfx_init(struct rendertarget *s, const struct rendertarge
     s_priv->render_pass = get_render_pass(ctx, rt_desc);
 
     s_priv->output_framebuffer = Framebuffer::create(ctx->device, s_priv->render_pass, attachments, w, h);
+
+    s_priv->parent.width = w;
+    s_priv->parent.height = h;
+
     return 0;
 }
 void ngli_rendertarget_ngfx_resolve(struct rendertarget *s) {
@@ -90,9 +94,11 @@ static void begin_render_pass(rendertarget_ngfx *thiz, struct gctx *s)
 
     Framebuffer *framebuffer = thiz->output_framebuffer;
     graphics->beginRenderPass(cmd_buf, render_pass, framebuffer, glm::make_vec4(s_priv->clear_color));
-    int* vp = s_priv->viewport;
+    int vp[4];
+    ngli_gctx_get_viewport(s, vp);
     graphics->setViewport(cmd_buf, { vp[0], vp[1], uint32_t(vp[2]), uint32_t(vp[3]) });
-    int *sr = s_priv->scissor;
+    int sr[4];
+    ngli_gctx_get_scissor(s, sr);
     graphics->setScissor(cmd_buf, { sr[0], sr[1], uint32_t(sr[2]), uint32_t(sr[3]) });
 }
 

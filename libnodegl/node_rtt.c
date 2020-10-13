@@ -360,13 +360,20 @@ static void rtt_draw(struct ngl_node *node)
 
     struct rendertarget *rt = s->rt;
     struct rendertarget *prev_rt = ngli_gctx_get_rendertarget(gctx);
-    ngli_gctx_bind_rendertarget(gctx, rt);
 
     int prev_vp[4] = {0};
     ngli_gctx_get_viewport(gctx, prev_vp);
 
     const int vp[4] = {0, 0, s->width, s->height};
     ngli_gctx_set_viewport(gctx, vp);
+
+    int prev_sr[4] = {0};
+    ngli_gctx_get_scissor(gctx, prev_sr);
+
+    int sr[4] = {0, 0, s->width, s->height};
+    ngli_gctx_set_scissor(gctx, sr);
+
+    ngli_gctx_bind_rendertarget(gctx, rt);
 
     float prev_clear_color[4] = {0};
     if (s->use_clear_color) {
@@ -389,6 +396,7 @@ static void rtt_draw(struct ngl_node *node)
 
     ngli_gctx_bind_rendertarget(gctx, prev_rt);
     ngli_gctx_set_viewport(gctx, prev_vp);
+    ngli_gctx_set_scissor(gctx, prev_sr);
 
     if (s->use_clear_color)
         ngli_gctx_set_clear_color(gctx, prev_clear_color);
