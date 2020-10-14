@@ -29,12 +29,15 @@
 namespace ngfx {
     class VKRenderPass : public RenderPass {
     public:
-        void create(VkDevice device, const std::vector<VkAttachmentDescription> &attachments,
-                    const std::vector<VkSubpassDescription> &subpasses,
+        void create(VkDevice device, const std::vector<VkAttachmentDescription> &attachmentsDesc,
+                    const std::vector<VkSubpassDescription> &subpassesDesc,
                     const std::vector<VkSubpassDependency>& dependencies);
         virtual ~VKRenderPass();
         VkRenderPass v = VK_NULL_HANDLE;
         VkRenderPassCreateInfo createInfo;
+        std::vector<VkAttachmentDescription> attachmentsDesc;
+        std::vector<VkSubpassDescription> subpassesDesc;
+        std::vector<VkSubpassDependency> dependencies;
     private:
         VkDevice device;
     };

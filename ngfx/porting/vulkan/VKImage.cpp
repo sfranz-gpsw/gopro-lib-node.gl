@@ -65,7 +65,10 @@ void VKImage::changeLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayou
         uint32_t baseMipLevel, uint32_t levelCount, uint32_t baseArrayLayer, uint32_t layerCount) {
     uint32_t baseIndex = baseArrayLayer * createInfo.mipLevels + baseMipLevel;
     VkImageLayout srcImageLayout = imageLayout[baseIndex];
-    if (srcImageLayout == newLayout) return;
+    if (srcImageLayout == newLayout) {
+        return;
+    }
+    LOG("set layout: %d %p", newLayout, v);
     VkAccessFlags srcAccessMask = accessMask[baseIndex];
     VkPipelineStageFlags srcStageMask = stageMask[baseIndex];
     VkImageSubresourceRange subresourceRange = {

@@ -353,6 +353,7 @@ static int rtt_update(struct ngl_node *node, double t)
 
 static void rtt_draw(struct ngl_node *node)
 {
+    LOG(WARNING, ">> rtt_draw");
     struct ngl_ctx *ctx = node->ctx;
     struct gctx *gctx = ctx->gctx;
     struct rtt_priv *s = node->priv_data;
@@ -407,6 +408,8 @@ static void rtt_draw(struct ngl_node *node)
         if (ngli_texture_has_mipmap(texture))
             ngli_texture_generate_mipmap(texture);
     }
+
+    LOG(WARNING, "<< rtt_draw");
 }
 
 static void rtt_release(struct ngl_node *node)

@@ -26,19 +26,23 @@
 using namespace ngfx;
 
 void VKRenderPass::create(VkDevice device,
-        const std::vector<VkAttachmentDescription> &attachments,
-        const std::vector<VkSubpassDescription> &subpasses,
-        const std::vector<VkSubpassDependency>& dependencies) {
+        const std::vector<VkAttachmentDescription> &pAttachmentsDesc,
+        const std::vector<VkSubpassDescription> &pSubpassesDesc,
+        const std::vector<VkSubpassDependency>& pDependenciesDesc) {
     VkResult vkResult;
     this->device = device;
+    this->attachmentsDesc = pAttachmentsDesc;
+    this->subpassesDesc = pSubpassesDesc;
+    this->dependencies = pDependenciesDesc;
     createInfo = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
             nullptr, 0,
-            uint32_t(attachments.size()), attachments.data(),
-            uint32_t(subpasses.size()), subpasses.data(),
+            uint32_t(attachmentsDesc.size()), attachmentsDesc.data(),
+            uint32_t(subpassesDesc.size()), subpassesDesc.data(),
             uint32_t(dependencies.size()), dependencies.data()
     };
     V(vkCreateRenderPass(device, &createInfo, nullptr, &v));
+    LOG("this: %p initialLayout[0]: %d", this, createInfo.pAttachments[0].initialLayout);
 }
 
 VKRenderPass::~VKRenderPass() {

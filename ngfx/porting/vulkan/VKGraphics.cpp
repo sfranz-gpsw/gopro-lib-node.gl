@@ -26,11 +26,13 @@
 #include "porting/vulkan/VKTexture.h"
 #include "porting/vulkan/VKDebugUtil.h"
 #include "porting/vulkan/VKConfig.h"
+#include "porting/vulkan/VKRenderPass.h"
 using namespace ngfx;
 
 void VKGraphics::beginRenderPass(CommandBuffer* commandBuffer, RenderPass* renderPass, Framebuffer* framebuffer,
         glm::vec4 clearColor, float clearDepth, uint32_t clearStencil) {
     currentRenderPass = renderPass;
+    currentFramebuffer = framebuffer;
     renderPass->currentFramebuffer = framebuffer;
     auto &vkCommandBuffer = vk(commandBuffer)->v;
     auto vkFramebuffer = vk(framebuffer);
@@ -48,10 +50,30 @@ void VKGraphics::beginRenderPass(CommandBuffer* commandBuffer, RenderPass* rende
         uint32_t(clearValues.size()), clearValues.data()
     };
     VK_TRACE(vkCmdBeginRenderPass(vkCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE));
+
+    auto vkRenderPass = vk(renderPass);
+    for (uint32_t j = 0; j<framebuffer->attachments.size(); j++) {
+        auto& attachment = framebuffer->attachments[j];
+        auto vkTexture = (VKTexture*)attachment.texture;
+        uint32_t baseIndex = attachment.layer * vkTexture->vkImage.createInfo.mipLevels + attachment.level;
+        LOG("renderPass: %p vkImage: %p initialLayout[0]: %d", vkRenderPass, vkTexture->vkImage.v, vkRenderPass->createInfo.pAttachments[j].initialLayout);
+        vkTexture->vkImage.imageLayout[baseIndex] = vkRenderPass->createInfo.pAttachments[j].initialLayout;
+    }
 }
 
 void VKGraphics::endRenderPass(CommandBuffer* commandBuffer) {
     VK_TRACE(vkCmdEndRenderPass(vk(commandBuffer)->v));
+
+    auto vkRenderPass = vk(currentRenderPass);
+    auto framebuffer = currentFramebuffer;
+    for (uint32_t j = 0; j<framebuffer->attachments.size(); j++) {
+        auto& attachment = framebuffer->attachments[j];
+        auto vkTexture = (VKTexture*)attachment.texture;
+        uint32_t baseIndex = attachment.layer * vkTexture->vkImage.createInfo.mipLevels + attachment.level;
+        LOG("renderPass: %p vkImage: %p finalLayout[0]: %d", vkRenderPass, vkTexture->vkImage.v, vkRenderPass->createInfo.pAttachments[j].finalLayout);
+        vkTexture->vkImage.imageLayout[baseIndex] = vkRenderPass->createInfo.pAttachments[j].finalLayout;
+    }
+
     currentRenderPass->currentFramebuffer = nullptr;
     currentRenderPass = nullptr;
 }
