@@ -98,6 +98,7 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
         GraphicsPipeline::State state;
 
         state.renderPass = get_render_pass(gctx->graphics_context, params->graphics.rt_desc);
+        state.numColorAttachments = params->graphics.rt_desc.nb_colors;
 
         state.primitiveTopology = to_ngfx_topology(s->graphics.topology);
 

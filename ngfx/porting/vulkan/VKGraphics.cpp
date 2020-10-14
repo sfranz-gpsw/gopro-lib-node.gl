@@ -33,7 +33,6 @@ void VKGraphics::beginRenderPass(CommandBuffer* commandBuffer, RenderPass* rende
         glm::vec4 clearColor, float clearDepth, uint32_t clearStencil) {
     currentRenderPass = renderPass;
     currentFramebuffer = framebuffer;
-    renderPass->currentFramebuffer = framebuffer;
     auto &vkCommandBuffer = vk(commandBuffer)->v;
     auto vkFramebuffer = vk(framebuffer);
     auto &vkAttachmentInfos = vkFramebuffer->vkAttachmentInfos;
@@ -72,7 +71,6 @@ void VKGraphics::endRenderPass(CommandBuffer* commandBuffer) {
         vkTexture->vkImage.imageLayout[baseIndex] = vkRenderPass->createInfo.pAttachments[j].finalLayout;
     }
 
-    currentRenderPass->currentFramebuffer = nullptr;
     currentRenderPass = nullptr;
 }
 
