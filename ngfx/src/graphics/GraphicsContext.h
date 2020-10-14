@@ -70,7 +70,7 @@ namespace ngfx {
                     && numColorAttachments == rhs.numColorAttachments;
             }
             bool offscreen = false;
-            bool enableDepthStencil = false;
+            bool enableDepthStencil = false, enableDepthStencilResolve = false;
             uint32_t numSamples = 1;
             uint32_t numColorAttachments = 1;
         };

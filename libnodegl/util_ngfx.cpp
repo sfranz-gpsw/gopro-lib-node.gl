@@ -128,6 +128,7 @@ ngfx::ImageUsageFlags to_ngfx_image_usage_flags(int usage_flags) {
 RenderPass* get_render_pass(GraphicsContext* ctx, const rendertarget_desc &rt_desc) {
     GraphicsContext::RenderPassConfig renderPassConfig;
     renderPassConfig.enableDepthStencil = rt_desc.depth_stencil.format != NGLI_FORMAT_UNDEFINED;
+    renderPassConfig.enableDepthStencilResolve = rt_desc.depth_stencil.resolve != 0;
     renderPassConfig.numColorAttachments = rt_desc.nb_colors;
     renderPassConfig.numSamples = std::max(rt_desc.colors[0].samples, 1);
     //TODO: remove renderPassConfig.offscreen param
