@@ -112,10 +112,12 @@ void ngli_rendertarget_ngfx_begin_pass(struct rendertarget *s) {
     gctx_ngfx *ctx = (gctx_ngfx *)s_priv->parent.gctx;
     CommandBuffer *cmd_buf = ctx->cur_command_buffer;
     const auto &attachments = s_priv->output_framebuffer->attachments;
-    auto output_texture = attachments[0].texture;
-    auto resolve_texture = (output_texture->numSamples > 1) ? attachments[1].texture : nullptr;
-    output_texture->changeLayout(ctx->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    if (resolve_texture) resolve_texture->changeLayout(ctx->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    for (uint32_t j = 0; j<attachments.size(); j++) {
+        auto output_texture = attachments[j].texture;
+        if (output_texture->imageUsageFlags & IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+            output_texture->changeLayout(ctx->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        }
+    }
     begin_render_pass((rendertarget_ngfx *)s, s->gctx);
     int *vp = ctx->viewport;
     ctx->graphics->setViewport(cmd_buf, { vp[0], vp[1], uint32_t(vp[2]), uint32_t(vp[3]) });
@@ -127,13 +129,12 @@ void ngli_rendertarget_ngfx_end_pass(struct rendertarget *s) {
     rendertarget_ngfx *s_priv = (rendertarget_ngfx *)s;
     gctx_ngfx *ctx = (gctx_ngfx *)s_priv->parent.gctx;
     const auto &attachments = s_priv->output_framebuffer->attachments;
-    auto output_texture = attachments[0].texture;
-    if (output_texture->numSamples > 1) {
-        //get resolve attachment
-        output_texture = attachments[1].texture;
-    }
-    if (output_texture->imageUsageFlags & IMAGE_USAGE_SAMPLED_BIT) {
-        output_texture->changeLayout(ctx->cur_command_buffer, IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    for (uint32_t j = 0; j<attachments.size(); j++) {
+        auto output_texture = attachments[j].texture;
+        if (output_texture->imageUsageFlags & IMAGE_USAGE_SAMPLED_BIT) {
+            ngli_assert(output_texture->numSamples == 1);
+            output_texture->changeLayout(ctx->cur_command_buffer, IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
     }
 }
 

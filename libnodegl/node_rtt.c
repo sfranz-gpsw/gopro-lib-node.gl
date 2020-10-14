@@ -232,8 +232,8 @@ static int rtt_prefetch(struct ngl_node *node)
                 attachment_params.width = s->width;
                 attachment_params.height = s->height;
                 attachment_params.samples = s->samples;
-                attachment_params.usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT |
-                        NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT | NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT;
+                attachment_params.usage = NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT | NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT |
+                    NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT;
                 ret = ngli_texture_init(ms_texture, &attachment_params);
                 if (ret < 0)
                     return ret;
@@ -265,8 +265,8 @@ static int rtt_prefetch(struct ngl_node *node)
             attachment_params.width = s->width;
             attachment_params.height = s->height;
             attachment_params.samples = s->samples;
-            attachment_params.usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT |
-                    NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT | NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            attachment_params.usage = NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT | NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT |
+                NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
             ret = ngli_texture_init(ms_texture, &attachment_params);
             if (ret < 0)
                 return ret;
@@ -291,8 +291,8 @@ static int rtt_prefetch(struct ngl_node *node)
             attachment_params.width = s->width;
             attachment_params.height = s->height;
             attachment_params.samples = s->samples;
-            attachment_params.usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT |
-                    NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT | NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            attachment_params.usage = NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT | NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT |
+                NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
             ret = ngli_texture_init(depth, &attachment_params);
             if (ret < 0)
                 return ret;

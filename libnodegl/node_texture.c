@@ -325,11 +325,11 @@ static int texture_prefetch(struct ngl_node *node)
             ngli_assert(0);
         }
     }
-    params->usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT | NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT | NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT;
+    params->usage = NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT | NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT;
 
     //TODO: specify usage flags from higher-level
     if (ngli_format_has_depth(params->format)) params->usage |= NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    else params->usage |= NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT;
+    else params->usage |= NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT  | NGLI_TEXTURE_USAGE_SAMPLED_BIT;
 
     s->texture = ngli_texture_create(gctx);
     if (!s->texture)

@@ -69,7 +69,7 @@ static int create_offscreen_resources(struct gctx *s) {
         depth_texture_params.height = config->height;
         depth_texture_params.format = to_ngli_format(ctx->graphics_context->depthFormat);
         depth_texture_params.samples = config->samples;
-        depth_texture_params.usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT | NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT |
+        depth_texture_params.usage = NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT |
             NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
         ngli_texture_init(depth_texture, &depth_texture_params);
     }
