@@ -130,14 +130,14 @@ static int ngfx_init(struct gctx *s)
 
     const int *viewport = config->viewport;
     if (viewport[2] > 0 && viewport[3] > 0) {
-        ngli_gctx_set_viewport(s, viewport);
+        memcpy(ctx->viewport, viewport, sizeof(ctx->viewport));
     } else {
         const int default_viewport[] = {0, 0, config->width, config->height};
-        ngli_gctx_set_viewport(s, default_viewport);
+        memcpy(ctx->viewport, default_viewport, sizeof(ctx->viewport));
     }
 
     const int scissor[] = {0, 0, config->width, config->height};
-    ngli_gctx_set_scissor(s, scissor);
+    memcpy(ctx->scissor, scissor, sizeof(ctx->scissor));
 
     ngli_gctx_set_clear_color(s, config->clear_color);
 
@@ -253,10 +253,11 @@ static const struct rendertarget_desc *ngfx_get_default_rendertarget_desc(struct
     return &s_priv->default_rendertarget_desc;
 }
 
-static void ngfx_set_viewport(struct gctx *s, const int *viewport)
+static void ngfx_set_viewport(struct gctx *s, const int *vp)
 {
     struct gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
-    memcpy(s_priv->viewport, viewport, sizeof(s_priv->viewport));
+    memcpy(s_priv->viewport, vp, sizeof(s_priv->viewport));
+    s_priv->graphics->setViewport(s_priv->cur_command_buffer, { vp[0], vp[1], uint32_t(vp[2]), uint32_t(vp[3]) });
 }
 
 static void ngfx_get_viewport(struct gctx *s, int *viewport)
@@ -265,10 +266,11 @@ static void ngfx_get_viewport(struct gctx *s, int *viewport)
     memcpy(viewport, &s_priv->viewport, sizeof(s_priv->viewport));
 }
 
-static void ngfx_set_scissor(struct gctx *s, const int *scissor)
+static void ngfx_set_scissor(struct gctx *s, const int *sr)
 {
     struct gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
-    memcpy(&s_priv->scissor, scissor, sizeof(s_priv->scissor));
+    memcpy(&s_priv->scissor, sr, sizeof(s_priv->scissor));
+    s_priv->graphics->setScissor(s_priv->cur_command_buffer, { sr[0], sr[1], uint32_t(sr[2]), uint32_t(sr[3]) });
 }
 
 static void ngfx_get_scissor(struct gctx *s, int *scissor)

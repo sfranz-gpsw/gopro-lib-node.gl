@@ -393,13 +393,13 @@ static void rtt_draw(struct ngl_node *node)
     if (s->invalidate_depth_stencil)
         ngli_gctx_invalidate_depth_stencil(gctx);
 
+    ngli_gctx_bind_rendertarget(gctx, prev_rt);
+
     ngli_gctx_set_viewport(gctx, prev_vp);
     ngli_gctx_set_scissor(gctx, prev_sr);
 
     if (s->use_clear_color)
         ngli_gctx_set_clear_color(gctx, prev_clear_color);
-
-    ngli_gctx_bind_rendertarget(gctx, prev_rt);
 
     for (int i = 0; i < s->nb_color_textures; i++) {
         struct texture_priv *texture_priv = s->color_textures[i]->priv_data;
