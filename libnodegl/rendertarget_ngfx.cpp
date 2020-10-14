@@ -54,8 +54,8 @@ int ngli_rendertarget_ngfx_init(struct rendertarget *s, const struct rendertarge
         rt_desc.colors[rt_desc.nb_colors].resolve = color_attachment->resolve_target != NULL;
         rt_desc.nb_colors++;
         if (i == 0) { w = color_texture->v->w; h = color_texture->v->h; }
-        attachments.push_back({ color_texture->v, 0, uint32_t(i) });
-        if (resolve_texture) attachments.push_back({ resolve_texture->v, 0, uint32_t(i) });
+        attachments.push_back({ color_texture->v, 0, uint32_t(color_attachment->attachment_layer) });
+        if (resolve_texture) attachments.push_back({ resolve_texture->v, 0, uint32_t(color_attachment->resolve_target_layer) });
     }
 
     const attachment *depth_attachment = &params->depth_stencil;

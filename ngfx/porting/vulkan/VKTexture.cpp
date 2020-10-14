@@ -49,8 +49,8 @@ void VKTexture::create(VKGraphicsContext *ctx, void* data, uint32_t size, VkExte
     this->mipLevels = genMipmaps ? floor(log2(float(glm::min(extent.width, extent.height)))) + 1 : 1;
     vkImage.create(&ctx->vkDevice, extent, format,imageUsageFlags, imageType, mipLevels, arrayLayers, numSamples,
         (imageViewType == VK_IMAGE_VIEW_TYPE_CUBE) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0);
-   vkDefaultImageView = getImageView(imageViewType, mipLevels, arrayLayers);
-
+    vkDefaultImageView = getImageView(imageViewType, mipLevels, arrayLayers);
+    LOG("VKTexture::create this: %p imageViewType: %d", this, imageViewType);
     auto &copyCommandBuffer = ctx->vkCopyCommandBuffer;
     std::unique_ptr<VKBuffer> stagingBuffer;
     if (data) {
@@ -293,6 +293,7 @@ VKImageView* VKTexture::getImageView(VkImageViewType imageViewType, uint32_t mip
             return imageView.get();
         }
     }
+    LOG("getImageView this: %p baseArrayLayer: %d", this, baseArrayLayer);
     auto vkImageView = std::make_unique<VKImageView>();
     vkImageView->create(ctx->vkDevice.v, imageViewCreateInfo);
     auto result = vkImageView.get();
