@@ -210,9 +210,7 @@ static int render_update(struct ngl_node *node, double t)
 static void render_draw(struct ngl_node *node)
 {
     struct render_priv *s = node->priv_data;
-    LOG(WARNING, ">> render_draw");
     ngli_pass_exec(&s->pass);
-    LOG(WARNING, "<< render_draw");
 }
 
 const struct node_class ngli_render_class = {

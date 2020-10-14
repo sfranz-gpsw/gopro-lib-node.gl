@@ -119,7 +119,6 @@ void ngli_rendertarget_ngfx_begin_pass(struct rendertarget *s) {
     const auto &attachments = s_priv->output_framebuffer->attachments;
     auto output_texture = attachments[0].texture;
     auto resolve_texture = (output_texture->numSamples > 1) ? attachments[1].texture : nullptr;
-    LOG(WARNING, "begin_pass change_layout color_attachment_optimal");
     output_texture->changeLayout(ctx->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     if (resolve_texture) resolve_texture->changeLayout(ctx->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     begin_render_pass((rendertarget_ngfx *)s, s->gctx);
@@ -135,7 +134,6 @@ void ngli_rendertarget_ngfx_end_pass(struct rendertarget *s) {
         output_texture = attachments[1].texture;
     }
     if (output_texture->imageUsageFlags & IMAGE_USAGE_SAMPLED_BIT) {
-        LOG(WARNING, "end_pass change_layout shader_read_only_optimal");
         output_texture->changeLayout(ctx->cur_command_buffer, IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 }

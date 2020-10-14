@@ -68,7 +68,6 @@ void VKImage::changeLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayou
     if (srcImageLayout == newLayout) {
         return;
     }
-    LOG("set layout: %d %p", newLayout, v);
     VkAccessFlags srcAccessMask = accessMask[baseIndex];
     VkPipelineStageFlags srcStageMask = stageMask[baseIndex];
     VkImageSubresourceRange subresourceRange = {

@@ -56,7 +56,6 @@ void VKGraphics::beginRenderPass(CommandBuffer* commandBuffer, RenderPass* rende
         auto& attachment = framebuffer->attachments[j];
         auto vkTexture = (VKTexture*)attachment.texture;
         uint32_t baseIndex = attachment.layer * vkTexture->vkImage.createInfo.mipLevels + attachment.level;
-        LOG("renderPass: %p vkImage: %p initialLayout[0]: %d", vkRenderPass, vkTexture->vkImage.v, vkRenderPass->createInfo.pAttachments[j].initialLayout);
         vkTexture->vkImage.imageLayout[baseIndex] = vkRenderPass->createInfo.pAttachments[j].initialLayout;
     }
 }
@@ -70,7 +69,6 @@ void VKGraphics::endRenderPass(CommandBuffer* commandBuffer) {
         auto& attachment = framebuffer->attachments[j];
         auto vkTexture = (VKTexture*)attachment.texture;
         uint32_t baseIndex = attachment.layer * vkTexture->vkImage.createInfo.mipLevels + attachment.level;
-        LOG("renderPass: %p vkImage: %p finalLayout[0]: %d", vkRenderPass, vkTexture->vkImage.v, vkRenderPass->createInfo.pAttachments[j].finalLayout);
         vkTexture->vkImage.imageLayout[baseIndex] = vkRenderPass->createInfo.pAttachments[j].finalLayout;
     }
 

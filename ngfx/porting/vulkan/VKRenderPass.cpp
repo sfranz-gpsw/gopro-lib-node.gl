@@ -42,7 +42,6 @@ void VKRenderPass::create(VkDevice device,
             uint32_t(dependencies.size()), dependencies.data()
     };
     V(vkCreateRenderPass(device, &createInfo, nullptr, &v));
-    LOG("this: %p initialLayout[0]: %d", this, createInfo.pAttachments[0].initialLayout);
 }
 
 VKRenderPass::~VKRenderPass() {
