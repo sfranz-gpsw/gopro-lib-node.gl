@@ -327,7 +327,6 @@ static int texture_prefetch(struct ngl_node *node)
     }
     params->usage |= NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT | NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT;
 
-    //Some usage flags are set at a higher-level (in pass.c)
     if (ngli_format_has_depth(params->format)) params->usage |= NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     else params->usage |= NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT  | NGLI_TEXTURE_USAGE_SAMPLED_BIT;
 
@@ -426,6 +425,7 @@ static int texture2d_init(struct ngl_node *node)
     struct texture_priv *s = node->priv_data;
     s->params.type = NGLI_TEXTURE_TYPE_2D;
     s->params.format = get_preferred_format(gctx, s->format);
+    s->params.usage = 0;
     s->supported_image_layouts = s->direct_rendering ? -1 : (1 << NGLI_IMAGE_LAYOUT_DEFAULT);
     return 0;
 }
