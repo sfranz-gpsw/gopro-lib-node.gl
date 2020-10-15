@@ -309,8 +309,8 @@ void ngli_pipeline_ngfx_dispatch(struct pipeline *s, int nb_group_x, int nb_grou
     TODO("pass threads_per_group as params");
     int threads_per_group_x = 1, threads_per_group_y = 1, threads_per_group_z = 1;
     gctx_ngfx->graphics->dispatch(cmd_buf, nb_group_x, nb_group_y, nb_group_z, threads_per_group_x, threads_per_group_y, threads_per_group_z);
-
 }
+
 void ngli_pipeline_ngfx_freep(struct pipeline **sp) {
     if (!*sp)
         return;

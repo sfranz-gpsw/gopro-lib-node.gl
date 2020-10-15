@@ -723,16 +723,18 @@ int ngli_pass_exec(struct pass *s)
         ngli_pipeline_update_uniform(pipeline, fields[NGLI_INFO_FIELD_SAMPLING_MODE].index, &layout);
     }
 
-    if (ctx->gctx->cur_rendertarget == NULL)
-        ngli_gctx_bind_rendertarget(ctx->gctx, ctx->gctx->default_rendertarget);
 
-    if (s->pipeline_type == NGLI_PIPELINE_TYPE_GRAPHICS)
+    if (s->pipeline_type == NGLI_PIPELINE_TYPE_GRAPHICS) {
+        if (ctx->gctx->cur_rendertarget == NULL)
+            ngli_gctx_bind_rendertarget(ctx->gctx, ctx->gctx->default_rendertarget);
         if (s->indices_buffer)
             ngli_pipeline_draw_indexed(pipeline, s->indices_buffer, s->indices_format, s->nb_indices, s->nb_instances);
         else
             ngli_pipeline_draw(pipeline, s->nb_vertices, s->nb_instances);
-    else
+    }
+    else {
         ngli_pipeline_dispatch(pipeline, params->nb_group_x, params->nb_group_y, params->nb_group_z);
+    }
 
     return 0;
 }
