@@ -145,6 +145,7 @@ static int register_texture(struct pass *s, const char *name, struct ngl_node *t
         if (resprops_node) {
             const struct resourceprops_priv *resprops = resprops_node->priv_data;
             if (resprops->as_image) {
+                texture_priv->params.usage |= NGLI_TEXTURE_USAGE_STORAGE_BIT;
                 if (texture->class->id != NGL_NODE_TEXTURE2D) {
                     LOG(ERROR, "\"%s\" can not be accessed as an image; only Texture2D is supported as image", name);
                     return NGL_ERROR_UNSUPPORTED;
