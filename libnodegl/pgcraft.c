@@ -441,7 +441,7 @@ static int inject_block(struct pgcraft *s, struct bstr *b,
     }
 
     const char *keyword = get_glsl_type(block->type);
-    const char* memory_qualifiers = (stage == NGLI_PROGRAM_SHADER_FRAG) ? "readonly" : "";
+    const char* memory_qualifiers = (stage == NGLI_PROGRAM_SHADER_COMP) ? "" : "readonly";
     ngli_bstr_printf(b, " %s %s %s_block {\n", keyword, memory_qualifiers, named_block->name);
     const struct block_field *field_info = ngli_darray_data(&block->fields);
     for (int i = 0; i < ngli_darray_count(&block->fields); i++) {
