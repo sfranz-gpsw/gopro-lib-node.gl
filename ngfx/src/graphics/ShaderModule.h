@@ -64,6 +64,12 @@ namespace ngfx {
             uint32_t count, elementSize;
         };
         std::vector<AttributeDescription> attributes;
+        inline AttributeDescription* findAttribute(const std::string& name) {
+            for (auto& attr : attributes) {
+                if (attr.name == name) return &attr;
+            }
+            return nullptr;
+        }
         void initBindings(const std::string& filename);
     };
     class FragmentShaderModule : public ShaderModule {

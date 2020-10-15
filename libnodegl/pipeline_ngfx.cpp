@@ -119,6 +119,16 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
 
         state.numSamples = std::max(attachment_desc->samples, 1);
 
+        //Handle attribute stride mismatch
+        for (int j = 0; j<params->nb_attributes; j++) {
+            auto& src_attr_desc = params->attributes_desc[j];
+            auto& dst_attr_desc = *program->vs->findAttribute(src_attr_desc.name);
+            uint32_t src_attr_stride = src_attr_desc.stride;
+            uint32_t dst_attr_stride = dst_attr_desc.elementSize * dst_attr_desc.count;
+            if (src_attr_stride != dst_attr_stride) {
+                dst_attr_desc.elementSize = src_attr_desc.stride / dst_attr_desc.count;
+            }
+        }
         pipeline->gp = GraphicsPipeline::create(
             gctx->graphics_context,
             state,

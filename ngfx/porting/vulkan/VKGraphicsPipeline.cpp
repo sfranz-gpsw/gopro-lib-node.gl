@@ -172,7 +172,7 @@ GraphicsPipeline* GraphicsPipeline::create(GraphicsContext* graphicsContext, con
         uint32_t binding = attr.location;
         VkVertexInputRate inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
         if (instanceAttributes.find(attr.name) != instanceAttributes.end()) inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
-        vkVertexInputBindings[j] = { binding, strideMap.at(attr.format) * attr.count, inputRate };
+        vkVertexInputBindings[j] = { binding, attr.elementSize * attr.count, inputRate };
     }
     vkGraphicsPipeline->create(vk(graphicsContext),
             vkState, vkDescriptors, vkVertexInputBindings, vkVertexInputAttributes, vkShaderStages, VkFormat(colorFormat));
