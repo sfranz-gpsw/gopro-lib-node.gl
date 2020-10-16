@@ -117,7 +117,7 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
 
         state.cullModeFlags = to_ngfx_cull_mode(gs->cull_mode);
 
-        state.numSamples = std::max(attachment_desc->samples, 1);
+        state.numSamples = glm::max(attachment_desc->samples, 1);
 
         //Handle attribute stride mismatch
         for (int j = 0; j<params->nb_attributes; j++) {

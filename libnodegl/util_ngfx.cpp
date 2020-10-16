@@ -92,10 +92,10 @@ BlendOp to_ngfx_blend_op(int blend_op)
 
 ColorComponentFlags to_ngfx_color_mask(int color_write_mask)
 {
-    return (color_write_mask & NGLI_COLOR_COMPONENT_R_BIT ? VK_COLOR_COMPONENT_R_BIT : 0)
-         | (color_write_mask & NGLI_COLOR_COMPONENT_G_BIT ? VK_COLOR_COMPONENT_G_BIT : 0)
-         | (color_write_mask & NGLI_COLOR_COMPONENT_B_BIT ? VK_COLOR_COMPONENT_B_BIT : 0)
-         | (color_write_mask & NGLI_COLOR_COMPONENT_A_BIT ? VK_COLOR_COMPONENT_A_BIT : 0);
+    return (color_write_mask & NGLI_COLOR_COMPONENT_R_BIT ? COLOR_COMPONENT_R_BIT : 0)
+         | (color_write_mask & NGLI_COLOR_COMPONENT_G_BIT ? COLOR_COMPONENT_G_BIT : 0)
+         | (color_write_mask & NGLI_COLOR_COMPONENT_B_BIT ? COLOR_COMPONENT_B_BIT : 0)
+         | (color_write_mask & NGLI_COLOR_COMPONENT_A_BIT ? COLOR_COMPONENT_A_BIT : 0);
 }
 
 CullModeFlags to_ngfx_cull_mode(int cull_mode)
@@ -130,7 +130,7 @@ RenderPass* get_render_pass(GraphicsContext* ctx, const rendertarget_desc &rt_de
     renderPassConfig.enableDepthStencil = rt_desc.depth_stencil.format != NGLI_FORMAT_UNDEFINED;
     renderPassConfig.enableDepthStencilResolve = rt_desc.depth_stencil.resolve != 0;
     renderPassConfig.numColorAttachments = rt_desc.nb_colors;
-    renderPassConfig.numSamples = std::max(rt_desc.colors[0].samples, 1);
+    renderPassConfig.numSamples = glm::max(rt_desc.colors[0].samples, 1);
     //TODO: remove renderPassConfig.offscreen param
     renderPassConfig.offscreen = true;
     return ctx->getRenderPass(renderPassConfig);
