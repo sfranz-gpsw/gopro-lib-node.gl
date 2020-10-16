@@ -4,7 +4,12 @@ set(CMAKE_CXX_STANDARD 17)
 
 file (GLOB_RECURSE SHADER_TOOLS_SRC_FILES src/*.cpp src/*.h)
 
-add_library(shader_tools SHARED ${SHADER_TOOLS_SRC_FILES})
+if ( ${CMAKE_SYSTEM_NAME} MATCHES "Linux") 
+set(SHADER_TOOLS_BUILD_TYPE SHARED)
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+set(SHADER_TOOLS_BUILD_TYPE STATIC)
+endif()
+add_library(shader_tools ${SHADER_TOOLS_BUILD_TYPE} ${SHADER_TOOLS_SRC_FILES})
 target_compile_options(shader_tools PUBLIC ${NGFX_CFLAGS})
 target_include_directories(shader_tools PUBLIC src ${JSON_INCLUDE_DIRS} ${NGFX_INCLUDE_DIRS})
 

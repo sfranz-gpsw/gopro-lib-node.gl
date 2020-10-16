@@ -19,8 +19,8 @@
  * under the License.
  */
 
-#ifndef LIMITS_H
-#define LIMITS_H
+#ifndef GLIMITS_H
+#define GLIMITS_H
 
 struct limits {
     int max_texture_image_units;

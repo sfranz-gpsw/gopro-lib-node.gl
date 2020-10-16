@@ -29,7 +29,7 @@ extern "C" {
 #include "buffer.h"
 #include "features.h"
 #include "gtimer.h"
-#include "limits.h"
+#include "glimits.h"
 #include "nodegl.h"
 #include "pipeline.h"
 #include "rendertarget.h"

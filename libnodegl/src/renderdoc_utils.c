@@ -1,6 +1,7 @@
 #include "renderdoc_utils.h"
-#include "renderdoc.h"
+#include "renderdoc_app.h"
 #ifdef _WIN32
+#include <Windows.h>
 #else
 #include <dlfcn.h>
 #endif

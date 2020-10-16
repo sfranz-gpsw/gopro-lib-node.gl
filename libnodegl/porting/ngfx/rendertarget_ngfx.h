@@ -22,7 +22,6 @@
 #ifndef RENDERTARGET_NGFX_H
 #define RENDERTARGET_NGFX_H
 
-#include "glincludes.h"
 #include "rendertarget.h"
 #include "graphics/Framebuffer.h"
 

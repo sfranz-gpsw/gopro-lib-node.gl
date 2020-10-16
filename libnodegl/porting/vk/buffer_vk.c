@@ -105,7 +105,7 @@ int ngli_buffer_vk_upload(struct buffer *s, const void *data, uint32_t size, uin
 int ngli_buffer_vk_download(struct buffer* s, void* data, uint32_t size, uint32_t offset) {
     void* src;
     ngli_buffer_map(s, size, offset, &src);
-    memcpy(data, src + offset, size);
+    memcpy(data, (uint8_t*)src + offset, size);
     ngli_buffer_unmap(s);
     return 0;
 }

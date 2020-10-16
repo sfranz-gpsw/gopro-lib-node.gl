@@ -88,9 +88,15 @@ set (JSON_DIR ${EXTERNAL_DIR}/json)
 set (JSON_INCLUDE_DIRS ${JSON_DIR}/include)
 
 #optional: enable renderdoc integration for debugging
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+set (RENDERDOC_DIR C:/Program\ Files/RenderDoc)
+set (RENDERDOC_INCLUDE_DIRS ${RENDERDOC_DIR})
+set (RENDERDOC_LIBRARY_DIRS ${RENDERDOC_DIR})
+else()
 set (RENDERDOC_DIR /home/$ENV{USER}/Downloads/renderdoc_1.7)
 set (RENDERDOC_INCLUDE_DIRS ${RENDERDOC_DIR}/include)
 set (RENDERDOC_LIBRARY_DIRS ${RENDERDOC_DIR}/lib)
+endif()
 
 set (STB_INCLUDE_DIRS ${EXTERNAL_DIR}/stb)
 

@@ -22,9 +22,9 @@
 #ifndef NODES_H
 #define NODES_H
 
+#include <pthread.h>
 #include <stdlib.h>
 #include <sxplayer.h>
-#include <pthread.h>
 
 #if defined(HAVE_VAAPI_X11)
 #include <X11/Xlib.h>
