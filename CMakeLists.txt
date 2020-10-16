@@ -46,10 +46,14 @@ set (SHADERC_LIBRARIES shaderc_combined)
 set (GL_LIBRARIES OpenGL32)
 set (GL_INCLUDE_DIRS ${EXTERNAL_DIR}/win64/gl/include)
 
+set (GLM_INCLUDE_DIRS ${EXTERNAL_DIR}/win64/glm-0.9.9.8/glm)
+
 set (PYTHON_DIR C:/Users/jmoguillansky/AppData/Local/Programs/Python/Python38)
 set (PYTHON_INCLUDE_DIRS ${PYTHON_DIR}/include)
 set (PYTHON_LIBRARY_DIRS ${PYTHON_DIR}/libs)
 set (PYTHON_LIBRARIES python38)
+
+set (D3DX12_INCLUDE_DIRS ${EXTERNAL_DIR}/win64/d3dx12)
 
 else ()
 find_package (PkgConfig REQUIRED)
@@ -61,6 +65,7 @@ pkg_check_modules(VULKANSDK REQUIRED vulkan)
 pkg_check_modules(SHADERC REQUIRED shaderc_combined)
 set (GL_PACKAGES gl egl)
 pkg_check_modules(GL REQUIRED ${GL_PACKAGES})
+pkg_check_modules(GLM REQUIRED glm)
 pkg_check_modules(PYTHON REQUIRED python-3.7)
 
 set (SXPLAYER_DIR ${EXTERNAL_DIR}/sxplayer-9.5.1)
@@ -86,6 +91,8 @@ set (SHADER_TOOLS_LIBRARIES shader_tools)
 set (RENDERDOC_DIR /home/$ENV{USER}/Downloads/renderdoc_1.7)
 set (RENDERDOC_INCLUDE_DIRS ${RENDERDOC_DIR}/include)
 set (RENDERDOC_LIBRARY_DIRS ${RENDERDOC_DIR}/lib)
+
+set (STB_INCLUDE_DIRS ${EXTERNAL_DIR}/stb)
 
 option (GRAPHICS_BACKEND_METAL "build metal backend" OFF)
 option (GRAPHICS_BACKEND_DIRECT3D12 "build directx12 backend" OFF)

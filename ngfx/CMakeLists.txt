@@ -54,7 +54,14 @@ endif()
 add_library(ngfx ${NGFX_BUILD_TYPE} ${NGFX_SOURCE_FILES} ${GRAPHICS_BACKEND_SOURCE_FILES} ${WINDOW_BACKEND_SOURCE_FILES})
 target_compile_definitions(ngfx PUBLIC -DGLM_ENABLE_EXPERIMENTAL -D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING ${GRAPHICS_BACKEND_CFLAGS} ${WINDOW_BACKEND_CFLAGS})
 target_link_libraries(ngfx ${GRAPHICS_BACKEND_LIBS} ${WINDOW_BACKEND_LIBS})
-target_include_directories(ngfx PUBLIC . src)
+target_include_directories(ngfx PUBLIC . src
+	${GLM_INCLUDE_DIRS}
+	${STB_INCLUDE_DIRS}
+)
+
+if (GRAPHICS_BACKEND_DIRECT3D12)
+	target_include_directories(ngfx PUBLIC . src ${D3DX12_INCLUDE_DIRS})
+endif()
 
 function(build_test name)
 file (GLOB_RECURSE TEST_SOURCE_FILES test/${name}/*.cpp test/${name}/*.h test/${name}/*.mm)
