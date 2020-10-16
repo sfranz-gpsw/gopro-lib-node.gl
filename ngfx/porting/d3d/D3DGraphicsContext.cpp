@@ -94,9 +94,11 @@ void D3DGraphicsContext::setSurface(Surface* surface) {
             TODO();
         }
     }
-    if (surface && !surface->offscreen) d3dDefaultRenderPass = (D3DRenderPass*)getRenderPass({ false, enableDepthStencil, numSamples });
+    if (surface && !surface->offscreen) d3dDefaultRenderPass = (D3DRenderPass*)getRenderPass({ 
+        false, enableDepthStencil, false, numSamples, 1
+    });
     defaultOffscreenSurfaceFormat = PIXELFORMAT_RGBA8_UNORM;
-    d3dDefaultOffscreenRenderPass = (D3DRenderPass*)getRenderPass({ true, enableDepthStencil, numSamples });
+    d3dDefaultOffscreenRenderPass = (D3DRenderPass*)getRenderPass({ true, enableDepthStencil, false, numSamples, 1 });
     if (surface && !surface->offscreen) {
         createSwapchainFramebuffers(surface->w, surface->h);
     }

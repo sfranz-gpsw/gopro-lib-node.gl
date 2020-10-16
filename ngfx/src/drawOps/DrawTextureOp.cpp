@@ -37,8 +37,8 @@ DrawTextureOp::DrawTextureOp(GraphicsContext* ctx, Texture* texture,
 
 void DrawTextureOp::draw(CommandBuffer* commandBuffer, Graphics* graphics) {
     graphics->bindGraphicsPipeline(commandBuffer, graphicsPipeline);
-    graphics->bindVertexBuffer(commandBuffer, bPos.get(), B_POS);
-    graphics->bindVertexBuffer(commandBuffer, bTexCoord.get(), B_TEXCOORD);
+    graphics->bindVertexBuffer(commandBuffer, bPos.get(), B_POS, sizeof(vec2));
+    graphics->bindVertexBuffer(commandBuffer, bTexCoord.get(), B_TEXCOORD, sizeof(vec2));
     graphics->bindTexture(commandBuffer, texture, U_TEXTURE);
     graphics->draw(commandBuffer, numVerts);
 }

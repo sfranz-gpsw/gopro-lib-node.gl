@@ -422,9 +422,11 @@ void VKGraphicsContext::setSurface(Surface* surface) {
                 VK_IMAGE_VIEW_TYPE_2D, vkPhysicalDevice.depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
         }
     }
-    if (surface && !surface->offscreen) vkDefaultRenderPass = (VKRenderPass*)getRenderPass({ false, enableDepthStencil, numSamples });
+    if (surface && !surface->offscreen) {
+		vkDefaultRenderPass = (VKRenderPass*)getRenderPass({ false, enableDepthStencil, false, numSamples, 1 });
+	}
     defaultOffscreenSurfaceFormat = PixelFormat(VK_FORMAT_R8G8B8A8_UNORM);
-    vkDefaultOffscreenRenderPass = (VKRenderPass*)getRenderPass({ true, enableDepthStencil, numSamples });
+    vkDefaultOffscreenRenderPass = (VKRenderPass*)getRenderPass({ true, enableDepthStencil, false, numSamples, 1 });
     vkPipelineCache.create(vkDevice.v);
     if (surface && !surface->offscreen) createSwapchainFramebuffers(surface->w, surface->h);
     initSemaphores(vkDevice.v);

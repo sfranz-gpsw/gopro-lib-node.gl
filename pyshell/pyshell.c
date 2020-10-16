@@ -24,7 +24,7 @@
 int main(int argc, char** argv) {
     //Convert arguments to UTF8 string
     wchar_t **wargv = (wchar_t**)malloc(sizeof(wchar_t*) * argc);
-    for (uint32_t j = 0; j<argc; j++) {
+    for (int j = 0; j<argc; j++) {
         int len = strlen(argv[j]);
         wargv[j] = (wchar_t*)malloc(sizeof(wchar_t) * (len+1));
         mbstowcs(wargv[j], argv[j], len);

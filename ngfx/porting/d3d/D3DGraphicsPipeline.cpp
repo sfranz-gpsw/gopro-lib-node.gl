@@ -117,11 +117,29 @@ GraphicsPipeline* GraphicsPipeline::create(GraphicsContext* graphicsContext, con
         default: return blendFactor; break;
         };
     };
+    struct State {
+        D3D12_PRIMITIVE_TOPOLOGY primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+        D3D12_FILL_MODE fillMode = D3D12_FILL_MODE_SOLID;
+        bool blendEnable = false;
+        D3D12_BLEND blendSrcColorFactor = D3D12_BLEND_SRC_ALPHA;
+        D3D12_BLEND blendDstColorFactor = D3D12_BLEND_INV_SRC_ALPHA;
+        D3D12_BLEND_OP blendColorOp = D3D12_BLEND_OP_ADD;
+        D3D12_BLEND blendSrcAlphaFactor = D3D12_BLEND_SRC_ALPHA;
+        D3D12_BLEND blendDstAlphaFactor = D3D12_BLEND_INV_SRC_ALPHA;
+        D3D12_BLEND_OP blendAlphaOp = D3D12_BLEND_OP_ADD;
+        D3D12_COLOR_WRITE_ENABLE colorWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+        D3D12_CULL_MODE cullMode = D3D12_CULL_MODE_BACK;
+        bool frontFaceCounterClockwise = false;
+        float lineWidth = 1.0f;
+        bool depthTestEnable = false, depthWriteEnable = false;
+        D3DRenderPass* renderPass = nullptr;
+        uint32_t numSamples = 1, numColorAttachments = 1;
+    };
     D3DGraphicsPipeline::State d3dState = {
         D3D_PRIMITIVE_TOPOLOGY(state.primitiveTopology), D3D12_FILL_MODE(state.polygonMode),
         state.blendEnable, 
-        D3D12_BLEND(state.blendSrcFactor), D3D12_BLEND(state.blendDstFactor), D3D12_BLEND_OP(state.blendOp),
-        D3D12_BLEND(getAlphaBlendFactor(state.blendSrcFactor)), D3D12_BLEND(getAlphaBlendFactor(state.blendDstFactor)), D3D12_BLEND_OP(state.blendOp),
+        D3D12_BLEND(state.srcColorBlendFactor), D3D12_BLEND(state.dstColorBlendFactor), D3D12_BLEND_OP(state.colorBlendOp),
+        D3D12_BLEND(getAlphaBlendFactor(state.srcAlphaBlendFactor)), D3D12_BLEND(getAlphaBlendFactor(state.dstAlphaBlendFactor)), D3D12_BLEND_OP(state.alphaBlendOp),
         D3D12_COLOR_WRITE_ENABLE(state.colorWriteMask), 
         D3D12_CULL_MODE(state.cullModeFlags), (state.frontFace == FRONT_FACE_COUNTER_CLOCKWISE), state.lineWidth,
         state.depthTestEnable, state.depthWriteEnable, d3d(state.renderPass), 

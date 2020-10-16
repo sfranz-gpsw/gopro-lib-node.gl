@@ -20,22 +20,23 @@
  */
 #include "FileUtil.h"
 #include <fstream>
-#include <filesystem>
 #include <cstring>
 #include <cassert>
+#include <chrono>
 using namespace std;
 namespace fs = std::filesystem;
 using namespace ngfx;
 
-time_t FileUtil::getmtime(const string& filename) {
-    if (!fs::exists(filename)) { return 0; }
-    auto ftime = fs::last_write_time(filename);
-    return fs::file_time_type::clock::to_time_t(ftime);
+bool FileUtil::getmtime(const string& filename, fs::file_time_type &mtime) {
+    if (!fs::exists(filename)) { return false; }
+    mtime = fs::last_write_time(filename);
+    return true;
 }
 
 bool FileUtil::srcFileChanged(const string& srcFileName, const string& targetFileName) {
-    time_t srcTimeStamp = getmtime(srcFileName);
-    time_t targetTimeStamp = getmtime(targetFileName);
+    fs::file_time_type srcTimeStamp, targetTimeStamp;
+    getmtime(srcFileName, srcTimeStamp);
+    if (!getmtime(targetFileName, targetTimeStamp)) return true;
     if (srcTimeStamp > targetTimeStamp)
         return true;
     return false;
@@ -68,7 +69,7 @@ vector<string> FileUtil::splitExt(const string& filename) {
 vector<string> FileUtil::findFiles(const string& path) {
     vector<string> files;
     for (const auto & entry : fs::directory_iterator(path)) {
-        files.push_back(entry.path());
+        files.push_back(entry.path().string());
     }
     return files;
 }
@@ -78,7 +79,7 @@ vector<string> FileUtil::findFiles(const string& path, const string& ext) {
     for (const auto & entry : fs::directory_iterator(path)) {
         const fs::path& path = entry.path();
         if (path.extension() != ext) continue;
-        files.push_back(path);
+        files.push_back(path.string());
     }
     return files;
 }

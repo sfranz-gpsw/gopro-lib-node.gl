@@ -73,9 +73,6 @@ set (SXPLAYER_INCLUDE_DIRS ${SXPLAYER_DIR})
 set (SXPLAYER_LIBRARY_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/cmake-build-debug/external/sxplayer-9.5.1)
 set (SXPLAYER_LIBRARIES sxplayer avformat avfilter avcodec avutil pthread)
 
-set (JSON_DIR ${EXTERNAL_DIR}/json)
-set (JSON_INCLUDE_DIRS ${JSON_DIR}/include)
-
 endif()
 
 set (NGFX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ngfx)
@@ -86,6 +83,9 @@ set (NGFX_LIBRARIES ngfx)
 set (SHADER_TOOLS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shader-tools)
 set (SHADER_TOOLS_INCLUDE_DIRS ${SHADER_TOOLS_DIR} ${SHADER_TOOLS_DIR}/src)
 set (SHADER_TOOLS_LIBRARIES shader_tools)
+
+set (JSON_DIR ${EXTERNAL_DIR}/json)
+set (JSON_INCLUDE_DIRS ${JSON_DIR}/include)
 
 #optional: enable renderdoc integration for debugging
 set (RENDERDOC_DIR /home/$ENV{USER}/Downloads/renderdoc_1.7)

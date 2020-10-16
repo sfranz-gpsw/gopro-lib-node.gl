@@ -36,7 +36,7 @@ DrawColorOp::DrawColorOp(GraphicsContext* ctx, const std::vector<glm::vec2> &pos
 
 void DrawColorOp::draw(CommandBuffer* commandBuffer, Graphics* graphics) {
     graphics->bindGraphicsPipeline(commandBuffer, graphicsPipeline);
-    graphics->bindVertexBuffer(commandBuffer, bPos.get(), B_POS);
+    graphics->bindVertexBuffer(commandBuffer, bPos.get(), B_POS, sizeof(vec2));
     graphics->bindUniformBuffer(commandBuffer, bUbo.get(), U_UBO, SHADER_STAGE_FRAGMENT_BIT);
     graphics->draw(commandBuffer, numVerts);
 }

@@ -19,13 +19,14 @@
  * under the License.
  */
 #pragma once
+#include <filesystem>
 #include <string>
 #include <vector>
 
 namespace ngfx {
 class FileUtil {
 public:
-    static time_t getmtime(const std::string& filename);
+    static bool getmtime(const std::string& filename, std::filesystem::file_time_type &mtime);
     static bool srcFileChanged(const std::string& srcFileName, const std::string& targetFileName);
     static std::string readFile(const std::string& path);
     static void writeFile(const std::string& path, const std::string& contents);

@@ -77,13 +77,13 @@ static std::unique_ptr<T> createShaderModule(Device* device, const std::string& 
 }
 
 unique_ptr<VertexShaderModule> VertexShaderModule::create(Device* device, const std::string& filename) {
-    return createShaderModule<D3DVertexShaderModule>(device, DATA_PATH() + "/" + filename);
+    return createShaderModule<D3DVertexShaderModule>(device, filename);
 }
 
 unique_ptr<FragmentShaderModule> FragmentShaderModule::create(Device* device, const std::string& filename) {
-    return createShaderModule<D3DFragmentShaderModule>(device, DATA_PATH() + "/" + filename);
+    return createShaderModule<D3DFragmentShaderModule>(device, filename);
 }
 
 unique_ptr<ComputeShaderModule> ComputeShaderModule::create(Device* device, const std::string& filename) {
-    return createShaderModule<D3DComputeShaderModule>(device, DATA_PATH() + "/" + filename);
+    return createShaderModule<D3DComputeShaderModule>(device, filename);
 }

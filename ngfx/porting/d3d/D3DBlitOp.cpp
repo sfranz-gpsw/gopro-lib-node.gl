@@ -42,8 +42,8 @@ D3DBlitOp::D3DBlitOp(D3DGraphicsContext* ctx,
             ctx->device, ctx->defaultOffscreenRenderPass, { { dstTexture, dstLevel, 0 } }, dstTexture->w >> dstLevel, dstTexture->h >> dstLevel
         )
     );
-    std::vector<vec2> pos = { glm::vec2(-1, 1), glm::vec2(-1, -1), glm::vec2(1, 1), glm::vec2(1, -1) };
-    std::vector<vec2> texCoord = { glm::vec2(0,0), glm::vec2(0,1), glm::vec2(1,0), glm::vec2(1,1) };
+    std::vector<vec2> pos = { vec2(-1, 1), vec2(-1, -1), vec2(1, 1), vec2(1, -1) };
+    std::vector<vec2> texCoord = { vec2(0,0), vec2(0,1), vec2(1,0), vec2(1,1) };
     bPos.reset((D3DBuffer*)createVertexBuffer<vec2>(ctx, pos));
     bTexCoord.reset((D3DBuffer*)createVertexBuffer<vec2>(ctx, texCoord));
     numVerts = uint32_t(pos.size());
@@ -71,9 +71,9 @@ void D3DBlitOp::createPipeline() {
 
 void D3DBlitOp::draw(D3DCommandList* cmdList, D3DGraphics* graphics) {
     graphics->bindGraphicsPipeline(cmdList, graphicsPipeline);
-    graphics->bindVertexBuffer(cmdList, bPos.get(), B_POS);
+    graphics->bindVertexBuffer(cmdList, bPos.get(), B_POS, sizeof(vec2));
     graphics->bindUniformBuffer(cmdList, bUbo.get(), U_UBO, SHADER_STAGE_FRAGMENT_BIT);
-    graphics->bindVertexBuffer(cmdList, bTexCoord.get(), B_TEXCOORD);
+    graphics->bindVertexBuffer(cmdList, bTexCoord.get(), B_TEXCOORD, sizeof(vec2));
     D3D_TRACE(cmdList->v->SetGraphicsRootDescriptorTable(U_TEXTURE, srcTexture->getSrvDescriptor(srcLevel, 1).gpuHandle));
     D3D12_FILTER filter = D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
     D3D_TRACE(cmdList->v->SetGraphicsRootDescriptorTable(U_TEXTURE + 1, srcTexture->getSamplerDescriptor(filter).gpuHandle));

@@ -34,8 +34,8 @@ namespace ngfx {
             glm::vec4 clearColor = glm::vec4(0.0f), float clearDepth = 1.0f, uint32_t clearStencil = 0) override;
         void endRenderPass(CommandBuffer* commandBuffer) override;
 
-        void bindVertexBuffer(CommandBuffer* commandBuffer, Buffer* buffer, uint32_t location) override;
-        void bindIndexBuffer(CommandBuffer* commandBuffer, Buffer* buffer) override;
+        void bindVertexBuffer(CommandBuffer* commandBuffer, Buffer* buffer, uint32_t location, uint32_t stride) override;
+        void bindIndexBuffer(CommandBuffer* commandBuffer, Buffer* buffer, IndexFormat indexFormat = INDEXFORMAT_UINT32) override;
         void bindUniformBuffer(CommandBuffer* commandBuffer, Buffer* buffer, uint32_t binding, ShaderStageFlags shaderStageFlags) override;
         void bindStorageBuffer(CommandBuffer* commandBuffer, Buffer* buffer, uint32_t binding, ShaderStageFlags shaderStageFlags) override;
         void bindComputePipeline(CommandBuffer* cmdBuffer, ComputePipeline* computePipeline) override;

@@ -63,21 +63,20 @@ void D3DGraphics::bindUniformBuffer(CommandBuffer* commandBuffer, Buffer* buffer
     }
 }
 
-void D3DGraphics::bindIndexBuffer(CommandBuffer* commandBuffer, Buffer* buffer) {
+void D3DGraphics::bindIndexBuffer(CommandBuffer* commandBuffer, Buffer* buffer, IndexFormat indexFormat) {
     auto d3dBuffer = d3d(buffer);
     D3D12_INDEX_BUFFER_VIEW ib;
-    IndexFormat indexFormat = (buffer->stride == sizeof(uint16_t) ? INDEXFORMAT_UINT16 : INDEXFORMAT_UINT32);
     ib.BufferLocation = d3dBuffer->v->GetGPUVirtualAddress();
     ib.Format = DXGI_FORMAT(indexFormat);
     ib.SizeInBytes = d3dBuffer->size;
     d3d(commandBuffer)->v->IASetIndexBuffer(&ib);
 }
 
-void D3DGraphics::bindVertexBuffer(CommandBuffer* commandBuffer, Buffer* buffer, uint32_t location) { //TODO: pass stride as parameter instead of member variable
+void D3DGraphics::bindVertexBuffer(CommandBuffer* commandBuffer, Buffer* buffer, uint32_t location, uint32_t stride) {
     auto d3dBuffer = d3d(buffer);
     D3D12_VERTEX_BUFFER_VIEW vb;
     vb.BufferLocation = d3dBuffer->v->GetGPUVirtualAddress();
-    vb.StrideInBytes = d3dBuffer->stride;
+    vb.StrideInBytes = stride;
     vb.SizeInBytes = d3dBuffer->size;
     d3d(commandBuffer)->v->IASetVertexBuffers(location, 1, &vb);
 }

@@ -273,7 +273,7 @@ static void bind_vertex_buffers(CommandBuffer *cmd_buf, pipeline *s) {
     for (int j = 0; j<nb_attributes; j++) {
         const pipeline_attribute_desc &attr_desc = *(const pipeline_attribute_desc *)ngli_darray_get(&s->attribute_descs, j);
         const buffer_ngfx *buffer = *(const buffer_ngfx **)ngli_darray_get(&s->attributes, j);
-        gctx_ngfx->graphics->bindVertexBuffer(cmd_buf, buffer->v, attr_desc.location);
+        gctx_ngfx->graphics->bindVertexBuffer(cmd_buf, buffer->v, attr_desc.location, attr_desc.stride);
     }
 }
 

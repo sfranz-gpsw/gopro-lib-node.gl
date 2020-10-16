@@ -130,10 +130,9 @@ void D3DBuffer::upload(const void* data, uint32_t size, uint32_t offset) {
     }
 }
 
-Buffer* Buffer::create(GraphicsContext* ctx, const void* data, uint32_t size, uint32_t stride,
+Buffer* Buffer::create(GraphicsContext* ctx, const void* data, uint32_t size,
         BufferUsageFlags usageFlags) {
     D3DBuffer* d3dBuffer = new D3DBuffer();
     d3dBuffer->create(d3d(ctx), data, size, usageFlags);
-    d3dBuffer->stride = stride;
     return d3dBuffer;
 }

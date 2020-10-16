@@ -41,8 +41,8 @@ DrawMeshOp::DrawMeshOp(GraphicsContext* ctx, MeshData& meshData)
 
 void DrawMeshOp::draw(CommandBuffer* commandBuffer, Graphics* graphics) {
     graphics->bindGraphicsPipeline(commandBuffer, graphicsPipeline);
-    graphics->bindVertexBuffer(commandBuffer, bPos.get(), B_POS);
-    graphics->bindVertexBuffer(commandBuffer, bNormals.get(), B_NORMALS);
+    graphics->bindVertexBuffer(commandBuffer, bPos.get(), B_POS, sizeof(vec3));
+    graphics->bindVertexBuffer(commandBuffer, bNormals.get(), B_NORMALS, sizeof(vec3));
     graphics->bindIndexBuffer(commandBuffer, bFaces.get());
     graphics->bindUniformBuffer(commandBuffer, bUboVS.get(), U_UBO_VS, SHADER_STAGE_VERTEX_BIT);
     graphics->bindUniformBuffer(commandBuffer, bUboFS.get(), U_UBO_FS, SHADER_STAGE_FRAGMENT_BIT);

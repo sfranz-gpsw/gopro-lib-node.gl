@@ -21,6 +21,7 @@
 
 #include "ProcessUtil.h"
 #ifdef _WIN32
+#include <windows.h>
 #else
 #include <unistd.h>
 #endif
@@ -28,6 +29,7 @@ using namespace ngfx;
 
 int ProcessUtil::getPID() {
 #ifdef _WIN32
+    return GetCurrentProcessId();
 #else
     return getpid();
 #endif
