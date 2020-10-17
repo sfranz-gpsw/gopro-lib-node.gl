@@ -25,7 +25,9 @@ from setuptools import setup, Command, Extension
 from setuptools.command.build_ext import build_ext
 
 #set graphics backend
+#GRAPHICS_BACKEND_VULKAN = 1
 GRAPHICS_BACKEND_DIRECT3D12 = 1
+#GRAPHICS_BACKEND_METAL = 1
 
 class LibNodeGLConfig:
 
