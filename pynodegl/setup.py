@@ -24,6 +24,8 @@ import os.path as op
 from setuptools import setup, Command, Extension
 from setuptools.command.build_ext import build_ext
 
+#set graphics backend
+GRAPHICS_BACKEND_DIRECT3D12 = 1
 
 class LibNodeGLConfig:
 
@@ -35,14 +37,16 @@ class LibNodeGLConfig:
             self.include_dirs = [ op.join(os.getcwd(),'..', 'nodegl-env', 'Include') ]
             self.library_dirs = [ op.join(os.getcwd(),'..', 'nodegl-env', 'Lib') ]
             self.libraries = [
-                'nodegl', 
+                'nodegl', 'ngfx',
                 'pthreadVC2', 
                 'sxplayer', 
-                'vulkan-1',
                 'avcodec', 'avdevice', 'avformat', 'avfilter', 'avutil', 
-                'shaderc_combined', 
                 'OpenGL32', 'gdi32', 'user32'
             ]
+            if GRAPHICS_BACKEND_DIRECT3D12:
+                self.libraries.extend(['d3d12', 'shader_tools', 'dxgi', 'd3dcompiler'])
+            elif GRAPHICS_BACKEND_VULKAN:
+                self.libraries.extend(['vulkan-1', 'shaderc_combined'])
             self.data_root_dir = op.join(os.getcwd(),'..', 'nodegl-env', 'share')
         else:
             import subprocess
