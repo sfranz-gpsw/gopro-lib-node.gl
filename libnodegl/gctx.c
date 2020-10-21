@@ -87,6 +87,21 @@ int ngli_gctx_set_capture_buffer(struct gctx *s, void *capture_buffer)
     return class->set_capture_buffer(s, capture_buffer);
 }
 
+int ngli_gctx_update(struct gctx *s, struct ngl_node *scene, double t)
+{
+    const struct gctx_class *class = s->class;
+
+    int ret = class->begin_update(s, t);
+    if (ret < 0)
+        return ret;
+
+    ret = ngli_node_update(scene, t);
+    if (ret < 0)
+        return ret;
+
+    return class->end_update(s, t);
+}
+
 int ngli_gctx_begin_draw(struct gctx *s, double t)
 {
     return s->class->begin_draw(s, t);
