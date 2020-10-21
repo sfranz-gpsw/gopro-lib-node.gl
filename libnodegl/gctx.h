@@ -38,6 +38,8 @@ struct gctx_class {
     struct gctx *(*create)(const struct ngl_config *config);
     int (*init)(struct gctx *s);
     int (*resize)(struct gctx *s, int width, int height, const int *viewport);
+    int (*begin_update)(struct gctx *s, double t);
+    int (*end_update)(struct gctx *s, double t);
     int (*begin_draw)(struct gctx *s, double t);
     int (*end_draw)(struct gctx *s, double t);
     int (*query_draw_time)(struct gctx *s, int64_t *time);
@@ -108,6 +110,7 @@ struct gctx {
 struct gctx *ngli_gctx_create(const struct ngl_config *config);
 int ngli_gctx_init(struct gctx *s);
 int ngli_gctx_resize(struct gctx *s, int width, int height, const int *viewport);
+int ngli_gctx_update(struct gctx *s, struct ngl_node *scene, double t);
 int ngli_gctx_begin_draw(struct gctx *s, double t);
 int ngli_gctx_query_draw_time(struct gctx *s, int64_t *time);
 int ngli_gctx_end_draw(struct gctx *s, double t);
