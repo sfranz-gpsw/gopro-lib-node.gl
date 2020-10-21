@@ -368,6 +368,16 @@ static int gl_resize(struct gctx *s, int width, int height, const int *viewport)
     return 0;
 }
 
+static int gl_begin_update(struct gctx *s, double t)
+{
+    return 0;
+}
+
+static int gl_end_update(struct gctx *s, double t)
+{
+    return 0;
+}
+
 static int gl_begin_draw(struct gctx *s, double t)
 {
     struct gctx_gl *s_priv = (struct gctx_gl *)s;
@@ -538,6 +548,8 @@ const struct gctx_class ngli_gctx_gl = {
     .create       = gl_create,
     .init         = gl_init,
     .resize       = gl_resize,
+    .begin_update = gl_begin_update,
+    .end_update   = gl_end_update,
     .begin_draw   = gl_begin_draw,
     .end_draw     = gl_end_draw,
     .destroy      = gl_destroy,
@@ -606,6 +618,8 @@ const struct gctx_class ngli_gctx_gles = {
     .create       = gl_create,
     .init         = gl_init,
     .resize       = gl_resize,
+    .begin_update = gl_begin_update,
+    .end_update   = gl_end_update,
     .begin_draw   = gl_begin_draw,
     .end_draw     = gl_end_draw,
     .destroy      = gl_destroy,
