@@ -31,6 +31,13 @@
 
 struct gctx;
 
+enum {
+    NGLI_ACCESS_READ_WRITE,
+    NGLI_ACCESS_READ_ONLY,
+    NGLI_ACCESS_WRITE_ONLY,
+    NGLI_ACCESS_NB
+};
+
 struct pipeline_uniform_desc {
     char name[MAX_ID_LEN];
     int type;
@@ -42,6 +49,7 @@ struct pipeline_texture_desc {
     int type;
     int location;
     int binding;
+    int access;
 };
 
 struct pipeline_buffer_desc {
