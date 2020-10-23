@@ -126,7 +126,7 @@ static int offscreen_rendertarget_init(struct gctx *s)
             .format = NGLI_FORMAT_R8G8B8A8_UNORM,
             .width  = config->width,
             .height = config->height,
-            .usage  = NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY,
+            .usage  = NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT,
         };
         s_priv->color = ngli_texture_create(s);
         if (!s_priv->color)
@@ -142,7 +142,7 @@ static int offscreen_rendertarget_init(struct gctx *s)
             .format  = NGLI_FORMAT_R8G8B8A8_UNORM,
             .width   = config->width,
             .height  = config->height,
-            .usage   = NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY,
+            .usage   = NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT,
             .samples = config->samples,
         };
         s_priv->ms_color = ngli_texture_create(s);
@@ -159,7 +159,7 @@ static int offscreen_rendertarget_init(struct gctx *s)
         .width   = config->width,
         .height  = config->height,
         .samples = config->samples,
-        .usage   = NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY,
+        .usage   = NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
     };
     s_priv->depth = ngli_texture_create(s);
     if (!s_priv->depth)
