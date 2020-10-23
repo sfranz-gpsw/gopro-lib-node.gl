@@ -87,6 +87,9 @@ static int init_hwconv(struct ngl_node *node)
     params.format = NGLI_FORMAT_R8G8B8A8_UNORM;
     params.width  = mapped_image->params.width;
     params.height = mapped_image->params.height;
+    params.usage  = NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT |
+                    NGLI_TEXTURE_USAGE_SAMPLED_BIT          |
+                    NGLI_TEXTURE_USAGE_STORAGE_BIT;
 
     s->texture = ngli_texture_create(gctx);
     if (!s->texture)
