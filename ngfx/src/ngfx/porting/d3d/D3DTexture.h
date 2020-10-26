@@ -20,7 +20,7 @@
  */
 #pragma once
 #include "ngfx/graphics/Texture.h"
-#include "ngfx/DebugUtil.h"
+#include "ngfx/core/DebugUtil.h"
 #include "ngfx/porting/d3d/D3DBuffer.h"
 #include "ngfx/porting/d3d/D3DDescriptorHandle.h"
 #include "ngfx/porting/d3d/D3DSamplerDesc.h"

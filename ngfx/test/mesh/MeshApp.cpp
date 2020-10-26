@@ -24,7 +24,7 @@
 #include "ngfx/graphics/ShaderModule.h"
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/component_wise.hpp>
-#include "ngfx/DebugUtil.h"
+#include "ngfx/core/DebugUtil.h"
 #include <memory>
 using namespace ngfx;
 using namespace std;

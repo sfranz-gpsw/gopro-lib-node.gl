@@ -21,7 +21,7 @@
 #pragma once
 #include "ngfx/graphics/Graphics.h"
 #include "ngfx/porting/d3d/D3DGraphicsContext.h"
-#include "ngfx/DebugUtil.h"
+#include "ngfx/core/DebugUtil.h"
 
 namespace ngfx {
     class D3DGraphics : public Graphics {

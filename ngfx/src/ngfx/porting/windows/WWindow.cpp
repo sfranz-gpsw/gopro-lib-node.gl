@@ -20,8 +20,8 @@
  */
 #include "ngfx/porting/windows/WWindow.h"
 #include <windowsx.h>
-#include "ngfx/StringUtil.h"
-#include "ngfx/DebugUtil.h"
+#include "ngfx/core/StringUtil.h"
+#include "ngfx/core/DebugUtil.h"
 using namespace ngfx;
 #define WINDOW_CLASS_NAME L"WWindow"
 

@@ -21,7 +21,7 @@
 #include "ngfx/porting/d3d/D3DReadbackBuffer.h"
 #include "ngfx/porting/d3d/D3DCommandList.h"
 #include "ngfx/porting/d3d/D3DDebugUtil.h"
-#include "ngfx/DebugUtil.h"
+#include "ngfx/core/DebugUtil.h"
 using namespace ngfx;
 
 void D3DReadbackBuffer::create(D3DGraphicsContext* ctx,uint32_t size) {

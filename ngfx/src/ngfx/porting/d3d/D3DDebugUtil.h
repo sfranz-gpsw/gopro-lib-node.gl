@@ -19,7 +19,7 @@
  * under the License.
  */
 #pragma once
-#include "ngfx/DebugUtil.h"
+#include "ngfx/core/DebugUtil.h"
 #include <d3d12.h>
 #include <system_error>
 

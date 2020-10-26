@@ -22,7 +22,7 @@
 #include "ngfx/porting/d3d/D3DCommandList.h"
 #include "ngfx/porting/d3d/D3DGraphicsContext.h"
 #include "ngfx/porting/d3d/D3DDebugUtil.h"
-#include "ngfx/DebugUtil.h"
+#include "ngfx/core/DebugUtil.h"
 #include <d3dx12.h>
 #include <glm/gtc/type_ptr.hpp>
 using namespace ngfx;

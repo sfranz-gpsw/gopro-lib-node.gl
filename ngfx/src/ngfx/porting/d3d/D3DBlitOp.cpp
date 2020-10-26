@@ -21,12 +21,12 @@
 #include "ngfx/porting/d3d/D3DBlitOp.h"
 #include "ngfx/porting/d3d/D3DGraphicsContext.h"
 #include "ngfx/porting/d3d/D3DTexture.h"
-#include "ngfx/src/graphics/BufferUtil.h"
+#include "ngfx/graphics/BufferUtil.h"
 #include "ngfx/porting/d3d/D3DGraphics.h"
 #include "ngfx/porting/d3d/D3DDebugUtil.h"
 #include "ngfx/graphics/Config.h"
 #include <glm/gtc/type_ptr.hpp>
-#include "ngfx/DebugUtil.h"
+#include "ngfx/core/DebugUtil.h"
 using namespace ngfx;
 using namespace glm;
 

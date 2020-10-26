@@ -18,7 +18,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#include "ngfx/D3DDescriptorHandle.h"
+#include "ngfx/porting/d3d/D3DDescriptorHandle.h"
 using namespace ngfx;
 
 D3DDescriptorHandle::D3DDescriptorHandle(uint32_t descriptorSize)

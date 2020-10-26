@@ -21,7 +21,7 @@
 #include "ngfx/porting/d3d/D3DCommandQueue.h"
 #include "ngfx/porting/d3d/D3DGraphicsContext.h"
 #include "ngfx/porting/d3d/D3DCommandList.h"
-#include "ngfx/D3DDebugUtil.h"
+#include "ngfx/porting/d3d/D3DDebugUtil.h"
 using namespace ngfx;
 
 void D3DCommandQueue::create(D3DGraphicsContext* ctx) {

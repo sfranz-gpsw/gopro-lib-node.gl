@@ -21,7 +21,7 @@
 #pragma once
 #include "ngfx/graphics/Buffer.h"
 #include "ngfx/porting/d3d/D3DDevice.h"
-#include "ngfx/DebugUtil.h"
+#include "ngfx/core/DebugUtil.h"
 
 namespace ngfx {
     class D3DGraphicsContext;

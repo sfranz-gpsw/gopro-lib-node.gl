@@ -20,9 +20,9 @@
  */
 #include "ngfx/porting/d3d/D3DShaderModule.h"
 #include "ngfx/porting/d3d/D3DDebugUtil.h"
-#include "ngfx/StringUtil.h"
+#include "ngfx/core/StringUtil.h"
 #include "ngfx/graphics/Config.h"
-#include "ngfx/File.h"
+#include "ngfx/core/File.h"
 #include <d3dcompiler.h>
 #include <memory>
 using namespace ngfx;

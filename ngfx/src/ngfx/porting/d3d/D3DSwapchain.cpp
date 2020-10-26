@@ -22,7 +22,7 @@
 #include "ngfx/porting/d3d/D3DGraphicsContext.h"
 #include "ngfx/porting/d3d/D3DDebugUtil.h"
 #include "ngfx/graphics/Config.h"
-#include "ngfx/DebugUtil.h"
+#include "ngfx/core/DebugUtil.h"
 using namespace ngfx;
 
 void D3DSwapchain::create(D3DGraphicsContext* ctx, D3DSurface* surface) {

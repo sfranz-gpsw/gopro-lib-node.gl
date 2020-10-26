@@ -23,7 +23,7 @@
 #include "ngfx/computeOps/MatrixMultiplyGPUOp.h"
 #include "ngfx/graphics/ShaderModule.h"
 #include <glm/gtx/string_cast.hpp>
-#include "ngfx/DebugUtil.h"
+#include "ngfx/core/DebugUtil.h"
 #include <memory>
 #define VALIDATE_RESULT
 using namespace ngfx;

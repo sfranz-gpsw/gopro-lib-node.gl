@@ -32,7 +32,7 @@
 #include "ngfx/porting/d3d/D3DFramebuffer.h"
 #include "ngfx/porting/d3d/D3DTexture.h"
 #include "ngfx/porting/d3d/D3DUtil.h"
-#include "ngfx/DebugUtil.h"
+#include "ngfx/core/DebugUtil.h"
 #include <memory>
 
 namespace ngfx {

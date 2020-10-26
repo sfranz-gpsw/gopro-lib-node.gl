@@ -1,6 +1,6 @@
 #include "ngfx/MeshTool.h"
 #include "ngfx/graphics/MeshUtil.h"
-#include "ngfx/DebugUtil.h"
+#include "ngfx/core/DebugUtil.h"
 using namespace ngfx;
 
 int main(int argc, char** argv) {

@@ -23,7 +23,7 @@
 #include "ngfx/porting/d3d/D3DDebugUtil.h"
 #include "ngfx/porting/d3d/D3DBuffer.h"
 #include "ngfx/porting/d3d/D3DBlitOp.h"
-#include "ngfx/DebugUtil.h"
+#include "ngfx/core/DebugUtil.h"
 using namespace ngfx;
 using namespace std;
 
