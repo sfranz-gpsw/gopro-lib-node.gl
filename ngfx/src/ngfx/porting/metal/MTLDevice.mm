@@ -1,5 +1,5 @@
-#include "porting/metal/MTLDevice.h"
-#include "DebugUtil.h"
+#include "ngfx/porting/metal/MTLDevice.h"
+#include "ngfx/core/DebugUtil.h"
 using namespace ngfx;
 
 id<MTLDevice> _mtlDevice;

@@ -1,6 +1,6 @@
-#include "porting/metal/MTLGraphicsContext.h"
-#include "porting/metal/MTLSurface.h"
-#include "DebugUtil.h"
+#include "ngfx/porting/metal/MTLGraphicsContext.h"
+#include "ngfx/porting/metal/MTLSurface.h"
+#include "ngfx/core/DebugUtil.h"
 #include <Foundation/Foundation.h>
 using namespace ngfx;
 using namespace std;

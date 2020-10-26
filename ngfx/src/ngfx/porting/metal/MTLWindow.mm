@@ -1,5 +1,5 @@
-#include "porting/metal/MTLWindow.h"
-#include "DebugUtil.h"
+#include "ngfx/porting/metal/MTLWindow.h"
+#include "ngfx/core/DebugUtil.h"
 using namespace ngfx;
 
 bool MTLWindow::shouldClose() {

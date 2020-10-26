@@ -25,7 +25,7 @@
 #include "ngfx/porting/metal/MTLRenderCommandEncoder.h"
 #include "ngfx/porting/metal/MTLUtil.h"
 #include <Metal/Metal.h>
-#include "ngfx/DebugUtil.h"
+#include "ngfx/core/DebugUtil.h"
 
 namespace ngfx {
     class GraphicsContext;

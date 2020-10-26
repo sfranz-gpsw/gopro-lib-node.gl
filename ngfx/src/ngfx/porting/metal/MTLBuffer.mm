@@ -1,6 +1,6 @@
-#include "porting/metal/MTLBuffer.h"
-#include "porting/metal/MTLGraphicsContext.h"
-#include "DebugUtil.h"
+#include "ngfx/porting/metal/MTLBuffer.h"
+#include "ngfx/porting/metal/MTLGraphicsContext.h"
+#include "ngfx/core/DebugUtil.h"
 using namespace ngfx;
 
 void MTLBuffer::create(MTLGraphicsContext* ctx, const void* data, uint32_t size, MTLResourceOptions resourceOptions) {

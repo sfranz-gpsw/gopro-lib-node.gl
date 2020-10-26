@@ -1,8 +1,8 @@
 #include "MTLApplication.h"
-#include "DebugUtil.h"
-#include "porting/metal/MTLGraphicsContext.h"
-#include "porting/metal/MTLCommandBuffer.h"
-#include "porting/metal/MTLSurface.h"
+#include "ngfx/core/DebugUtil.h"
+#include "ngfx/porting/metal/MTLGraphicsContext.h"
+#include "ngfx/porting/metal/MTLCommandBuffer.h"
+#include "ngfx/porting/metal/MTLSurface.h"
 #include <functional>
 using namespace ngfx;
 using namespace std::placeholders;

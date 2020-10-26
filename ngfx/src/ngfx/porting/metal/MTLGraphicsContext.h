@@ -27,7 +27,7 @@
 #include "ngfx/porting/metal/MTLRenderPass.h"
 #include "ngfx/porting/metal/MTLUtil.h"
 #include "ngfx/porting/metal/MTLDepthStencilTexture.h"
-#include "ngfx/DebugUtil.h"
+#include "ngfx/core/DebugUtil.h"
 #include <MetalKit/MetalKit.h>
 
 namespace ngfx {

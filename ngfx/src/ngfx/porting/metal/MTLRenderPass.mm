@@ -1,5 +1,5 @@
-#include "porting/metal/MTLRenderPass.h"
-#include "porting/metal/MTLGraphicsContext.h"
+#include "ngfx/porting/metal/MTLRenderPass.h"
+#include "ngfx/porting/metal/MTLGraphicsContext.h"
 using namespace ngfx;
 using namespace std;
 

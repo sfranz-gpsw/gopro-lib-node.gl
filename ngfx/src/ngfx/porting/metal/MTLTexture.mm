@@ -1,8 +1,8 @@
-#include "porting/metal/MTLTexture.h"
-#include "porting/metal/MTLGraphicsContext.h"
-#include "porting/metal/MTLCommandBuffer.h"
-#include "porting/metal/MTLRenderCommandEncoder.h"
-#include "DebugUtil.h"
+#include "ngfx/porting/metal/MTLTexture.h"
+#include "ngfx/porting/metal/MTLGraphicsContext.h"
+#include "ngfx/porting/metal/MTLCommandBuffer.h"
+#include "ngfx/porting/metal/MTLRenderCommandEncoder.h"
+#include "ngfx/core/DebugUtil.h"
 using namespace ngfx;
 
 void MTLTexture::create(MTLGraphicsContext *ctx, void* data, ::MTLPixelFormat format, uint32_t size,

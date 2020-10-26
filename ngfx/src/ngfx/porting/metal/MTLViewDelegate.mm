@@ -1,4 +1,4 @@
-#include "porting/metal/MTLViewDelegate.h"
+#include "ngfx/porting/metal/MTLViewDelegate.h"
 #include <functional>
 std::function<void(void*)> appInit, appPaint, appUpdate;
 

@@ -19,7 +19,7 @@
  * under the License.
  */
 #pragma once
-#include "ngfx/BaseApplication.h"
+#include "ngfx/core/BaseApplication.h"
 
 namespace ngfx {
     class MTLApplication : public BaseApplication {

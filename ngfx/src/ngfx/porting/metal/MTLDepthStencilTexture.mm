@@ -1,5 +1,5 @@
-#include "porting/metal/MTLDepthStencilTexture.h"
-#include "porting/metal/MTLGraphicsContext.h"
+#include "ngfx/porting/metal/MTLDepthStencilTexture.h"
+#include "ngfx/porting/metal/MTLGraphicsContext.h"
 using namespace ngfx;
 
 void MTLDepthStencilTexture::create(MTLGraphicsContext* ctx, uint32_t w, uint32_t h, ::MTLPixelFormat fmt) {

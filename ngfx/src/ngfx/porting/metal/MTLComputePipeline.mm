@@ -1,9 +1,9 @@
-#include "porting/metal/MTLComputePipeline.h"
-#include "porting/metal/MTLComputeCommandEncoder.h"
-#include "porting/metal/MTLCommandBuffer.h"
-#include "porting/metal/MTLPipelineUtil.h"
-#include "porting/metal/MTLShaderModule.h"
-#include "porting/metal/MTLGraphicsContext.h"
+#include "ngfx/porting/metal/MTLComputePipeline.h"
+#include "ngfx/porting/metal/MTLComputeCommandEncoder.h"
+#include "ngfx/porting/metal/MTLCommandBuffer.h"
+#include "ngfx/porting/metal/MTLPipelineUtil.h"
+#include "ngfx/porting/metal/MTLShaderModule.h"
+#include "ngfx/porting/metal/MTLGraphicsContext.h"
 using namespace ngfx;
 
 void MTLComputePipeline::create(ngfx::MTLGraphicsContext *ctx, id<MTLFunction> computeFunction) { 

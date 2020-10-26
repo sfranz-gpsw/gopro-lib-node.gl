@@ -21,7 +21,7 @@
 #pragma once
 #include "ngfx/graphics/Buffer.h"
 #include "ngfx/porting/metal/MTLUtil.h"
-#include "ngfx/DebugUtil.h"
+#include "ngfx/core/DebugUtil.h"
 #include <Metal/Metal.h>
 
 namespace ngfx {

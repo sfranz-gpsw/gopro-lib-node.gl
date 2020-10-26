@@ -1,10 +1,10 @@
-#include "porting/metal/MTLGraphicsPipeline.h"
-#include "porting/metal/MTLPipelineUtil.h"
-#include "porting/metal/MTLShaderModule.h"
-#include "porting/metal/MTLGraphicsContext.h"
-#include "porting/metal/MTLCommandBuffer.h"
-#include "porting/metal/MTLRenderCommandEncoder.h"
-#include "DebugUtil.h"
+#include "ngfx/porting/metal/MTLGraphicsPipeline.h"
+#include "ngfx/porting/metal/MTLPipelineUtil.h"
+#include "ngfx/porting/metal/MTLShaderModule.h"
+#include "ngfx/porting/metal/MTLGraphicsContext.h"
+#include "ngfx/porting/metal/MTLCommandBuffer.h"
+#include "ngfx/porting/metal/MTLRenderCommandEncoder.h"
+#include "ngfx/core/DebugUtil.h"
 using namespace ngfx;
 
 void MTLGraphicsPipeline::create(MTLGraphicsContext* ctx, const State& state, MTLVertexDescriptor* vertexDescriptor,

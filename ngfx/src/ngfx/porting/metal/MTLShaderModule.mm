@@ -1,8 +1,8 @@
-#include "porting/metal/MTLShaderModule.h"
-#include "porting/metal/MTLDevice.h"
-#include "graphics/Config.h"
-#include "DebugUtil.h"
-#include "File.h"
+#include "ngfx/porting/metal/MTLShaderModule.h"
+#include "ngfx/porting/metal/MTLDevice.h"
+#include "ngfx/graphics/Config.h"
+#include "ngfx/core/DebugUtil.h"
+#include "ngfx/core/File.h"
 using namespace ngfx;
 using namespace std;
 

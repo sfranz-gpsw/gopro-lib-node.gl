@@ -1,6 +1,6 @@
-#include "porting/metal/MTLFramebuffer.h"
-#include "porting/metal/MTLTexture.h"
-#include "DebugUtil.h"
+#include "ngfx/porting/metal/MTLFramebuffer.h"
+#include "ngfx/porting/metal/MTLTexture.h"
+#include "ngfx/core/DebugUtil.h"
 using namespace ngfx;
 
 void MTLFramebuffer::create(uint32_t w, uint32_t h, const ColorAttachments &colorAttachments,
