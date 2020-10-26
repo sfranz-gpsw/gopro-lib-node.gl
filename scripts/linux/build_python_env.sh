@@ -1,5 +1,11 @@
 #!/bin/bash
 #set -x
+
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+echo -e "${GREEN}Setting up python virtual environment${NC}"
+
 python3 -m venv nodegl-env
 
 install -C -d nodegl-env/share
@@ -26,7 +32,11 @@ sed -e "s#PREFIX#$CWD/nodegl-env#" \
 cd -
 install -C -m 644 libnodegl/libnodegl.pc nodegl-env/lib/pkgconfig
 
+echo -e "${GREEN}Installing pynodegl dependencies${NC}"
 source nodegl-env/bin/activate && python3 -m pip install -r pynodegl/requirements.txt; deactivate
+echo -e "${GREEN}Building pynodegl${NC}"
 source nodegl-env/bin/activate && PKG_CONFIG_PATH=$PWD/nodegl-env/lib/pkgconfig LDFLAGS=-Wl,-rpath,$PWD/nodegl-env/lib python3 -m pip -v install -e pynodegl; deactivate
+echo -e "${GREEN}Installing pynodegl-utils dependencies${NC}"
 source nodegl-env/bin/activate && python3 -m pip install -r pynodegl-utils/requirements.txt; deactivate
+echo -e "${GREEN}Building pynodegl-utils${NC}"
 source nodegl-env/bin/activate && PKG_CONFIG_PATH=$PWD/nodegl-env/lib/pkgconfig LDFLAGS=-Wl,-rpath,$PWD/nodegl-env/lib python3 -m pip -v install -e pynodegl-utils; deactivate
