@@ -191,6 +191,8 @@ static int offscreen_rendertarget_init(struct gctx *s)
     if (ret < 0)
         return ret;
 
+    s->default_rendertarget = s_priv->rt;
+
     s_priv->capture_func = ios_capture ? capture_ios : capture_default;
 
     ngli_gctx_bind_rendertarget(s, s_priv->rt);
