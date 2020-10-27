@@ -25,7 +25,7 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
-#include "glcontext.h"
+#include "nodegl/porting/gl/glcontext.h"
 
 EGLImageKHR ngli_eglCreateImageKHR(struct glcontext *gl,
                                    EGLContext handle,
