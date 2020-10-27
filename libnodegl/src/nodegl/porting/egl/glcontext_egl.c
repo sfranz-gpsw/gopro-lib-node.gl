@@ -48,6 +48,7 @@
 #define EGL_PLATFORM_SURFACELESS_MESA 0x31DD
 #define EGL_PLATFORM_WAYLAND 0x31D8
 #define ENABLE_DEBUG
+
 struct egl_priv {
     EGLNativeDisplayType native_display;
     int own_native_display;
