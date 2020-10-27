@@ -1,16 +1,16 @@
 #include "capture.h"
 #include "log.h"
-#ifdef _WIN32
 #include "renderdoc_app.h"
+#ifdef _WIN32
 #include <Windows.h>
 #else
-#include "renderdoc.h"
 #include <dlfcn.h>
 #endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 static RENDERDOC_API_1_4_1 *rdoc_api = NULL;
+void* _capture_device = NULL; //TODO: remove
 
 void init_capture() {
 #ifdef _WIN32
@@ -32,9 +32,9 @@ void init_capture() {
 }
 
 void begin_capture() {
-    rdoc_api->StartFrameCapture(NULL, NULL);
+    rdoc_api->StartFrameCapture(_capture_device, NULL);
 }
 
 void end_capture() {
-    rdoc_api->EndFrameCapture(NULL, NULL);
+    rdoc_api->EndFrameCapture(_capture_device, NULL);
 }

@@ -362,10 +362,10 @@ static void gl_destroy(struct gctx *s)
 {
     struct gctx_gl *s_priv = (struct gctx_gl *)s;
     offscreen_rendertarget_reset(s);
-    ngli_glcontext_freep(&s_priv->glcontext);
 #ifdef ENABLE_CAPTURE
     if (DEBUG_CAPTURE) end_capture();
 #endif
+    ngli_glcontext_freep(&s_priv->glcontext);
 }
 
 static int gl_transform_cull_mode(struct gctx *s, int cull_mode)

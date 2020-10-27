@@ -327,8 +327,9 @@ try_again:;
 
             if (i)
                 LOG(WARNING, "falling back on OpenGL %d.%d", gl_versions[i].major, gl_versions[i].minor);
-
             egl->handle = eglCreateContext(egl->display, egl->config, shared_context, ctx_attribs);
+            extern void* _capture_device;
+            _capture_device = egl->handle;
             if (egl->handle)
                 break;
         }
