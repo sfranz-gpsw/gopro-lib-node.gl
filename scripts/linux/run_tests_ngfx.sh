@@ -1,3 +1,4 @@
+#!/bin/bash
 rm /tmp/LOG_NGFX
 source nodegl-env/bin/activate
 TESTS=`cd tests && make tests-list | grep test-$FILTER`

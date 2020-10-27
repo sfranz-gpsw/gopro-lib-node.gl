@@ -76,6 +76,8 @@ target_link_libraries(nodegl PUBLIC
 )
 
 target_link_directories(nodegl PUBLIC 
+    ${NODEGL_NGFX_BACKEND_LIBRARY_DIRS}
+    ${NODEGL_GL_BACKEND_LIBRARY_DIRS}
     ${NODEGL_VK_BACKEND_LIBRARY_DIRS}
 )
 
