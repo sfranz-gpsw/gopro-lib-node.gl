@@ -31,6 +31,10 @@ ifeq ($(DEBUG_GL),yes)
 	PROJECT_CFLAGS += -DDEBUG_GL
 endif
 
+ifeq ($(DEBUG_VK),yes)
+	PROJECT_CFLAGS += -DDEBUG_VK
+endif
+
 ifeq ($(LOGTRACE),yes)
 	PROJECT_CFLAGS += -DLOGTRACE
 endif

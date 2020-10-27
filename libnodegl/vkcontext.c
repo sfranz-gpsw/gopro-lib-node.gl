@@ -41,10 +41,8 @@
 #include "nodegl.h"
 #include "vkcontext.h"
 
-// FIXME: rely on DEBUG_VK
-#define ENABLE_DEBUG 1
 
-#if ENABLE_DEBUG
+#ifdef DEBUG_VK
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
                                                      VkDebugUtilsMessageTypeFlagsEXT type,
                                                      const VkDebugUtilsMessengerCallbackDataEXT *callback_data,
@@ -169,7 +167,7 @@ static VkResult create_instance(struct vkcontext *s, int platform)
         }
     }
 
-#if ENABLE_DEBUG
+#ifdef DEBUG_VK
     int has_debug_extension = 0;
     const char *debug_extension = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
     for (uint32_t i = 0; i < s->nb_extensions; i++) {
@@ -220,7 +218,7 @@ static VkResult create_instance(struct vkcontext *s, int platform)
     if (res != VK_SUCCESS)
         return res;
 
-#if ENABLE_DEBUG
+#if DEBUG_VK
     if (has_debug_extension) {
         VK_LOAD_FUN(s->instance, CreateDebugUtilsMessengerEXT);
         if (!CreateDebugUtilsMessengerEXT)

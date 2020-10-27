@@ -94,7 +94,7 @@ static VkResult create_swapchain(struct gctx *s)
     s_priv->height = s_priv->extent.height;
     LOG(INFO, "current extent: %dx%d", s_priv->extent.width, s_priv->extent.height);
 
-    uint32_t img_count = s_priv->surface_caps.minImageCount + 1;
+    uint32_t img_count = s_priv->surface_caps.minImageCount;
     if (s_priv->surface_caps.maxImageCount && img_count > s_priv->surface_caps.maxImageCount)
         img_count = s_priv->surface_caps.maxImageCount;
     LOG(INFO, "swapchain image count: %d [%d-%d]", img_count,
