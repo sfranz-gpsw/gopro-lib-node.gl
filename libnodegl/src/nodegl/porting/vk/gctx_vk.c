@@ -43,9 +43,9 @@
 #include "nodegl/porting/vk/swapchain_vk.h"
 #include "nodegl/porting/vk/util_vk.h"
 #include <limits.h>
-#ifdef ENABLE_RENDERDOC_CAPTURE
-#include "renderdoc_utils.h"
-static bool DEBUG_CAPTURE = false;
+#ifdef ENABLE_CAPTURE
+#include "tools/capture/capture.h"
+static int DEBUG_CAPTURE;
 #endif
 
 int ngli_gctx_vk_begin_transient_command(struct gctx *s, VkCommandBuffer *command_buffer)
@@ -296,9 +296,9 @@ static int vk_init(struct gctx *s)
 {
     const struct ngl_config *config = &s->config;
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
-#ifdef ENABLE_RENDERDOC_CAPTURE
+#ifdef ENABLE_CAPTURE
     DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != NULL);
-    if (DEBUG_CAPTURE) init_renderdoc();
+    if (DEBUG_CAPTURE) init_capture();
 #endif
     /* FIXME */
     s->features = -1;
@@ -322,8 +322,8 @@ static int vk_init(struct gctx *s)
         ngli_vkcontext_freep(&s_priv->vkcontext);
         return ret;
     }
-#ifdef ENABLE_RENDERDOC_CAPTURE
-    if (DEBUG_CAPTURE) begin_renderdoc_capture();
+#ifdef ENABLE_CAPTURE
+    if (DEBUG_CAPTURE) begin_capture();
 #endif
     struct vkcontext *vk = s_priv->vkcontext;
 
@@ -625,8 +625,8 @@ static void vk_destroy(struct gctx *s)
     ngli_darray_reset(&s_priv->signal_semaphores);
 
     ngli_vkcontext_freep(&s_priv->vkcontext);
-#ifdef ENABLE_RENDERDOC_CAPTURE
-    if (DEBUG_CAPTURE) end_renderdoc_capture();
+#ifdef ENABLE_CAPTURE
+    if (DEBUG_CAPTURE) end_capture();
 #endif
 }
 

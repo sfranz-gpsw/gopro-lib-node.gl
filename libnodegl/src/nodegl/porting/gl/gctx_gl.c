@@ -38,6 +38,10 @@
 #include "nodegl/porting/gl/program_gl.h"
 #include "nodegl/porting/gl/rendertarget_gl.h"
 #include "nodegl/porting/gl/texture_gl.h"
+#ifdef ENABLE_CAPTURE
+#include "tools/capture/capture.h"
+static int DEBUG_CAPTURE;
+#endif
 
 #if defined(HAVE_VAAPI)
 #include "vaapi.h"
@@ -243,7 +247,10 @@ static int gl_init(struct gctx *s)
     int ret;
     const struct ngl_config *config = &s->config;
     struct gctx_gl *s_priv = (struct gctx_gl *)s;
-
+#ifdef ENABLE_CAPTURE
+    DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != NULL);
+    if (DEBUG_CAPTURE) init_capture();
+#endif
     s_priv->glcontext = ngli_glcontext_new(config);
     if (!s_priv->glcontext)
         return NGL_ERROR_MEMORY;
@@ -251,6 +258,10 @@ static int gl_init(struct gctx *s)
 #ifdef ENABLE_DEBUG
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glDebugMessageCallback(debug_message_callback, NULL);
+#endif
+
+#ifdef ENABLE_CAPTURE
+    if (DEBUG_CAPTURE) begin_capture();
 #endif
 
     struct glcontext *gl = s_priv->glcontext;
@@ -352,6 +363,9 @@ static void gl_destroy(struct gctx *s)
     struct gctx_gl *s_priv = (struct gctx_gl *)s;
     offscreen_rendertarget_reset(s);
     ngli_glcontext_freep(&s_priv->glcontext);
+#ifdef ENABLE_CAPTURE
+    if (DEBUG_CAPTURE) end_capture();
+#endif
 }
 
 static int gl_transform_cull_mode(struct gctx *s, int cull_mode)
