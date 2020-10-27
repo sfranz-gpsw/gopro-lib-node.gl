@@ -18,6 +18,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 #include "nodegl/porting/ngfx/gctx_ngfx.h"
 #include "nodegl/porting/ngfx/buffer_ngfx.h"
 #include "nodegl/porting/ngfx/gtimer_ngfx.h"

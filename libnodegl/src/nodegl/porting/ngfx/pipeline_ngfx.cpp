@@ -78,9 +78,9 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
     ngli_darray_init(&s->attribute_descs, sizeof(struct pipeline_attribute_desc), 0);
 
     ngli_assert(ngli_darray_count(&s->uniforms) == 0);
-    ngli_darray_init(&s->textures, sizeof(struct texture*), 0);
-    ngli_darray_init(&s->buffers,  sizeof(struct buffer*), 0);
-    ngli_darray_init(&s->attributes, sizeof(struct buffer*), 0);
+    ngli_darray_init(&s->textures, sizeof(struct texture *), 0);
+    ngli_darray_init(&s->buffers,  sizeof(struct buffer *), 0);
+    ngli_darray_init(&s->attributes, sizeof(struct buffer *), 0);
 
     program_ngfx* program = (program_ngfx*)params->program;
     pipeline_ngfx* pipeline = (pipeline_ngfx*)s;
@@ -146,7 +146,7 @@ int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_param
     return 0;
 }
 
-static int update_blocks(struct pipeline* s,  const struct pipeline_desc_params *pipeline_desc_params) {
+static int update_blocks(struct pipeline *s,  const struct pipeline_desc_params *pipeline_desc_params) {
     /* Uniform blocks */
     memcpy(s->ublock, pipeline_desc_params->ublock, sizeof(s->ublock));
     memcpy(s->ubuffer, pipeline_desc_params->ubuffer, sizeof(s->ubuffer));

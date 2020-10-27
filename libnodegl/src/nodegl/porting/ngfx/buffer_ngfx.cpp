@@ -18,6 +18,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 #include "nodegl/core/memory.h"
 #include "nodegl/porting/ngfx/buffer_ngfx.h"
 #include "nodegl/porting/ngfx/gctx_ngfx.h"
@@ -56,19 +57,19 @@ int ngli_buffer_ngfx_upload(struct buffer *s, const void *data, uint32_t size, u
     return 0;
 }
 
-int ngli_buffer_ngfx_download(struct buffer* s, void* data, uint32_t size, uint32_t offset)
+int ngli_buffer_ngfx_download(struct buffer *s, void *data, uint32_t size, uint32_t offset)
 {
     TODO("Buffer download");
     return 0;
 }
 
-int ngli_buffer_ngfx_map(struct buffer *s, int size, uint32_t offset, void** data)
+int ngli_buffer_ngfx_map(struct buffer *s, int size, uint32_t offset, void **data)
 {
     TODO("Buffer::map");
     return 0;
 }
 
-void ngli_buffer_ngfx_unmap(struct buffer* s) {
+void ngli_buffer_ngfx_unmap(struct buffer *s) {
     TODO("Buffer::unmap");
 }
 

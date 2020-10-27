@@ -73,7 +73,7 @@ int ngli_texture_ngfx_match_dimensions(const struct texture *s, int width, int h
 int ngli_texture_ngfx_upload(struct texture *s, const uint8_t *data, int linesize) {
     texture_ngfx *texture = (struct texture_ngfx *)s;
     uint32_t size = s->bytes_per_pixel * texture->v->w * texture->v->h * texture->v->d * texture->v->arrayLayers;
-    texture->v->upload((void*)data, size, 0, 0, 0, texture->v->w, texture->v->h, texture->v->d, texture->v->arrayLayers);
+    texture->v->upload((void *)data, size, 0, 0, 0, texture->v->w, texture->v->h, texture->v->d, texture->v->arrayLayers);
     return 0;
 }
 int ngli_texture_ngfx_generate_mipmap(struct texture *s) {
