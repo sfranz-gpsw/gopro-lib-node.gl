@@ -178,4 +178,4 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     add_custom_target(build_python_env DEPENDS ${CMAKE_BINARY_DIR}/build_python_env.task)
 endif()
 
-add_dependencies(pyshell ngfx nodegl build_python_env)
+#add_dependencies(pyshell ngfx nodegl build_python_env)

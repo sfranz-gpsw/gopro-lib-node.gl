@@ -417,6 +417,9 @@ static int inject_block(struct pgcraft *s, struct bstr *b,
     if (named_block->stage != stage)
         return 0;
 
+    struct ngl_ctx *ctx = s->ctx;
+    const struct ngl_config *config = &ctx->config;
+
     const struct block *block = named_block->block;
 
     struct pipeline_buffer_desc pl_buffer_desc = {
@@ -442,7 +445,9 @@ static int inject_block(struct pgcraft *s, struct bstr *b,
 
     const char *keyword = get_glsl_type(block->type);
     struct bstr *memory_qualifiers = ngli_bstr_create();
-    if ((0 == strcmp(keyword, "buffer")) &&  (stage != NGLI_PROGRAM_SHADER_COMP)) ngli_bstr_print(memory_qualifiers , "readonly");
+    if (config->backend != BACKEND_GL) {
+        if ((0 == strcmp(keyword, "buffer")) &&  (stage != NGLI_PROGRAM_SHADER_COMP)) ngli_bstr_print(memory_qualifiers , "readonly");
+    }
     ngli_bstr_printf(b, " %s %s %s_block {\n", keyword, ngli_bstr_strptr(memory_qualifiers), named_block->name);
     ngli_bstr_freep(&memory_qualifiers);
     const struct block_field *field_info = ngli_darray_data(&block->fields);

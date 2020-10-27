@@ -285,8 +285,9 @@ int ngli_program_gl_init(struct program *s, const char *vertex, const char *frag
         ngli_glShaderSource(gl, shader, 1, &shaders[i].src, NULL);
         ngli_glCompileShader(gl, shader);
         ret = program_check_status(gl, shader, GL_COMPILE_STATUS);
-        if (ret < 0)
+        if (ret < 0) {
             goto fail;
+        }
         ngli_glAttachShader(gl, s_priv->id, shader);
     }
 
