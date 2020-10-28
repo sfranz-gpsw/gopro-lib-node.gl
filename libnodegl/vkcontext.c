@@ -341,7 +341,24 @@ static VkResult create_window_surface(struct vkcontext *s, const struct ngl_conf
     } else if (platform == NGL_PLATFORM_WINDOWS) {
         ngli_assert(0);
     } else if (platform == NGL_PLATFORM_WAYLAND) {
-        ngli_assert(0);
+#if defined(HAVE_WAYLAND)
+        const VkWaylandSurfaceCreateInfoKHR surface_create_info = {
+            .sType   = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR,
+            .display = (struct wl_display *)config->display,
+            .surface = (struct wl_surface *)config->window,
+        };
+
+        VK_LOAD_FUN(s->instance, CreateWaylandSurfaceKHR);
+        if (!CreateWaylandSurfaceKHR) {
+            return VK_ERROR_EXTENSION_NOT_PRESENT;
+        }
+
+        VkResult res = CreateWaylandSurfaceKHR(s->instance, &surface_create_info, NULL, &s->surface);
+        if (res != VK_SUCCESS)
+            return res;
+#else
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+#endif
     } else {
         ngli_assert(0);
     }
