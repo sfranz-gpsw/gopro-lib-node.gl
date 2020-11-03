@@ -27,7 +27,7 @@ import sys
 from pynodegl_utils.com import load_script
 
 
-def _run_test(func_name, tester, ref_data, out_data):
+def _run_test(func_name, tester, ref_data, out_data, debug = False):
     err = []
     if len(ref_data) != len(out_data):
         err = ['{}: data len mismatch (ref:{} out:{})'.format(func_name, len(ref_data), len(out_data))]
@@ -46,16 +46,16 @@ def _get_ref_data(tester, ref_filepath):
     return tester.deserialize(serialized_data)
 
 
-def _run_test_default(func_name, tester, ref_filepath):
+def _run_test_default(func_name, tester, ref_filepath, debug = False):
     if not op.exists(ref_filepath):
         sys.stderr.write('{}: reference file {} not found, use GEN=yes to create it\n'.format(func_name, ref_filepath))
         sys.exit(1)
     ref_data = _get_ref_data(tester, ref_filepath)
-    out_data = tester.get_out_data()
-    return _run_test(func_name, tester, ref_data, out_data)
+    out_data = tester.get_out_data(debug = debug, debug_func = func_name)
+    return _run_test(func_name, tester, ref_data, out_data, debug)
 
 
-def _run_test_gen_yes(func_name, tester, ref_filepath):
+def _run_test_gen_yes(func_name, tester, ref_filepath, debug = False):
     out_data = tester.get_out_data()
     if not op.exists(ref_filepath):
         sys.stderr.write('{}: creating {}\n'.format(func_name, ref_filepath))
@@ -65,7 +65,7 @@ def _run_test_gen_yes(func_name, tester, ref_filepath):
     return _run_test(func_name, tester, ref_data, out_data)
 
 
-def _run_test_gen_update(func_name, tester, ref_filepath):
+def _run_test_gen_update(func_name, tester, ref_filepath, debug = False):
     out_data = tester.get_out_data()
     if not op.exists(ref_filepath):
         sys.stderr.write('{}: creating {}\n'.format(func_name, ref_filepath))
@@ -79,7 +79,7 @@ def _run_test_gen_update(func_name, tester, ref_filepath):
     return None
 
 
-def _run_test_gen_force(func_name, tester, ref_filepath):
+def _run_test_gen_force(func_name, tester, ref_filepath, debug = False):
     if not op.exists(ref_filepath):
         sys.stderr.write('{}: creating {}\n'.format(func_name, ref_filepath))
     else:
@@ -104,6 +104,8 @@ def run():
         sys.stderr.write('GEN environment variable must be any of {}\n'.format(', '.join(allowed_gen_opt)))
         sys.exit(1)
 
+    debug_opt = os.environ.get('DEBUG') != None
+
     if len(sys.argv) != 4:
         sys.stderr.write('''Usage: [GEN={}] {} <script_path> <func_name> <ref_filepath>
 
@@ -121,9 +123,12 @@ def run():
     tester = func.tester
 
     test_func = _gen_map.get(gen_opt, _run_test_default)
-    err = test_func(func_name, tester, ref_filepath)
+    print(func_name + ' start')
+    err = test_func(func_name, tester, ref_filepath, debug = debug_opt)
     if err:
         sys.stderr.write('\n'.join(err) + '\n')
+        print(func_name + ' failed', file=sys.stderr)
         sys.exit(1)
-
+    else:
+        print(func_name + ' passed')
     sys.exit(0)

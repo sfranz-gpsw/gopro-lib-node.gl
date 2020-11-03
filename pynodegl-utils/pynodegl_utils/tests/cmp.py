@@ -24,7 +24,7 @@ import os
 import difflib
 import pynodegl as ngl
 from pynodegl_utils.misc import get_backend
-
+import tempfile
 
 class CompareBase:
 
@@ -36,7 +36,7 @@ class CompareBase:
     def deserialize(data):
         return data
 
-    def get_out_data(self):
+    def get_out_data(self, debug = False, debug_func = ''):
         raise NotImplementedError
 
     def compare_data(self, test_name, ref_data, out_data):
@@ -133,3 +133,9 @@ def get_test_decorator(cls):
             return user_func
         return test_decorator
     return test_func
+    
+def get_temp_dir():
+    dir = os.path.normpath(tempfile.gettempdir() + "/pynodegl_tests")
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+    return dir
