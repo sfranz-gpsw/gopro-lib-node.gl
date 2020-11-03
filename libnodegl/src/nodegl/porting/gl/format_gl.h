@@ -22,9 +22,9 @@
 #ifndef FORMAT_GL_H
 #define FORMAT_GL_H
 
-#include "format.h"
-#include "glcontext.h"
-#include "glincludes.h"
+#include "nodegl/core/format.h"
+#include "nodegl/porting/gl/glcontext.h"
+#include "nodegl/porting/gl/glincludes.h"
 
 int ngli_format_get_gl_texture_format(struct glcontext *gl,
                                       int data_format,

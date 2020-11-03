@@ -22,8 +22,8 @@
 #ifndef PROGRAM_GL_H
 #define PROGRAM_GL_H
 
-#include "glincludes.h"
-#include "program.h"
+#include "nodegl/porting/gl/glincludes.h"
+#include "nodegl/core/program.h"
 
 struct gctx;
 

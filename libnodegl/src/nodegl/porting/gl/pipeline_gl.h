@@ -22,8 +22,8 @@
 #ifndef PIPELINE_GL_H
 #define PIPELINE_GL_H
 
-#include "pipeline.h"
-#include "glincludes.h"
+#include "nodegl/core/pipeline.h"
+#include "nodegl/porting/gl/glincludes.h"
 
 struct gctx;
 struct glcontext;

@@ -22,8 +22,8 @@
 #ifndef BUFFER_GL_H
 #define BUFFER_GL_H
 
-#include "buffer.h"
-#include "glincludes.h"
+#include "nodegl/core/buffer.h"
+#include "nodegl/porting/gl/glincludes.h"
 
 struct buffer_gl {
     struct buffer parent;

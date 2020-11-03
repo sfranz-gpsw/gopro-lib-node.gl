@@ -22,13 +22,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "gctx_gl.h"
-#include "glincludes.h"
-#include "log.h"
-#include "memory.h"
-#include "nodes.h"
-#include "program_gl.h"
-#include "type.h"
+#include "nodegl/porting/gl/gctx_gl.h"
+#include "nodegl/porting/gl/glincludes.h"
+#include "nodegl/core/log.h"
+#include "nodegl/core/memory.h"
+#include "nodegl/core/nodes.h"
+#include "nodegl/porting/gl/program_gl.h"
+#include "nodegl/core/type.h"
 
 static int program_check_status(const struct glcontext *gl, GLuint id, GLenum status)
 {

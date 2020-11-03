@@ -22,8 +22,8 @@
 #ifndef RENDERTARGET_GL_H
 #define RENDERTARGET_GL_H
 
-#include "glincludes.h"
-#include "rendertarget.h"
+#include "nodegl/porting/gl/glincludes.h"
+#include "nodegl/core/rendertarget.h"
 
 struct rendertarget_gl {
     struct rendertarget parent;

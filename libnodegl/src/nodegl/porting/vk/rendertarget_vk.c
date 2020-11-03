@@ -2,15 +2,15 @@
 #include <string.h>
 #include <vulkan/vulkan.h>
 
-#include "format.h"
-#include "gctx_vk.h"
-#include "log.h"
-#include "memory.h"
-#include "nodes.h"
-#include "rendertarget_vk.h"
-#include "texture_vk.h"
-#include "gctx_vk.h"
-#include "format_vk.h"
+#include "nodegl/core/format.h"
+#include "nodegl/porting/vk/gctx_vk.h"
+#include "nodegl/core/log.h"
+#include "nodegl/core/memory.h"
+#include "nodegl/core/nodes.h"
+#include "nodegl/porting/vk/rendertarget_vk.h"
+#include "nodegl/porting/vk/texture_vk.h"
+#include "nodegl/porting/vk/gctx_vk.h"
+#include "nodegl/porting/vk/format_vk.h"
 
 static const VkAttachmentLoadOp load_op_map[] = {
     [NGLI_LOAD_OP_LOAD]      = VK_ATTACHMENT_LOAD_OP_LOAD,

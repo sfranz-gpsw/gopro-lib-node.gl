@@ -35,10 +35,10 @@
 #include <wayland-client.h>
 #endif
 
-#include "darray.h"
-#include "nodegl.h"
-#include "rendertarget.h"
-#include "texture.h"
+#include "nodegl/core/darray.h"
+#include "nodegl/core/nodegl.h"
+#include "nodegl/core/rendertarget.h"
+#include "nodegl/core/texture.h"
 
 #define VK_FUN(name) PFN_vk##name
 

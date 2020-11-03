@@ -23,7 +23,7 @@
 #define BUFFER_VK_H
 
 #include <vulkan/vulkan.h>
-#include "buffer.h"
+#include "nodegl/core/buffer.h"
 
 struct buffer_vk {
     struct buffer parent;

@@ -22,26 +22,25 @@
 #include <string.h>
 #include <inttypes.h>
 #include <stdlib.h>
-#include <limits.h>
 
 #include <vulkan/vulkan.h>
 
-#include "gctx_vk.h"
-#include "log.h"
-#include "math_utils.h"
-#include "memory.h"
-#include "nodes.h"
-#include "pgcache.h"
-#include "vkcontext.h"
-#include "vkutils.h"
+#include "nodegl/core/math_utils.h"
+#include "nodegl/core/nodes.h"
+#include "nodegl/porting/vk/vkcontext.h"
+#include "nodegl/porting/vk/gctx_vk.h"
+#include "nodegl/core/log.h"
+#include "nodegl/core/memory.h"
+#include "nodegl/core/pgcache.h"
 
 /* FIXME: missing includes probably */
-#include "buffer_vk.h"
-#include "texture_vk.h"
-#include "rendertarget_vk.h"
-#include "program_vk.h"
-#include "pipeline_vk.h"
-#include "gtimer_vk.h"
+#include "nodegl/porting/vk/buffer_vk.h"
+#include "nodegl/porting/vk/texture_vk.h"
+#include "nodegl/porting/vk/rendertarget_vk.h"
+#include "nodegl/porting/vk/program_vk.h"
+#include "nodegl/porting/vk/pipeline_vk.h"
+#include "nodegl/porting/vk/gtimer_vk.h"
+#include <limits.h>
 
 
 static VkSurfaceFormatKHR select_swapchain_surface_format(const VkSurfaceFormatKHR *formats,

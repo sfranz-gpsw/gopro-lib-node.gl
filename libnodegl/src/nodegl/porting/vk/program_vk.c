@@ -22,11 +22,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "log.h"
-#include "memory.h"
-#include "nodes.h"
-#include "program_vk.h"
-#include "gctx_vk.h"
+#include "nodegl/core/log.h"
+#include "nodegl/core/memory.h"
+#include "nodegl/core/nodes.h"
+#include "nodegl/porting/vk/program_vk.h"
+#include "nodegl/porting/vk/gctx_vk.h"
 
 struct program *ngli_program_vk_create(struct gctx *gctx)
 {

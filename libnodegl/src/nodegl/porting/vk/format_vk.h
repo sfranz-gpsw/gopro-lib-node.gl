@@ -22,8 +22,8 @@
 #ifndef FORMAT_VK_H
 #define FORMAT_VK_H
 
-#include "format.h"
-#include "vkcontext.h"
+#include "nodegl/core/format.h"
+#include "nodegl/porting/vk/vkcontext.h"
 
 int ngli_format_get_vk_format(struct vkcontext *vk, int data_format, VkFormat *format);
 

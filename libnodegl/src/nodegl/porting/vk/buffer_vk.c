@@ -22,12 +22,12 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "buffer_vk.h"
-#include "log.h"
-#include "nodes.h"
-#include "memory.h"
-#include "gctx_vk.h"
-#include "vkcontext.h"
+#include "nodegl/porting/vk/buffer_vk.h"
+#include "nodegl/core/log.h"
+#include "nodegl/core/nodes.h"
+#include "nodegl/core/memory.h"
+#include "nodegl/porting/vk/gctx_vk.h"
+#include "nodegl/porting/vk/vkcontext.h"
 
 #define USAGE (VK_BUFFER_USAGE_VERTEX_BUFFER_BIT  | \
                VK_BUFFER_USAGE_INDEX_BUFFER_BIT   | \
