@@ -21,11 +21,11 @@
 
 #include <string.h>
 
-#include "gctx.h"
-#include "gctx_gl.h"
-#include "gtimer_gl.h"
-#include "log.h"
-#include "memory.h"
+#include "nodegl/core/gctx.h"
+#include "nodegl/porting/gl/gctx_gl.h"
+#include "nodegl/porting/gl/gtimer_gl.h"
+#include "nodegl/core/log.h"
+#include "nodegl/core/memory.h"
 
 static void noop(const struct glcontext *gl, ...)
 {

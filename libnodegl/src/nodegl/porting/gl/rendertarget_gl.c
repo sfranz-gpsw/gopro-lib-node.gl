@@ -21,16 +21,16 @@
 
 #include <string.h>
 
-#include "rendertarget_gl.h"
-#include "format.h"
-#include "gctx_gl.h"
-#include "glcontext.h"
-#include "glincludes.h"
-#include "log.h"
-#include "memory.h"
-#include "nodes.h"
-#include "texture_gl.h"
-#include "utils.h"
+#include "nodegl/porting/gl/rendertarget_gl.h"
+#include "nodegl/core/format.h"
+#include "nodegl/porting/gl/gctx_gl.h"
+#include "nodegl/porting/gl/glcontext.h"
+#include "nodegl/porting/gl/glincludes.h"
+#include "nodegl/core/log.h"
+#include "nodegl/core/memory.h"
+#include "nodegl/core/nodes.h"
+#include "nodegl/porting/gl/texture_gl.h"
+#include "nodegl/core/utils.h"
 
 static GLenum get_gl_attachment_index(GLenum format)
 {

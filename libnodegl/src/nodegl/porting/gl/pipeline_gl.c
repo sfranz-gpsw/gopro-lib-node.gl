@@ -21,18 +21,18 @@
 
 #include <string.h>
 
-#include "buffer_gl.h"
-#include "format.h"
-#include "gctx_gl.h"
-#include "glcontext.h"
-#include "log.h"
-#include "memory.h"
-#include "nodes.h"
-#include "pipeline_gl.h"
-#include "program_gl.h"
-#include "texture_gl.h"
-#include "topology_gl.h"
-#include "type_gl.h"
+#include "nodegl/porting/gl/buffer_gl.h"
+#include "nodegl/core/format.h"
+#include "nodegl/porting/gl/gctx_gl.h"
+#include "nodegl/porting/gl/glcontext.h"
+#include "nodegl/core/log.h"
+#include "nodegl/core/memory.h"
+#include "nodegl/core/nodes.h"
+#include "nodegl/porting/gl/pipeline_gl.h"
+#include "nodegl/porting/gl/program_gl.h"
+#include "nodegl/porting/gl/texture_gl.h"
+#include "nodegl/porting/gl/topology_gl.h"
+#include "nodegl/porting/gl/type_gl.h"
 
 typedef void (*set_uniform_func)(struct glcontext *gl, GLint location, int count, const void *data);
 

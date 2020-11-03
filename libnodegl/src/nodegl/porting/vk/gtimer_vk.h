@@ -23,7 +23,7 @@
 #define GTIMER_VK_H
 
 #include <vulkan/vulkan.h>
-#include "gtimer.h"
+#include "nodegl/core/gtimer.h"
 
 struct gctx;
 

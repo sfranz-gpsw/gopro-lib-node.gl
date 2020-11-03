@@ -25,7 +25,7 @@
 
 #include "gctx.h"
 #include "hmap.h"
-#include "limit.h"
+#include "glimits.h"
 #include "log.h"
 #include "nodegl.h"
 #include "nodes.h"

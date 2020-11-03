@@ -37,12 +37,12 @@
 #include <android/hardware_buffer.h>
 #endif
 
-#include "egl.h"
-#include "format.h"
-#include "glcontext.h"
-#include "log.h"
-#include "nodegl.h"
-#include "utils.h"
+#include "nodegl/core/egl.h"
+#include "nodegl/core/format.h"
+#include "nodegl/porting/gl/glcontext.h"
+#include "nodegl/core/log.h"
+#include "nodegl/core/nodegl.h"
+#include "nodegl/core/utils.h"
 
 #define EGL_PLATFORM_X11 0x31D5
 #define EGL_PLATFORM_SURFACELESS_MESA 0x31DD

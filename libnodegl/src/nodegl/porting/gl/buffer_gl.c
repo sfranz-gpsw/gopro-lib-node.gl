@@ -21,13 +21,13 @@
 
 #include <string.h>
 
-#include "buffer_gl.h"
-#include "gctx_gl.h"
-#include "glcontext.h"
-#include "glincludes.h"
-#include "memory.h"
-#include "nodes.h"
-#include "log.h"
+#include "nodegl/porting/gl/buffer_gl.h"
+#include "nodegl/porting/gl/gctx_gl.h"
+#include "nodegl/porting/gl/glcontext.h"
+#include "nodegl/porting/gl/glincludes.h"
+#include "nodegl/core/memory.h"
+#include "nodegl/core/nodes.h"
+#include "nodegl/core/log.h"
 
 static const GLenum gl_usage_map[NGLI_BUFFER_USAGE_NB] = {
     [NGLI_BUFFER_USAGE_STATIC]  = GL_STATIC_DRAW,

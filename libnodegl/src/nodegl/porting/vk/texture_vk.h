@@ -24,8 +24,8 @@
 
 #include <vulkan/vulkan.h>
 
-#include "texture.h"
-#include "vkcontext.h"
+#include "nodegl/core/texture.h"
+#include "nodegl/porting/vk/vkcontext.h"
 
 struct texture_vk {
     struct texture parent;

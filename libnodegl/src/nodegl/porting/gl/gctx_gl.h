@@ -26,14 +26,14 @@
 #include <CoreVideo/CoreVideo.h>
 #endif
 
-#include "nodegl.h"
-#include "glstate.h"
-#include "graphicstate.h"
-#include "rendertarget.h"
-#include "pgcache.h"
-#include "pipeline.h"
-#include "gtimer.h"
-#include "gctx.h"
+#include "nodegl/core/nodegl.h"
+#include "nodegl/porting/gl/glstate.h"
+#include "nodegl/core/graphicstate.h"
+#include "nodegl/core/rendertarget.h"
+#include "nodegl/core/pgcache.h"
+#include "nodegl/core/pipeline.h"
+#include "nodegl/core/gtimer.h"
+#include "nodegl/core/gctx.h"
 
 struct ngl_ctx;
 struct rendertarget;

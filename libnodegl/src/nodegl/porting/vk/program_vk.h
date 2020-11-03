@@ -25,7 +25,7 @@
 #include <shaderc/shaderc.h>
 #include <vulkan/vulkan.h>
 
-#include "program.h"
+#include "nodegl/core/program.h"
 
 struct gctx;
 

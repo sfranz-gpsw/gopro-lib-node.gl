@@ -23,17 +23,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "bstr.h"
-#include "glcontext.h"
-#include "limit.h"
-#include "log.h"
-#include "memory.h"
-#include "nodegl.h"
-#include "utils.h"
-#include "glincludes.h"
+#include "nodegl/core/bstr.h"
+#include "nodegl/porting/gl/glcontext.h"
+#include "nodegl/core/glimits.h"
+#include "nodegl/core/log.h"
+#include "nodegl/core/memory.h"
+#include "nodegl/core/nodegl.h"
+#include "nodegl/core/utils.h"
+#include "nodegl/porting/gl/glincludes.h"
 
-#include "gldefinitions_data.h"
-#include "glfeatures_data.h"
+#include "nodegl/porting/gl/gldefinitions_data.h"
+#include "nodegl/porting/gl/glfeatures_data.h"
 
 NGLI_STATIC_ASSERT(gfloat_size,  sizeof(GLfloat)  == sizeof(float));
 NGLI_STATIC_ASSERT(gbyte_size,   sizeof(GLbyte)   == sizeof(char));

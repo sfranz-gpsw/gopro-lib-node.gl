@@ -19,8 +19,8 @@
  * under the License.
  */
 
-#include "format_gl.h"
-#include "utils.h"
+#include "nodegl/porting/gl/format_gl.h"
+#include "nodegl/core/utils.h"
 
 static int get_gl_format_type(struct glcontext *gl, int data_format,
                               GLint *formatp, GLint *internal_formatp, GLenum *typep)
