@@ -22,8 +22,8 @@
 #ifndef TEXTURE_GL_H
 #define TEXTURE_GL_H
 
-#include "glincludes.h"
-#include "texture.h"
+#include "nodegl/porting/gl/glincludes.h"
+#include "nodegl/core/texture.h"
 
 GLint ngli_texture_get_gl_min_filter(int min_filter, int mipmap_filter);
 GLint ngli_texture_get_gl_mag_filter(int mag_filter);

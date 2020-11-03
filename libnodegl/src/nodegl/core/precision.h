@@ -22,7 +22,7 @@
 #ifndef PRECISION_H
 #define PRECISION_H
 
-#include "params.h"
+#include "nodegl/core/params.h"
 
 enum {
     NGLI_PRECISION_AUTO,

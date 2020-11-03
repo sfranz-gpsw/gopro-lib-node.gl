@@ -24,8 +24,8 @@
 
 #include <vulkan/vulkan.h>
 
-#include "pipeline.h"
-#include "darray.h"
+#include "nodegl/core/pipeline.h"
+#include "nodegl/core/darray.h"
 
 struct gctx;
 

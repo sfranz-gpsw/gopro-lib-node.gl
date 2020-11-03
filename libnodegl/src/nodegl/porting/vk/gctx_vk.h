@@ -22,8 +22,8 @@
 #ifndef GCTX_VK_H
 #define GCTX_VK_H
 
-#include "gctx.h"
-#include "vkcontext.h"
+#include "nodegl/core/gctx.h"
+#include "nodegl/porting/vk/vkcontext.h"
 
 struct gctx_vk {
     struct gctx parent;
