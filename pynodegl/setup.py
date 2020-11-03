@@ -19,29 +19,51 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-
+import os
+import os.path as op
 from setuptools import setup, Command, Extension
 from setuptools.command.build_ext import build_ext
 
+#set graphics backend
+#GRAPHICS_BACKEND_VULKAN = 1
+GRAPHICS_BACKEND_DIRECT3D12 = 1
+#GRAPHICS_BACKEND_METAL = 1
 
 class LibNodeGLConfig:
 
     PKG_LIB_NAME = 'libnodegl'
 
     def __init__(self, pkg_config_bin='pkg-config'):
-        import subprocess
-
-        if subprocess.call([pkg_config_bin, '--exists', self.PKG_LIB_NAME]) != 0:
-            raise Exception(f'{self.PKG_LIB_NAME} is required to build pynodegl')
-
-        self.version       = subprocess.check_output([pkg_config_bin, '--modversion', self.PKG_LIB_NAME]).strip().decode()
-        self.data_root_dir = subprocess.check_output([pkg_config_bin, '--variable=datarootdir', self.PKG_LIB_NAME]).strip().decode()
-        pkgcfg_libs_cflags = subprocess.check_output([pkg_config_bin, '--libs', '--cflags', self.PKG_LIB_NAME]).decode()
-
-        flags = pkgcfg_libs_cflags.split()
-        self.include_dirs = [f[2:] for f in flags if f.startswith('-I')]
-        self.library_dirs = [f[2:] for f in flags if f.startswith('-L')]
-        self.libraries    = [f[2:] for f in flags if f.startswith('-l')]
+        if os.name == 'nt':
+            self.version = '0.0'
+            self.include_dirs = [ op.join(os.getcwd(),'..', 'nodegl-env', 'Include') ]
+            self.library_dirs = [ op.join(os.getcwd(),'..', 'nodegl-env', 'Lib') ]
+            self.libraries = [
+                'nodegl', 'ngfx',
+                'pthreadVC2', 
+                'sxplayer', 
+                'avcodec', 'avdevice', 'avformat', 'avfilter', 'avutil', 
+                'OpenGL32', 'gdi32', 'user32'
+            ]
+            if GRAPHICS_BACKEND_DIRECT3D12:
+                self.libraries.extend(['d3d12', 'shader_tools', 'dxgi', 'd3dcompiler'])
+            elif GRAPHICS_BACKEND_VULKAN:
+                self.libraries.extend(['vulkan-1', 'shaderc_combined'])
+            self.data_root_dir = op.join(os.getcwd(),'..', 'nodegl-env', 'share')
+        else:
+            import subprocess
+            
+            if subprocess.call([pkg_config_bin, '--exists', self.PKG_LIB_NAME]) != 0:
+                raise Exception(f'{self.PKG_LIB_NAME} is required to build pynodegl')
+            
+            self.version       = subprocess.check_output([pkg_config_bin, '--modversion', self.PKG_LIB_NAME]).strip().decode()
+            self.data_root_dir = subprocess.check_output([pkg_config_bin, '--variable=datarootdir', self.PKG_LIB_NAME]).strip().decode()
+            pkgcfg_libs_cflags = subprocess.check_output([pkg_config_bin, '--libs', '--cflags', self.PKG_LIB_NAME]).decode()
+            
+            flags = pkgcfg_libs_cflags.split()
+            self.include_dirs = [f[2:] for f in flags if f.startswith('-I')]
+            self.library_dirs = [f[2:] for f in flags if f.startswith('-L')]
+            self.libraries    = [f[2:] for f in flags if f.startswith('-l')]
 
 
 _LIB_CFG = LibNodeGLConfig()
@@ -356,7 +378,6 @@ cdef class {node}({parent_node}):
 
     @staticmethod
     def write_definitions_pyx():
-        import os.path as op
         specs_file = op.join(_LIB_CFG.data_root_dir, 'nodegl', 'nodes.specs')
         content = CommandUtils._gen_definitions_pyx(specs_file)
         with open('nodes_def.pyx', 'w') as output:
