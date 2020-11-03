@@ -47,6 +47,8 @@ else
 	PREFIX     ?= /usr/local
 endif
 
+$(info TARGET_OS: $(TARGET_OS))
+
 define capitalize
 $(shell echo $1 | tr a-z- A-Z_)
 endef
