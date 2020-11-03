@@ -1,1 +1,1 @@
-cd external && bash scripts/sync.sh; cd -
+cd external && bash scripts/sync.sh $1; cd -
