@@ -141,7 +141,7 @@ message(STATUS "CMAKE_CXX_FLAGS_RELWITHDEBINFO: ${CMAKE_CXX_FLAGS_RELWITHDEBINFO
 endif()
 
 #add_subdirectory(ngfx)
-#add_subdirectory(external/sxplayer-9.5.1)
+add_subdirectory(external/sxplayer-9.5.1)
 add_subdirectory(libnodegl)
 #add_subdirectory(pyshell)
 #add_subdirectory(shader-tools)
