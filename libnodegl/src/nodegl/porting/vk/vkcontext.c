@@ -43,11 +43,14 @@
 
 
 #ifdef DEBUG_VK
+#define FILTER_DEBUG_LEVEL_VK VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
                                                      VkDebugUtilsMessageTypeFlagsEXT type,
                                                      const VkDebugUtilsMessengerCallbackDataEXT *callback_data,
                                                      void *user_data)
 {
+    if (severity < FILTER_DEBUG_LEVEL_VK) return VK_FALSE;
     int level = NGL_LOG_INFO;
     switch (severity) {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:   level = NGL_LOG_ERROR;    break;
