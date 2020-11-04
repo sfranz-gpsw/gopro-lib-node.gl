@@ -24,6 +24,7 @@
 #include "nodegl.h"
 #include "darray.h"
 #include "memory.h"
+#include "log.h"
 #include "utils.h"
 
 static int reserve_non_aligned(struct darray *darray, int capacity)
@@ -103,8 +104,7 @@ void *ngli_darray_pop(struct darray *darray)
 
 void *ngli_darray_get(const struct darray *darray, int index)
 {
-    if (index < 0 || index >= darray->count)
-        return NULL;
+    ngli_assert(index >= 0 && index < darray->count);
     return darray->data + index * darray->element_size;
 }
 
