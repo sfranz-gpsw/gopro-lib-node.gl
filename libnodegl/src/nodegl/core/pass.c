@@ -298,11 +298,7 @@ static int register_attribute(struct pass *s, const char *name, struct ngl_node 
         buffer = block_priv->buffer;
     }
 
-    /*
-     * FIXME: we should probably expose ngl_position as vec3 instead of vec4 to
-     * avoid this exception.
-     */
-    const int attr_type = strcmp(name, "ngl_position") ? attribute_priv->data_type : NGLI_TYPE_VEC4;
+    const int attr_type = attribute_priv->data_type;
 
     struct pgcraft_attribute crafter_attribute = {
         .type   = attr_type,
