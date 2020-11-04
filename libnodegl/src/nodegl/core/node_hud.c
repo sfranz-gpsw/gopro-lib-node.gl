@@ -1265,7 +1265,7 @@ static int hud_init(struct ngl_node *node)
     if (ret < 0)
         return ret;
 
-    ret = ngli_buffer_upload(s->coords, coords, sizeof(coords));
+    ret = ngli_buffer_upload(s->coords, coords, sizeof(coords), 0);
     if (ret < 0)
         return ret;
 
@@ -1409,7 +1409,7 @@ static void hud_draw(struct ngl_node *node)
          x,     1.0f, 1.0f, 0.0f,
     };
 
-    int ret = ngli_buffer_upload(s->coords, coords, sizeof(coords));
+    int ret = ngli_buffer_upload(s->coords, coords, sizeof(coords), 0);
     if (ret < 0)
         return;
 
