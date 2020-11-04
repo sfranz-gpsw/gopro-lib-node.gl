@@ -24,6 +24,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct darray {
     uint8_t *data;
     int count;
@@ -55,5 +59,9 @@ static inline void ngli_darray_clear(struct darray *darray)
 {
     darray->count = 0;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

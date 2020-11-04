@@ -24,6 +24,10 @@
 
 #include "hmap.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct gctx;
 
 #define MAX_ID_LEN 128
@@ -52,5 +56,9 @@ struct program {
 struct program *ngli_program_create(struct gctx *gctx);
 int ngli_program_init(struct program *s, const char *vertex, const char *fragment, const char *compute);
 void ngli_program_freep(struct program **sp);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

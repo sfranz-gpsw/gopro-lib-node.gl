@@ -24,6 +24,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct gctx;
 
 struct gtimer {
@@ -36,5 +40,9 @@ int ngli_gtimer_start(struct gtimer *s);
 int ngli_gtimer_stop(struct gtimer *s);
 int64_t ngli_gtimer_read(struct gtimer *s);
 void ngli_gtimer_freep(struct gtimer **sp);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

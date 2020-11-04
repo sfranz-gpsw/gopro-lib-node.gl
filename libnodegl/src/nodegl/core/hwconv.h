@@ -29,6 +29,10 @@
 #include "texture.h"
 #include "pipeline.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct ngl_ctx;
 
 struct hwconv {
@@ -47,5 +51,9 @@ int ngli_hwconv_init(struct hwconv *hwconv, struct ngl_ctx *ctx,
 
 int ngli_hwconv_convert_image(struct hwconv *hwconv, const struct image *image);
 void ngli_hwconv_reset(struct hwconv *texconv);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

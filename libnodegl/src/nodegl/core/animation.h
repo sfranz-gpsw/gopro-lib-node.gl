@@ -24,6 +24,10 @@
 
 #include "nodegl.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct animkeyframe_priv;
 
 typedef void (*ngli_animation_mix_func_type)(void *user_arg, void *dst,
@@ -49,5 +53,9 @@ int ngli_animation_init(struct animation *s, void *user_arg,
                         ngli_animation_cpy_func_type cpy_func);
 
 int ngli_animation_evaluate(struct animation *s, void *dst, double t);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
