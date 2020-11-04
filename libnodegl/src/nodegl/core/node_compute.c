@@ -108,7 +108,7 @@ static int compute_init(struct ngl_node *node)
         return NGL_ERROR_INVALID_ARG;
     }
     struct gctx *gctx = ctx->gctx;
-    struct limits *limits = &gctx->limits;
+    struct glimits *limits = &gctx->limits;
 
     if (s->nb_group_x > limits->max_compute_work_group_counts[0] ||
         s->nb_group_y > limits->max_compute_work_group_counts[1] ||

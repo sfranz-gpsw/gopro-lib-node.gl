@@ -287,7 +287,7 @@ static int glcontext_check_mandatory_extensions(struct glcontext *glcontext)
 
 static int glcontext_probe_settings(struct glcontext *glcontext)
 {
-    struct limits *limits = &glcontext->limits;
+    struct glimits *limits = &glcontext->limits;
 
     ngli_glGetIntegerv(glcontext, GL_MAX_TEXTURE_IMAGE_UNITS, &limits->max_texture_image_units);
 
