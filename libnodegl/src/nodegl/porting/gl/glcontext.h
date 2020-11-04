@@ -51,7 +51,7 @@ struct glcontext {
     uint64_t features;
 
     /* GL limits */
-    struct limits limits;
+    struct glimits limits;
 
     /* GL functions */
     struct glfunctions funcs;
