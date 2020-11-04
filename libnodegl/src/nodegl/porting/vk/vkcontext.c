@@ -28,7 +28,7 @@
 # define VK_USE_PLATFORM_MACOS_MVK
 #elif defined(TARGET_IPHONE)
 # define VK_USE_PLATFORM_IOS_MVK
-#elif defined(TARGET_MINGW_W64)
+#elif defined(TARGET_WINDOWS)
 # define VK_USE_PLATFORM_WIN32_KHR
 #endif
 
