@@ -40,7 +40,7 @@ static void default_callback(void *arg, int level, const char *filename, int ln,
 
     const char *color_start = "", *color_end = "";
 
-#if !defined(TARGET_IPHONE) && !defined(TARGET_ANDROID) && !defined(TARGET_MINGW_W64)
+#if !defined(TARGET_IPHONE) && !defined(TARGET_ANDROID)
     if (isatty(1) && getenv("TERM")) {
         static const char * const colors[] = {
             [NGL_LOG_DEBUG]   = "\033[32m",   // green
