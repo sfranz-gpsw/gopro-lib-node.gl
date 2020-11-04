@@ -24,32 +24,32 @@
 
 struct gtimer *ngli_gtimer_create(struct gctx *gctx)
 {
-    return gctx->class->gtimer_create(gctx);
+    return gctx->clazz->gtimer_create(gctx);
 }
 
 int ngli_gtimer_init(struct gtimer *s)
 {
-    return s->gctx->class->gtimer_init(s);
+    return s->gctx->clazz->gtimer_init(s);
 }
 
 int ngli_gtimer_start(struct gtimer *s)
 {
-    return s->gctx->class->gtimer_start(s);
+    return s->gctx->clazz->gtimer_start(s);
 }
 
 int ngli_gtimer_stop(struct gtimer *s)
 {
-    return s->gctx->class->gtimer_stop(s);
+    return s->gctx->clazz->gtimer_stop(s);
 }
 
 int64_t ngli_gtimer_read(struct gtimer *s)
 {
-    return s->gctx->class->gtimer_read(s);
+    return s->gctx->clazz->gtimer_read(s);
 }
 
 void ngli_gtimer_freep(struct gtimer **sp)
 {
     if (!*sp)
         return;
-    (*sp)->gctx->class->gtimer_freep(sp);
+    (*sp)->gctx->clazz->gtimer_freep(sp);
 }

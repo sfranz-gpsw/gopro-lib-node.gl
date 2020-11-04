@@ -117,7 +117,7 @@ struct gctx_class {
 
 struct gctx {
     struct ngl_config config;
-    const struct gctx_class *class;
+    const struct gctx_class *clazz;
     int version;
     uint64_t features;
     struct glimits limits;
