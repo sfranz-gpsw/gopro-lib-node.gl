@@ -24,7 +24,9 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 #include "buffer.h"
 #include "log.h"
@@ -125,6 +127,10 @@ static int buffer_init_from_data(struct ngl_node *node)
 
 static int buffer_init_from_filename(struct ngl_node *node)
 {
+#ifdef _WIN32
+    ngli_assert(0);
+    return 0; //TODO
+#else
     struct buffer_priv *s = node->priv_data;
 
     s->fd = open(s->filename, O_RDONLY);
@@ -167,6 +173,7 @@ static int buffer_init_from_filename(struct ngl_node *node)
     }
 
     return 0;
+#endif
 }
 
 static int buffer_init_from_count(struct ngl_node *node)
