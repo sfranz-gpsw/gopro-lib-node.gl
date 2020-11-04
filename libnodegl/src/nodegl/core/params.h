@@ -26,6 +26,10 @@
 
 #include "bstr.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum {
     PARAM_TYPE_INT,
     PARAM_TYPE_IVEC2,
@@ -110,5 +114,9 @@ int ngli_params_vset(uint8_t *base_ptr, const struct node_param *par, ...);
 int ngli_params_set_defaults(uint8_t *base_ptr, const struct node_param *params);
 int ngli_params_add(uint8_t *base_ptr, const struct node_param *par, int nb_elems, void *elems);
 void ngli_params_free(uint8_t *base_ptr, const struct node_param *params);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

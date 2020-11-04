@@ -21,7 +21,9 @@
 
 #ifndef LOG_H
 #define LOG_H
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "nodegl.h"
 #include "utils.h"
 
@@ -40,4 +42,7 @@ void ngli_log_print(int log_level, const char *filename,
 
 char *ngli_log_ret_str(char *buf, size_t buf_size, int ret);
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* LOG_H */

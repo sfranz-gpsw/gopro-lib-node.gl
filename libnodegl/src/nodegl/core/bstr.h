@@ -26,6 +26,10 @@
 
 #include "utils.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct bstr;
 
 struct bstr *ngli_bstr_create(void);
@@ -38,5 +42,9 @@ const char *ngli_bstr_strptr(const struct bstr *b);
 int ngli_bstr_len(const struct bstr *b);
 int ngli_bstr_check(const struct bstr *b);
 void ngli_bstr_freep(struct bstr **bp);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

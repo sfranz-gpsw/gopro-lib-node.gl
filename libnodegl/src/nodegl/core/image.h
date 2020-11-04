@@ -27,6 +27,10 @@
 #include "texture.h"
 #include "utils.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define NGLI_COLOR_INFO_DEFAULTS {             \
     .space     = SXPLAYER_COL_SPC_UNSPECIFIED, \
     .range     = SXPLAYER_COL_RNG_UNSPECIFIED, \
@@ -73,5 +77,9 @@ struct image {
 void ngli_image_init(struct image *s, const struct image_params *params, struct texture **planes);
 void ngli_image_reset(struct image *s);
 uint64_t ngli_image_get_memory_size(const struct image *s);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
