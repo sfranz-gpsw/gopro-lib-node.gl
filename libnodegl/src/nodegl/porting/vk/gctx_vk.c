@@ -40,6 +40,7 @@
 #include "nodegl/porting/vk/program_vk.h"
 #include "nodegl/porting/vk/pipeline_vk.h"
 #include "nodegl/porting/vk/gtimer_vk.h"
+#include "nodegl/porting/vk/vkutils.h"
 #include <limits.h>
 
 #ifdef ENABLE_CAPTURE
