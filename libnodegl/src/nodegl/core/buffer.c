@@ -34,7 +34,7 @@ int ngli_buffer_init(struct buffer *s, int size, int usage)
     return s->gctx->clazz->buffer_init(s, size, usage);
 }
 
-int ngli_buffer_upload(struct buffer *s, const void *data, int size, uint32_t offset)
+int ngli_buffer_upload(struct buffer *s, const void *data, uint32_t size, uint32_t offset)
 {
     return s->gctx->clazz->buffer_upload(s, data, size, offset);
 }
