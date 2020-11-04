@@ -24,10 +24,18 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct gctx;
 
 int ngli_swapchain_create(struct gctx *s);
 void ngli_swapchain_destroy(struct gctx *s);
 int ngli_swapchain_acquire_image(struct gctx *s, uint32_t *image_index);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

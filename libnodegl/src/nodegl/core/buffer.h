@@ -24,6 +24,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct gctx;
 
 enum {
@@ -45,5 +49,9 @@ int ngli_buffer_download(struct buffer *s, void *data, uint32_t size, uint32_t o
 int ngli_buffer_map(struct buffer *s, int size, uint32_t offset, void **data);
 void ngli_buffer_unmap(struct buffer* s);
 void ngli_buffer_freep(struct buffer **sp);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

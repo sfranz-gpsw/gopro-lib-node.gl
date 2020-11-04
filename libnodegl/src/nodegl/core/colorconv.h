@@ -24,6 +24,14 @@
 
 #include "image.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int ngli_colorconv_get_ycbcr_to_rgb_color_matrix(float *dst, const struct color_info *info);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

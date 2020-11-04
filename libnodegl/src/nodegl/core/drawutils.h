@@ -24,6 +24,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define NGLI_COLOR_VEC4_TO_U32(vec) (((uint32_t)((vec)[0] * 255) & 0xff) << 24 | \
                                      ((uint32_t)((vec)[1] * 255) & 0xff) << 16 | \
                                      ((uint32_t)((vec)[2] * 255) & 0xff) <<  8 | \
@@ -45,5 +49,9 @@ void ngli_drawutils_draw_rect(struct canvas *canvas, const struct rect *rect, ui
 void ngli_drawutils_print(struct canvas *canvas, int x, int y, const char *str, uint32_t color);
 int ngli_drawutils_get_font_atlas(struct canvas *c_dst);
 void ngli_drawutils_get_atlas_uvcoords(uint8_t chr, float *dst);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

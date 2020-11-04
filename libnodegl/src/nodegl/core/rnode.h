@@ -26,6 +26,10 @@
 #include "graphicstate.h"
 #include "rendertarget.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct rnode {
     int id;
     struct graphicstate graphicstate;
@@ -37,5 +41,9 @@ void ngli_rnode_init(struct rnode *s);
 void ngli_rnode_clear(struct rnode *s);
 void ngli_rnode_reset(struct rnode *s);
 struct rnode *ngli_rnode_add_child(struct rnode *s);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

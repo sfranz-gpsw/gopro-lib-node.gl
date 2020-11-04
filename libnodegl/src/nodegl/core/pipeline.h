@@ -30,6 +30,10 @@
 #include "rendertarget.h"
 #include "texture.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct gctx;
 
 enum {
@@ -142,5 +146,9 @@ void ngli_pipeline_draw_indexed(struct pipeline *s, struct buffer *indices, int 
 void ngli_pipeline_dispatch(struct pipeline *s, int nb_group_x, int nb_group_y, int nb_group_z);
 
 void ngli_pipeline_freep(struct pipeline **sp);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

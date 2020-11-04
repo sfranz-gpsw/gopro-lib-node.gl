@@ -22,6 +22,10 @@
 #ifndef MATH_UTILS_H
 #define MATH_UTILS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -84,5 +88,9 @@ void ngli_mat4_mul_vec4_aarch64(float *dst, const float *m, const float *v);
 #define NGLI_QUAT_IDENTITY {0.0f, 0.0f, 0.0f, 1.0f}
 
 void ngli_quat_slerp(float *dst, const float *q1, const float *q2, float t);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

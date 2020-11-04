@@ -22,6 +22,10 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 
 void *ngli_malloc(size_t size);
@@ -34,5 +38,9 @@ void ngli_free(void *ptr);
 void ngli_freep(void *ptr);
 void ngli_free_aligned(void *ptr);
 void ngli_freep_aligned(void *ptr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

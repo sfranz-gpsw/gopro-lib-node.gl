@@ -27,6 +27,10 @@
 #include "pgcraft.h"
 #include "pipeline.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct ngl_ctx;
 
 struct pass_params {
@@ -89,5 +93,9 @@ int ngli_pass_prepare(struct pass *s);
 void ngli_pass_uninit(struct pass *s);
 int ngli_pass_update(struct pass *s, double t);
 int ngli_pass_exec(struct pass *s);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

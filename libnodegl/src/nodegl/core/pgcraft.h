@@ -30,6 +30,10 @@
 #include "precision.h"
 #include "texture.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct ngl_ctx;
 
 struct pgcraft_uniform { // also buffers (for arrays)
@@ -214,5 +218,9 @@ int ngli_pgcraft_craft(struct pgcraft *s,
 int ngli_pgcraft_get_uniform_index(const struct pgcraft *s, const char *name, int stage);
 
 void ngli_pgcraft_freep(struct pgcraft **sp);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
