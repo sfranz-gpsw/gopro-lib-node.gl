@@ -22,12 +22,12 @@
 #define _GNU_SOURCE
 #include <pthread.h>
 
+#include <time.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
 
 #include "log.h"
 #include "memory.h"
@@ -49,18 +49,28 @@ char *ngli_strdup(const char *s)
 
 int64_t ngli_gettime(void)
 {
+#ifdef _WIN32
+    ngl_assert(0);
+    return 0; //TODO
+#else
     struct timeval tv;
 
     gettimeofday(&tv, NULL);
     return 1000000 * (int64_t)tv.tv_sec + tv.tv_usec;
+#endif
 }
 
 int64_t ngli_gettime_relative(void)
 {
+#ifdef _WIN32
+    ngl_assert(0);
+    return 0; //TODO
+#else
     struct timespec ts;
 
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return 1000000 * (int64_t)ts.tv_sec + ts.tv_nsec / 1000;
+#endif
 }
 
 char *ngli_asprintf(const char *fmt, ...)
