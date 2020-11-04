@@ -24,21 +24,21 @@
 
 int ngli_swapchain_create(struct gctx *gctx)
 {
-    if (!gctx->class->swapchain_create)
+    if (!gctx->clazz->swapchain_create)
         return NGL_ERROR_UNSUPPORTED;
-    return gctx->class->swapchain_create(gctx);
+    return gctx->clazz->swapchain_create(gctx);
 }
 
 void ngli_swapchain_destroy(struct gctx *gctx)
 {
-    if (!gctx->class->swapchain_destroy)
+    if (!gctx->clazz->swapchain_destroy)
         return;
-    gctx->class->swapchain_destroy(gctx);
+    gctx->clazz->swapchain_destroy(gctx);
 }
 
 int ngli_swapchain_acquire_image(struct gctx *gctx, uint32_t *image_index)
 {
-    if (!gctx->class->swapchain_acquire_image)
+    if (!gctx->clazz->swapchain_acquire_image)
         return NGL_ERROR_UNSUPPORTED;
-    return gctx->class->swapchain_acquire_image(gctx, image_index);
+    return gctx->clazz->swapchain_acquire_image(gctx, image_index);
 }
