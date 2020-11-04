@@ -87,7 +87,11 @@ endif
 
 $(SIMPLE_TESTS):
 	@echo $@
+ifneq ($(TARGET_OS),Windows)
 	$(Q)$(PYTHON) -c 'from $(MODULE) import $(FUNC_NAME); $(FUNC_NAME)()' $(OUT)
+else
+	$(Q)../cmake-build-debug/pyshell/RelWithDebInfo/pyshell.exe -c 'from $(MODULE) import $(FUNC_NAME); $(FUNC_NAME)()' $(OUT)
+endif
 	@echo $(FUNC_NAME) passed
 
 TESTS = $(SIMPLE_TESTS) $(REF_TESTS)
