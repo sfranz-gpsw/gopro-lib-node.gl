@@ -88,6 +88,7 @@ endif
 $(SIMPLE_TESTS):
 	@echo $@
 	$(Q)$(PYTHON) -c 'from $(MODULE) import $(FUNC_NAME); $(FUNC_NAME)()' $(OUT)
+	@echo $(FUNC_NAME) passed
 
 TESTS = $(SIMPLE_TESTS) $(REF_TESTS)
 
