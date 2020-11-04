@@ -88,7 +88,7 @@ void ngl_log_set_min_level(int level);
  */
 struct ngl_node;
 
-#define NGLI_FOURCC(a,b,c,d) (((uint32_t)(a))<<24 | (b)<<16 | (c)<<8 | (d))
+#define NGLI_FOURCC(a,b,c,d) (((a))<<24 | (b)<<16 | (c)<<8 | (d))
 
 /**
  * Node FOURCC identifiers
