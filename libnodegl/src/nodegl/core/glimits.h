@@ -19,10 +19,10 @@
  * under the License.
  */
 
-#ifndef LIMIT_H
-#define LIMIT_H
+#ifndef GLIMITS_H
+#define GLIMITS_H
 
-struct limits {
+struct glimits {
     int max_texture_image_units;
     int max_compute_work_group_counts[3];
     int max_uniform_block_size;

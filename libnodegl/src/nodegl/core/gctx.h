@@ -116,7 +116,7 @@ struct gctx {
     const struct gctx_class *class;
     int version;
     uint64_t features;
-    struct limits limits;
+    struct glimits limits;
 };
 
 struct gctx *ngli_gctx_create(const struct ngl_config *config);

@@ -95,7 +95,7 @@ static int create_fbo(struct rendertarget *s, int resolve)
     struct rendertarget_gl *s_priv = (struct rendertarget_gl *)s;
     struct gctx_gl *gctx_gl = (struct gctx_gl *)s->gctx;
     struct glcontext *gl = gctx_gl->glcontext;
-    const struct limits *limits = &gl->limits;
+    const struct glimits *limits = &gl->limits;
     const struct rendertarget_params *params = &s->params;
 
     GLuint id = 0;
@@ -253,7 +253,7 @@ int ngli_rendertarget_gl_init(struct rendertarget *s, const struct rendertarget_
     struct rendertarget_gl *s_priv = (struct rendertarget_gl *)s;
     struct gctx_gl *gctx_gl = (struct gctx_gl *)s->gctx;
     struct glcontext *gl = gctx_gl->glcontext;
-    const struct limits *limits = &gl->limits;
+    const struct glimits *limits = &gl->limits;
 
     s->params = *params;
     s->width = params->width;
