@@ -50,10 +50,13 @@ int ngli_rendertarget_ngfx_init(struct rendertarget *s, const struct rendertarge
         const texture_ngfx *resolve_texture = (const texture_ngfx *)color_attachment->resolve_target;
         const texture_params *color_texture_params = &color_texture->parent.params;
         rt_desc.colors[rt_desc.nb_colors].format = color_texture_params->format;
-        rt_desc.colors[rt_desc.nb_colors].samples = color_texture_params->samples;
         rt_desc.colors[rt_desc.nb_colors].resolve = color_attachment->resolve_target != NULL;
         rt_desc.nb_colors++;
-        if (i == 0) { w = color_texture->v->w; h = color_texture->v->h; }
+        if (i == 0) {
+            w = color_texture->v->w;
+            h = color_texture->v->h;
+            rt_desc.samples = color_texture_params->samples;
+        }
         attachments.push_back({ color_texture->v, 0, uint32_t(color_attachment->attachment_layer) });
         if (resolve_texture) attachments.push_back({ resolve_texture->v, 0, uint32_t(color_attachment->resolve_target_layer) });
     }
@@ -64,7 +67,7 @@ int ngli_rendertarget_ngfx_init(struct rendertarget *s, const struct rendertarge
         const texture_ngfx *resolve_texture = (const texture_ngfx *)depth_attachment->resolve_target;
         const texture_params *depth_texture_params = &depth_texture->parent.params;
         rt_desc.depth_stencil.format = depth_texture_params->format;
-        rt_desc.depth_stencil.samples = depth_texture_params->samples;
+        rt_desc.samples = depth_texture_params->samples;
         rt_desc.depth_stencil.resolve = depth_attachment->resolve_target != NULL;
         attachments.push_back({ depth_texture->v });
         if (resolve_texture) attachments.push_back({ resolve_texture->v });

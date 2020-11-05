@@ -53,26 +53,30 @@ static int create_offscreen_resources(struct gctx *s) {
 
     auto &color_texture = ctx->offscreen_resources.color_texture;
     color_texture = ngli_texture_create(s);
-    texture_params color_texture_params = NGLI_TEXTURE_PARAM_DEFAULTS;
-    color_texture_params.width = config->width;
-    color_texture_params.height = config->height;
-    color_texture_params.format = NGLI_FORMAT_R8G8B8A8_UNORM;
-    color_texture_params.samples = config->samples;
-    color_texture_params.usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT | NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT |
-        NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT;
+    texture_params color_texture_params = {
+        .type = NGLI_TEXTURE_TYPE_2D,
+        .format = NGLI_FORMAT_R8G8B8A8_UNORM,
+        .width = config->width,
+        .height = config->height,
+        .samples = config->samples,
+        .usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT | NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT |
+            NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT
+    };
 
     ngli_texture_init(color_texture, &color_texture_params);
 
     auto &depth_texture = ctx->offscreen_resources.depth_texture;
     if (enable_depth_stencil) {
         depth_texture = ngli_texture_create(s);
-        texture_params depth_texture_params = NGLI_TEXTURE_PARAM_DEFAULTS;
-        depth_texture_params.width = config->width;
-        depth_texture_params.height = config->height;
-        depth_texture_params.format = to_ngli_format(ctx->graphics_context->depthFormat);
-        depth_texture_params.samples = config->samples;
-        depth_texture_params.usage = NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT |
-            NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        texture_params depth_texture_params = {
+            .type = NGLI_TEXTURE_TYPE_2D,
+            .format = to_ngli_format(ctx->graphics_context->depthFormat),
+            .width = config->width,
+            .height = config->height,
+            .samples = config->samples,
+            .usage = NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT |
+                NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+        };
         ngli_texture_init(depth_texture, &depth_texture_params);
     }
 
@@ -98,6 +102,8 @@ static int create_offscreen_resources(struct gctx *s) {
 
     return 0;
 }
+
+static void ngfx_set_clear_color(struct gctx *s, const float *color);
 
 static int ngfx_init(struct gctx *s)
 {
@@ -141,23 +147,21 @@ static int ngfx_init(struct gctx *s)
     const int scissor[] = {0, 0, config->width, config->height};
     memcpy(ctx->scissor, scissor, sizeof(ctx->scissor));
 
-    ngli_gctx_set_clear_color(s, config->clear_color);
+    ngfx_set_clear_color(s, config->clear_color);
 
     if (config->offscreen) {
         ctx->default_rendertarget_desc.nb_colors = 1;
         ctx->default_rendertarget_desc.colors[0].format = NGLI_FORMAT_R8G8B8A8_UNORM;
-        ctx->default_rendertarget_desc.colors[0].samples = config->samples;
+        ctx->default_rendertarget_desc.samples = config->samples;
         ctx->default_rendertarget_desc.colors[0].resolve = config->samples > 0 ? 1 : 0;
         ctx->default_rendertarget_desc.depth_stencil.format = to_ngli_format(ctx->graphics_context->depthFormat);
-        ctx->default_rendertarget_desc.depth_stencil.samples = config->samples;
         ctx->default_rendertarget_desc.depth_stencil.resolve = 0;
     } else {
         ctx->default_rendertarget_desc.nb_colors = 1;
         ctx->default_rendertarget_desc.colors[0].format = NGLI_FORMAT_B8G8R8A8_UNORM;
-        ctx->default_rendertarget_desc.colors[0].samples = config->samples;
+        ctx->default_rendertarget_desc.samples = config->samples;
         ctx->default_rendertarget_desc.colors[0].resolve = config->samples > 0 ? 1 : 0;
         ctx->default_rendertarget_desc.depth_stencil.format = to_ngli_format(ctx->graphics_context->depthFormat);
-        ctx->default_rendertarget_desc.depth_stencil.samples = config->samples;
     }
 
     s->limits.max_compute_work_group_counts[0] = INT_MAX;
@@ -171,19 +175,21 @@ static int ngfx_resize(struct gctx *s, int width, int height, const int *viewpor
     return 0;
 }
 
-static int ngfx_pre_draw(struct gctx *s, double t)
+static void ngfx_bind_rendertarget(struct gctx *s, struct rendertarget *rt);
+
+static int ngfx_begin_draw(struct gctx *s, double t)
 {
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     s_priv->cur_command_buffer = s_priv->graphics_context->drawCommandBuffer();
     s_priv->cur_command_buffer->begin();
-    ngli_gctx_bind_rendertarget(s, nullptr);
+    ngfx_bind_rendertarget(s, nullptr);
     return 0;
 }
 
-static int ngfx_post_draw(struct gctx *s, double t)
+static int ngfx_end_draw(struct gctx *s, double t)
 {
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
-    ngli_gctx_bind_rendertarget(s, nullptr);
+    ngfx_bind_rendertarget(s, nullptr);
     s_priv->cur_command_buffer->end();
     s_priv->graphics_context->submit(s_priv->cur_command_buffer);
     if (s->config.offscreen && s->config.capture_buffer) {
@@ -242,8 +248,8 @@ static void ngfx_get_rendertarget_uvcoord_matrix(struct gctx *s, float *dst)
 static void ngfx_bind_rendertarget(struct gctx *s, struct rendertarget *rt)
 {
     if (s->cur_rendertarget != rt) {
-        if (s->cur_rendertarget) ngli_rendertarget_end_pass(s->cur_rendertarget);
-        if (rt) ngli_rendertarget_begin_pass(rt);
+        if (s->cur_rendertarget) ngli_rendertarget_ngfx_end_pass(s->cur_rendertarget);
+        if (rt) ngli_rendertarget_ngfx_begin_pass(rt);
     }
     s->cur_rendertarget = rt;
 }
@@ -334,8 +340,8 @@ extern "C" const struct gctx_class ngli_gctx_ngfx = {
     .create       = ngfx_create,
     .init         = ngfx_init,
     .resize       = ngfx_resize,
-    .pre_draw     = ngfx_pre_draw,
-    .post_draw    = ngfx_post_draw,
+    .begin_draw   = ngfx_begin_draw,
+    .end_draw     = ngfx_end_draw,
     .wait_idle    = ngfx_wait_idle,
     .destroy      = ngfx_destroy,
 
@@ -343,18 +349,11 @@ extern "C" const struct gctx_class ngli_gctx_ngfx = {
     .transform_projection_matrix = ngfx_transform_projection_matrix,
     .get_rendertarget_uvcoord_matrix = ngfx_get_rendertarget_uvcoord_matrix,
 
-    .bind_rendertarget         = ngfx_bind_rendertarget,
-    .get_rendertarget         = ngfx_get_rendertarget,
     .get_default_rendertarget_desc = ngfx_get_default_rendertarget_desc,
     .set_viewport             = ngfx_set_viewport,
     .get_viewport             = ngfx_get_viewport,
     .set_scissor              = ngfx_set_scissor,
     .get_scissor              = ngfx_get_scissor,
-    .set_clear_color          = ngfx_set_clear_color,
-    .get_clear_color          = ngfx_get_clear_color,
-    .clear_color              = ngfx_clear_color,
-    .clear_depth_stencil      = ngfx_clear_depth_stencil,
-    .invalidate_depth_stencil = ngfx_invalidate_depth_stencil,
     .get_preferred_depth_format= ngfx_get_preferred_depth_format,
     .get_preferred_depth_stencil_format=ngfx_get_preferred_depth_stencil_format,
     .flush                    = ngfx_flush,
@@ -376,7 +375,6 @@ extern "C" const struct gctx_class ngli_gctx_ngfx = {
 
     .pipeline_create         = ngli_pipeline_ngfx_create,
     .pipeline_init           = ngli_pipeline_ngfx_init,
-    .pipeline_bind_resources = ngli_pipeline_ngfx_bind_resources,
     .pipeline_update_attribute = ngli_pipeline_ngfx_update_attribute,
     .pipeline_update_uniform = ngli_pipeline_ngfx_update_uniform,
     .pipeline_update_texture = ngli_pipeline_ngfx_update_texture,
@@ -391,10 +389,7 @@ extern "C" const struct gctx_class ngli_gctx_ngfx = {
 
     .rendertarget_create        = ngli_rendertarget_ngfx_create,
     .rendertarget_init          = ngli_rendertarget_ngfx_init,
-    .rendertarget_resolve       = ngli_rendertarget_ngfx_resolve,
     .rendertarget_read_pixels   = ngli_rendertarget_ngfx_read_pixels,
-    .rendertarget_begin_pass    = ngli_rendertarget_ngfx_begin_pass,
-    .rendertarget_end_pass      = ngli_rendertarget_ngfx_end_pass,
     .rendertarget_freep         = ngli_rendertarget_ngfx_freep,
 
     .swapchain_create         = ngli_swapchain_ngfx_create,

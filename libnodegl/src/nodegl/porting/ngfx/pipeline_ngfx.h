@@ -31,17 +31,23 @@ struct glcontext;
 
 struct pipeline_ngfx {
     struct pipeline parent;
+
+    struct darray buffer_bindings;        // buffer_binding
+    struct darray texture_bindings;       // texture_binding
+    struct darray attribute_bindings;     // attribute_binding
+
     ngfx::GraphicsPipeline *gp = nullptr;
     ngfx::ComputePipeline *cp = nullptr;
 };
 
 struct pipeline *ngli_pipeline_ngfx_create(struct gctx *gctx);
-int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_desc_params *params);
-int ngli_pipeline_ngfx_bind_resources(struct pipeline *s, const struct pipeline_desc_params *desc_params,
+int ngli_pipeline_ngfx_init(struct pipeline *s, const struct pipeline_params *params);
+int ngli_pipeline_ngfx_set_resources(struct pipeline *s, const struct pipeline_params *desc_params,
                                     const struct pipeline_resource_params *data_params);
 int ngli_pipeline_ngfx_update_attribute(struct pipeline *s, int index, struct buffer *buffer);
 int ngli_pipeline_ngfx_update_uniform(struct pipeline *s, int index, const void *value);
 int ngli_pipeline_ngfx_update_texture(struct pipeline *s, int index, struct texture *texture);
+int ngli_pipeline_ngfx_update_buffer(struct pipeline *s, int index, struct buffer *buffer);
 void ngli_pipeline_ngfx_draw(struct pipeline *s, int nb_vertices, int nb_instances);
 void ngli_pipeline_ngfx_draw_indexed(struct pipeline *s, struct buffer *indices, int indices_format, int nb_indices, int nb_instances);
 void ngli_pipeline_ngfx_dispatch(struct pipeline *s, int nb_group_x, int nb_group_y, int nb_group_z);

@@ -130,7 +130,7 @@ RenderPass* get_render_pass(GraphicsContext* ctx, const rendertarget_desc &rt_de
     renderPassConfig.enableDepthStencil = rt_desc.depth_stencil.format != NGLI_FORMAT_UNDEFINED;
     renderPassConfig.enableDepthStencilResolve = rt_desc.depth_stencil.resolve != 0;
     renderPassConfig.numColorAttachments = rt_desc.nb_colors;
-    renderPassConfig.numSamples = glm::max(rt_desc.colors[0].samples, 1);
+    renderPassConfig.numSamples = glm::max(rt_desc.samples, 1);
     //TODO: remove renderPassConfig.offscreen param
     renderPassConfig.offscreen = true;
     return ctx->getRenderPass(renderPassConfig);
