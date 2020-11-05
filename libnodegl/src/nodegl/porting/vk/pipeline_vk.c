@@ -40,12 +40,14 @@
 #include "nodegl/core/topology.h"
 #include "nodegl/core/type.h"
 #include "nodegl/core/utils.h"
+#include "nodegl/core/pipeline_util.h"
 #include "nodegl/porting/vk/vkcontext.h"
 #include "nodegl/porting/vk/format_vk.h"
 #include "nodegl/porting/vk/buffer_vk.h"
 #include "nodegl/porting/vk/topology_vk.h"
 #include "nodegl/porting/vk/program_vk.h"
 #include "nodegl/porting/vk/rendertarget_vk.h"
+#include "nodegl/porting/vk/vkutils.h"
 
 struct attribute_binding {
     struct pipeline_attribute_desc desc;
@@ -62,7 +64,7 @@ struct texture_binding {
     struct texture *texture;
 };
 
-static int build_attribute_descs(struct pipeline *s, const struct pipeline_params *params)
+static int init_attributes_data(struct pipeline *s, const struct pipeline_params *params)
 {
     struct gctx_vk *gctx_vk = (struct gctx_vk *)s->gctx;
     struct vkcontext *vk = gctx_vk->vkcontext;
@@ -75,12 +77,6 @@ static int build_attribute_descs(struct pipeline *s, const struct pipeline_param
 
     for (int i = 0; i < params->nb_attributes; i++) {
         const struct pipeline_attribute_desc *desc = &params->attributes_desc[i];
-
-        struct attribute_binding attribute_binding = {
-            .desc = *desc,
-        };
-        if (!ngli_darray_push(&s_priv->attribute_bindings, &attribute_binding))
-            return NGL_ERROR_MEMORY;
 
         VkVertexInputBindingDescription binding_desc = {
             .binding   = i,
@@ -118,87 +114,13 @@ static int build_attribute_descs(struct pipeline *s, const struct pipeline_param
     return 0;
 }
 
-static const VkBlendFactor vk_blend_factor_map[NGLI_BLEND_FACTOR_NB] = {
-
-    [NGLI_BLEND_FACTOR_ZERO]                = VK_BLEND_FACTOR_ZERO,
-    [NGLI_BLEND_FACTOR_ONE]                 = VK_BLEND_FACTOR_ONE,
-    [NGLI_BLEND_FACTOR_SRC_COLOR]           = VK_BLEND_FACTOR_SRC_COLOR,
-    [NGLI_BLEND_FACTOR_ONE_MINUS_SRC_COLOR] = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,
-    [NGLI_BLEND_FACTOR_DST_COLOR]           = VK_BLEND_FACTOR_DST_COLOR,
-    [NGLI_BLEND_FACTOR_ONE_MINUS_DST_COLOR] = VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,
-    [NGLI_BLEND_FACTOR_SRC_ALPHA]           = VK_BLEND_FACTOR_SRC_ALPHA,
-    [NGLI_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA] = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-    [NGLI_BLEND_FACTOR_DST_ALPHA]           = VK_BLEND_FACTOR_DST_ALPHA,
-    [NGLI_BLEND_FACTOR_ONE_MINUS_DST_ALPHA] = VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,
-};
-
-static const VkBlendFactor get_vk_blend_factor(int blend_factor)
+struct pipeline *ngli_pipeline_vk_create(struct gctx *gctx)
 {
-    return vk_blend_factor_map[blend_factor];
-}
-
-static const VkBlendOp vk_blend_op_map[NGLI_BLEND_OP_NB] = {
-    [NGLI_BLEND_OP_ADD]              = VK_BLEND_OP_ADD,
-    [NGLI_BLEND_OP_SUBTRACT]         = VK_BLEND_OP_SUBTRACT,
-    [NGLI_BLEND_OP_REVERSE_SUBTRACT] = VK_BLEND_OP_REVERSE_SUBTRACT,
-    [NGLI_BLEND_OP_MIN]              = VK_BLEND_OP_MIN,
-    [NGLI_BLEND_OP_MAX]              = VK_BLEND_OP_MAX,
-};
-
-static VkBlendOp get_vk_blend_op(int blend_op)
-{
-    return vk_blend_op_map[blend_op];
-}
-
-static const VkCompareOp vk_compare_op_map[NGLI_COMPARE_OP_NB] = {
-    [NGLI_COMPARE_OP_NEVER]            = VK_COMPARE_OP_NEVER,
-    [NGLI_COMPARE_OP_LESS]             = VK_COMPARE_OP_LESS,
-    [NGLI_COMPARE_OP_EQUAL]            = VK_COMPARE_OP_EQUAL,
-    [NGLI_COMPARE_OP_LESS_OR_EQUAL]    = VK_COMPARE_OP_LESS_OR_EQUAL,
-    [NGLI_COMPARE_OP_GREATER]          = VK_COMPARE_OP_GREATER,
-    [NGLI_COMPARE_OP_NOT_EQUAL]        = VK_COMPARE_OP_NOT_EQUAL,
-    [NGLI_COMPARE_OP_GREATER_OR_EQUAL] = VK_COMPARE_OP_GREATER_OR_EQUAL,
-    [NGLI_COMPARE_OP_ALWAYS]           = VK_COMPARE_OP_ALWAYS,
-};
-
-static VkCompareOp get_vk_compare_op(int compare_op)
-{
-    return vk_compare_op_map[compare_op];
-}
-
-static const VkStencilOp vk_stencil_op_map[NGLI_STENCIL_OP_NB] = {
-    [NGLI_STENCIL_OP_KEEP]                = VK_STENCIL_OP_KEEP,
-    [NGLI_STENCIL_OP_ZERO]                = VK_STENCIL_OP_ZERO,
-    [NGLI_STENCIL_OP_REPLACE]             = VK_STENCIL_OP_REPLACE,
-    [NGLI_STENCIL_OP_INCREMENT_AND_CLAMP] = VK_STENCIL_OP_INCREMENT_AND_CLAMP,
-    [NGLI_STENCIL_OP_DECREMENT_AND_CLAMP] = VK_STENCIL_OP_DECREMENT_AND_CLAMP,
-    [NGLI_STENCIL_OP_INVERT]              = VK_STENCIL_OP_INVERT,
-    [NGLI_STENCIL_OP_INCREMENT_AND_WRAP]  = VK_STENCIL_OP_INCREMENT_AND_WRAP,
-    [NGLI_STENCIL_OP_DECREMENT_AND_WRAP]  = VK_STENCIL_OP_DECREMENT_AND_WRAP,
-};
-
-static VkStencilOp get_vk_stencil_op(int stencil_op)
-{
-    return vk_stencil_op_map[stencil_op];
-}
-
-static const VkCullModeFlags vk_cull_mode_map[NGLI_CULL_MODE_NB] = {
-    [NGLI_CULL_MODE_NONE]           = VK_CULL_MODE_NONE,
-    [NGLI_CULL_MODE_FRONT_BIT]      = VK_CULL_MODE_FRONT_BIT,
-    [NGLI_CULL_MODE_BACK_BIT]       = VK_CULL_MODE_BACK_BIT,
-};
-
-static VkCullModeFlags get_vk_cull_mode(int cull_mode)
-{
-    return vk_cull_mode_map[cull_mode];
-}
-
-static VkColorComponentFlags get_vk_color_write_mask(int color_write_mask)
-{
-    return (color_write_mask & NGLI_COLOR_COMPONENT_R_BIT ? VK_COLOR_COMPONENT_R_BIT : 0)
-         | (color_write_mask & NGLI_COLOR_COMPONENT_G_BIT ? VK_COLOR_COMPONENT_G_BIT : 0)
-         | (color_write_mask & NGLI_COLOR_COMPONENT_B_BIT ? VK_COLOR_COMPONENT_B_BIT : 0)
-         | (color_write_mask & NGLI_COLOR_COMPONENT_A_BIT ? VK_COLOR_COMPONENT_A_BIT : 0);
+    struct pipeline_vk *s = ngli_calloc(1, sizeof(*s));
+    if (!s)
+        return NULL;
+    s->parent.gctx = gctx;
+    return (struct pipeline *)s;
 }
 
 static int pipeline_graphics_init(struct pipeline *s, const struct pipeline_params *params)
@@ -209,7 +131,7 @@ static int pipeline_graphics_init(struct pipeline *s, const struct pipeline_para
     struct pipeline_graphics *graphics = &s->graphics;
     struct graphicstate *state = &graphics->state;
 
-    int ret = build_attribute_descs(s, params);
+    int ret = init_attributes_data(s, params);
     if (ret < 0)
         return ret;
 
@@ -401,42 +323,81 @@ static int pipeline_compute_init(struct pipeline *s)
     return 0;
 }
 
-static const VkShaderStageFlags stage_flag_map[] = {
-    [NGLI_PROGRAM_SHADER_VERT] = VK_SHADER_STAGE_VERTEX_BIT,
-    [NGLI_PROGRAM_SHADER_FRAG] = VK_SHADER_STAGE_FRAGMENT_BIT,
-    [NGLI_PROGRAM_SHADER_COMP] = VK_SHADER_STAGE_COMPUTE_BIT,
-};
+static int create_desc_set_layout_bindings(struct pipeline *s, const struct pipeline_params *params);
+static int create_pipeline_layout(struct pipeline *s);
 
-static const VkDescriptorType descriptor_type_map[] = {
-    [NGLI_TYPE_UNIFORM_BUFFER] = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-    [NGLI_TYPE_STORAGE_BUFFER] = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-    [NGLI_TYPE_SAMPLER_2D]     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-    [NGLI_TYPE_SAMPLER_3D]     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-    [NGLI_TYPE_SAMPLER_CUBE]   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-    [NGLI_TYPE_IMAGE_2D]       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-};
-
-static VkDescriptorType get_descriptor_type(int type)
+static int init_bindings(struct pipeline *s, const struct pipeline_params *params)
 {
-    ngli_assert(type >= 0 && type < NGLI_TYPE_NB);
-    VkDescriptorType descriptor_type = descriptor_type_map[type];
-    ngli_assert(descriptor_type);
-    return descriptor_type;
+    struct gctx_vk *gctx = (struct gctx_vk *)s->gctx;
+    struct pipeline_vk *s_priv = (struct pipeline_vk *)s;
+
+    ngli_darray_init(&s_priv->attribute_bindings, sizeof(struct attribute_binding), 0);
+    ngli_darray_init(&s_priv->buffer_bindings,  sizeof(struct buffer_binding), 0);
+    ngli_darray_init(&s_priv->texture_bindings, sizeof(struct texture_binding), 0);
+
+    for (int i = 0; i < params->nb_attributes; i++) {
+        const struct pipeline_attribute_desc *desc = &params->attributes_desc[i];
+
+        struct attribute_binding binding = {
+            .desc = *desc,
+        };
+        if (!ngli_darray_push(&s_priv->attribute_bindings, &binding))
+            return NGL_ERROR_MEMORY;
+    }
+
+    for (int i = 0; i < params->nb_buffers; i++) {
+        const struct pipeline_buffer_desc *desc = &params->buffers_desc[i];
+
+        struct buffer_binding binding = {
+            .desc = *desc,
+        };
+        if (!ngli_darray_push(&s_priv->buffer_bindings, &binding))
+            return NGL_ERROR_MEMORY;
+    }
+
+    for (int i = 0; i < params->nb_textures; i++) {
+        const struct pipeline_texture_desc *desc = &params->textures_desc[i];
+
+        struct texture_binding binding = {
+            .desc = *desc,
+        };
+        if (!ngli_darray_push(&s_priv->texture_bindings, &binding))
+            return NGL_ERROR_MEMORY;
+    }
+
+    return 0;
 }
 
-static const VkImageLayout image_layout_map[] ={
-    [NGLI_TYPE_SAMPLER_2D]     = VK_IMAGE_LAYOUT_GENERAL,
-    [NGLI_TYPE_SAMPLER_3D]     = VK_IMAGE_LAYOUT_GENERAL,
-    [NGLI_TYPE_SAMPLER_CUBE]   = VK_IMAGE_LAYOUT_GENERAL,
-    [NGLI_TYPE_IMAGE_2D]       = VK_IMAGE_LAYOUT_GENERAL,
-};
-
-static VkImageLayout get_image_layout(int type)
+int ngli_pipeline_vk_init(struct pipeline *s, const struct pipeline_params *params)
 {
-    ngli_assert(type >= 0 && type < NGLI_TYPE_NB);
-    VkImageLayout image_layout = image_layout_map[type];
-    ngli_assert(image_layout);
-    return image_layout;
+    struct pipeline_vk *s_priv = (struct pipeline_vk *)s;
+
+    s->type     = params->type;
+    s->graphics = params->graphics;
+    s->program  = params->program;
+
+    init_bindings(s, params);
+
+    int ret;
+    if ((ret = create_desc_set_layout_bindings(s, params)) < 0)
+        return ret;
+
+    if ((ret = create_pipeline_layout(s)) < 0)
+        return ret;
+
+    if (params->type == NGLI_PIPELINE_TYPE_GRAPHICS) {
+        ret = pipeline_graphics_init(s, params);
+        if (ret < 0)
+            return ret;
+    } else if (params->type == NGLI_PIPELINE_TYPE_COMPUTE) {
+        ret = pipeline_compute_init(s);
+        if (ret < 0)
+            return ret;
+    } else {
+        ngli_assert(0);
+    }
+
+    return 0;
 }
 
 static int create_desc_set_layout_bindings(struct pipeline *s, const struct pipeline_params *params)
@@ -465,15 +426,9 @@ static int create_desc_set_layout_bindings(struct pipeline *s, const struct pipe
             .binding         = desc->binding,
             .descriptorType  = type,
             .descriptorCount = 1,
-            .stageFlags      = stage_flag_map[desc->stage],
+            .stageFlags      = get_stage_flags(desc->stage),
         };
         if (!ngli_darray_push(&s_priv->desc_set_layout_bindings, &binding))
-            return NGL_ERROR_MEMORY;
-
-        struct buffer_binding buffer_binding = {
-            .desc = *desc,
-        };
-        if (!ngli_darray_push(&s_priv->buffer_bindings, &buffer_binding))
             return NGL_ERROR_MEMORY;
 
         desc_pool_size_map[desc->type].descriptorCount += gctx_vk->nb_in_flight_frames;
@@ -487,15 +442,9 @@ static int create_desc_set_layout_bindings(struct pipeline *s, const struct pipe
             .binding         = desc->binding,
             .descriptorType  = type,
             .descriptorCount = 1,
-            .stageFlags      = stage_flag_map[desc->stage],
+            .stageFlags      = get_stage_flags(desc->stage),
         };
         if (!ngli_darray_push(&s_priv->desc_set_layout_bindings, &binding))
-            return NGL_ERROR_MEMORY;
-
-        struct texture_binding texture_binding = {
-            .desc = *desc,
-        };
-        if (!ngli_darray_push(&s_priv->texture_bindings, &texture_binding))
             return NGL_ERROR_MEMORY;
 
         desc_pool_size_map[desc->type].descriptorCount += gctx_vk->nb_in_flight_frames;
@@ -582,65 +531,6 @@ static int create_pipeline_layout(struct pipeline *s)
     return 0;
 }
 
-static int set_uniforms(struct pipeline *s)
-{
-    for (int i = 0; i < NGLI_PROGRAM_SHADER_NB; i++) {
-        const uint8_t *udata = s->udata[i];
-        if (!udata)
-            continue;
-        struct buffer *ubuffer = s->ubuffer[i];
-        const struct block *ublock = s->ublock[i];
-        int ret = ngli_buffer_upload(ubuffer, udata, ublock->size, 0);
-        if (ret < 0)
-            return ret;
-    }
-
-    return 0;
-}
-
-struct pipeline *ngli_pipeline_vk_create(struct gctx *gctx)
-{
-    struct pipeline_vk *s = ngli_calloc(1, sizeof(*s));
-    if (!s)
-        return NULL;
-    s->parent.gctx = gctx;
-    return (struct pipeline *)s;
-}
-
-int ngli_pipeline_vk_init(struct pipeline *s, const struct pipeline_params *params)
-{
-    struct pipeline_vk *s_priv = (struct pipeline_vk *)s;
-
-    s->type     = params->type;
-    s->graphics = params->graphics;
-    s->program  = params->program;
-
-    ngli_darray_init(&s_priv->texture_bindings, sizeof(struct texture_binding), 0);
-    ngli_darray_init(&s_priv->buffer_bindings,  sizeof(struct buffer_binding), 0);
-    ngli_darray_init(&s_priv->attribute_bindings, sizeof(struct attribute_binding), 0);
-
-    int ret;
-    if ((ret = create_desc_set_layout_bindings(s, params)) < 0)
-        return ret;
-
-    if ((ret = create_pipeline_layout(s)) < 0)
-        return ret;
-
-    if (params->type == NGLI_PIPELINE_TYPE_GRAPHICS) {
-        ret = pipeline_graphics_init(s, params);
-        if (ret < 0)
-            return ret;
-    } else if (params->type == NGLI_PIPELINE_TYPE_COMPUTE) {
-        ret = pipeline_compute_init(s);
-        if (ret < 0)
-            return ret;
-    } else {
-        ngli_assert(0);
-    }
-
-    return 0;
-}
-
 int ngli_pipeline_vk_set_resources(struct pipeline *s, const struct pipeline_resource_params *params)
 {
     struct pipeline_vk *s_priv = (struct pipeline_vk *)s;
@@ -704,19 +594,7 @@ int ngli_pipeline_vk_update_attribute(struct pipeline *s, int index, struct buff
 
 int ngli_pipeline_vk_update_uniform(struct pipeline *s, int index, const void *value)
 {
-    if (index == -1)
-        return NGL_ERROR_NOT_FOUND;
-
-    const int stage = index >> 16;
-    const int field_index = index & 0xffff;
-    const struct block *block = s->ublock[stage];
-    const struct block_field *field_infos = ngli_darray_data(&block->fields);
-    const struct block_field *field_info = &field_infos[field_index];
-    if (value) {
-        uint8_t *dst = s->udata[stage] + field_info->offset;
-        ngli_block_field_copy(field_info, dst, value);
-    }
-    return 0;
+    return pipeline_update_uniform(s, index, value);
 }
 
 int ngli_pipeline_vk_update_texture(struct pipeline *s, int index, struct texture *texture)
@@ -812,15 +690,11 @@ void ngli_pipeline_vk_draw(struct pipeline *s, int nb_vertices, int nb_instances
         return;
     }
 
-    set_uniforms(s);
+    pipeline_set_uniforms(s);
 
     VkCommandBuffer cmd_buf = gctx_vk->cur_command_buffer;
 
     vkCmdBindPipeline(cmd_buf, s_priv->bind_point, s_priv->pipeline);
-
-    if (s_priv->desc_sets)
-        vkCmdBindDescriptorSets(cmd_buf, s_priv->bind_point, s_priv->pipeline_layout,
-                                0, 1, &s_priv->desc_sets[0], 0, NULL);
 
     struct pipeline_graphics *graphics = &s->graphics;
 
@@ -857,6 +731,10 @@ void ngli_pipeline_vk_draw(struct pipeline *s, int nb_vertices, int nb_instances
     VkDeviceSize *vertex_offsets = ngli_darray_data(&s_priv->vertex_offsets);
     vkCmdBindVertexBuffers(cmd_buf, 0, nb_vertex_buffers, vertex_buffers, vertex_offsets);
 
+    if (s_priv->desc_sets)
+        vkCmdBindDescriptorSets(cmd_buf, s_priv->bind_point, s_priv->pipeline_layout,
+                                0, 1, &s_priv->desc_sets[0], 0, NULL);
+
     vkCmdDraw(cmd_buf, nb_vertices, nb_instances, 0, 0);
 }
 
@@ -870,15 +748,11 @@ void ngli_pipeline_vk_draw_indexed(struct pipeline *s, struct buffer *indices, i
         return;
     }
 
-    set_uniforms(s);
+    pipeline_set_uniforms(s);
 
     VkCommandBuffer cmd_buf = gctx_vk->cur_command_buffer;
 
     vkCmdBindPipeline(cmd_buf, s_priv->bind_point, s_priv->pipeline);
-
-    if (s_priv->desc_sets)
-        vkCmdBindDescriptorSets(cmd_buf, s_priv->bind_point, s_priv->pipeline_layout,
-                                0, 1, &s_priv->desc_sets[0], 0, NULL);
 
     struct pipeline_graphics *graphics = &s->graphics;
 
@@ -915,6 +789,10 @@ void ngli_pipeline_vk_draw_indexed(struct pipeline *s, struct buffer *indices, i
     VkDeviceSize *vertex_offsets = ngli_darray_data(&s_priv->vertex_offsets);
     vkCmdBindVertexBuffers(cmd_buf, 0, nb_vertex_buffers, vertex_buffers, vertex_offsets);
 
+    if (s_priv->desc_sets)
+        vkCmdBindDescriptorSets(cmd_buf, s_priv->bind_point, s_priv->pipeline_layout,
+                                0, 1, &s_priv->desc_sets[0], 0, NULL);
+
     struct buffer_vk *indices_vk = (struct buffer_vk *)indices;
     VkIndexType indices_type = get_vk_indices_type(indices_format);
     vkCmdBindIndexBuffer(cmd_buf, indices_vk->buffer, 0, indices_type);
@@ -927,7 +805,7 @@ void ngli_pipeline_vk_dispatch(struct pipeline *s, int nb_group_x, int nb_group_
     struct gctx_vk *gctx_vk = (struct gctx_vk *)s->gctx;
     struct pipeline_vk *s_priv = (struct pipeline_vk *)s;
 
-    set_uniforms(s);
+    pipeline_set_uniforms(s);
 
     VkCommandBuffer cmd_buf = gctx_vk->cur_command_buffer;
 
