@@ -23,7 +23,7 @@
 
 #include "gctx_vk.h"
 #include "gtimer_vk.h"
-#include "memory.h"
+#include "nodegl/core/memory.h"
 #include "gctx_vk.h"
 
 struct gtimer *ngli_gtimer_vk_create(struct gctx *gctx)
