@@ -33,6 +33,7 @@ struct gctx;
 int ngli_swapchain_create(struct gctx *s);
 void ngli_swapchain_destroy(struct gctx *s);
 int ngli_swapchain_acquire_image(struct gctx *s, uint32_t *image_index);
+int ngli_swapchain_swap_buffers(struct gctx *s);
 
 #ifdef __cplusplus
 }
