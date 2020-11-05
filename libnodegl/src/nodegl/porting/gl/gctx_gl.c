@@ -638,6 +638,7 @@ const struct gctx_class ngli_gctx_gl = {
     .swapchain_create         = NULL,
     .swapchain_destroy        = NULL,
     .swapchain_acquire_image  = NULL,
+    .swapchain_swap_buffers   = NULL,
 
     .texture_create           = ngli_texture_gl_create,
     .texture_init             = ngli_texture_gl_init,
@@ -710,6 +711,11 @@ const struct gctx_class ngli_gctx_gles = {
     .rendertarget_init        = ngli_rendertarget_gl_init,
     .rendertarget_read_pixels = ngli_rendertarget_gl_read_pixels,
     .rendertarget_freep       = ngli_rendertarget_gl_freep,
+
+    .swapchain_create         = NULL,
+    .swapchain_destroy        = NULL,
+    .swapchain_acquire_image  = NULL,
+    .swapchain_swap_buffers   = NULL,
 
     .texture_create           = ngli_texture_gl_create,
     .texture_init             = ngli_texture_gl_init,
