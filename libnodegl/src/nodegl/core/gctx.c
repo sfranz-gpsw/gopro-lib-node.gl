@@ -30,6 +30,7 @@
 extern const struct gctx_class ngli_gctx_gl;
 extern const struct gctx_class ngli_gctx_gles;
 extern const struct gctx_class ngli_gctx_vk;
+extern const struct gctx_class ngli_gctx_ngfx;
 
 static const struct gctx_class *backend_map[] = {
 #ifdef BACKEND_GL
@@ -38,6 +39,9 @@ static const struct gctx_class *backend_map[] = {
 #endif
 #ifdef BACKEND_VK
     [NGL_BACKEND_VULKAN] = &ngli_gctx_vk,
+#endif
+#ifdef BACKEND_NGFX
+    [NGL_BACKEND_NGFX] = &ngli_gctx_ngfx
 #endif
 };
 
