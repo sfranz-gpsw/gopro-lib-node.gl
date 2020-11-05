@@ -63,3 +63,12 @@ const char *vk_res2str(VkResult res)
         default:                                return "unknown";
     }
 }
+
+uint32_t clip_u32(uint32_t x, uint32_t min, uint32_t max)
+{
+    if (x < min)
+        return min;
+    if (x > max)
+        return max;
+    return x;
+}
