@@ -206,5 +206,6 @@ def get_backend(backend):
         'gl': ngl.BACKEND_OPENGL,
         'gles': ngl.BACKEND_OPENGLES,
         'vk': ngl.BACKEND_VULKAN,
+        'ngfx': ngl.BACKEND_NGFX
     }
     return backend_map[backend]
