@@ -57,6 +57,8 @@ static int build_attribute_descs(pipeline *s, const pipeline_params *params)
     gctx_ngfx *gtctx = (gctx_ngfx *)s->gctx;
     pipeline_ngfx *s_priv = (pipeline_ngfx *)s;
 
+    ngli_darray_init(&s_priv->vertex_buffers, sizeof(ngfx::Buffer *), 0);
+
     for (int i = 0; i < params->nb_attributes; i++) {
         const pipeline_attribute_desc *desc = &params->attributes_desc[i];
 
@@ -102,6 +104,7 @@ static int pipeline_graphics_init(pipeline *s, const pipeline_params *params)
     int ret = build_attribute_descs(s, params);
     if (ret < 0)
         return ret;
+
     GraphicsPipeline::State state;
 
     state.renderPass = get_render_pass(gctx->graphics_context, params->graphics.rt_desc);
@@ -145,6 +148,7 @@ static int pipeline_graphics_init(pipeline *s, const pipeline_params *params)
         depth_attachment_desc ? to_ngfx_format(depth_attachment_desc->format) : PIXELFORMAT_UNDEFINED,
         get_instance_attributes(params->attributes_desc, params->nb_attributes)
     );
+
     return 0;
 }
 
@@ -170,29 +174,18 @@ int ngli_pipeline_ngfx_init(pipeline *s, const pipeline_params *params)
     ngli_darray_init(&s_priv->buffer_bindings,  sizeof(buffer_binding), 0);
     ngli_darray_init(&s_priv->attribute_bindings, sizeof(attribute_binding), 0);
 
+    int ret;
     if (params->type == NGLI_PIPELINE_TYPE_GRAPHICS) {
-        pipeline_graphics_init(s, params);
+        ret = pipeline_graphics_init(s, params);
+        if (ret < 0)
+            return ret;
     } else if (params->type == NGLI_PIPELINE_TYPE_COMPUTE) {
-        pipeline_compute_init(s, params);
+        ret = pipeline_compute_init(s, params);
+        if (ret < 0)
+            return ret;
     } else {
         ngli_assert(0);
     }
-    return 0;
-}
-
-static int upload_uniforms(pipeline *s)
-{
-    for (int i = 0; i < NGLI_PROGRAM_SHADER_NB; i++) {
-        const uint8_t *udata = s->udata[i];
-        if (!udata)
-            continue;
-        buffer *ubuffer = s->ubuffer[i];
-        const block *ublock = s->ublock[i];
-        int ret = ngli_buffer_upload(ubuffer, udata, ublock->size, 0);
-        if (ret < 0)
-            return ret;
-    }
-
     return 0;
 }
 
@@ -236,31 +229,66 @@ int ngli_pipeline_ngfx_set_resources(pipeline *s, const pipeline_resource_params
 
     return 0;
 }
-int ngli_pipeline_ngfx_update_attribute(pipeline *s, int index, buffer *buffer) {
-    TODO();
-    return 0;
-}
-int ngli_pipeline_ngfx_update_uniform(pipeline *s, int index, const void *value) {
+
+int ngli_pipeline_ngfx_update_attribute(pipeline *s, int index, buffer *p_buffer) {
+    pipeline_ngfx *s_priv = (pipeline_ngfx *)s;
+
     if (index == -1)
         return NGL_ERROR_NOT_FOUND;
 
-    const int stage = index >> 16;
-    const int field_index = index & 0xffff;
-    const block *block = s->ublock[stage];
-    const block_field *field_info = (const block_field *)ngli_darray_data(&block->fields);
-    const block_field *fi = &field_info[field_index];
-    uint8_t *dst = s->udata[stage] + fi->offset;
-    ngli_block_field_copy(fi, dst, (const uint8_t *)value);
+    ngli_assert(s->type == NGLI_PIPELINE_TYPE_GRAPHICS);
+
+    attribute_binding *attr_binding = (attribute_binding *)ngli_darray_get(&s_priv->attribute_bindings, index);
+    ngli_assert(attr_binding);
+
+    const buffer *current_buffer = attr_binding->buffer;
+    if (!current_buffer && p_buffer)
+        s_priv->nb_unbound_attributes--;
+    else if (current_buffer && !p_buffer)
+        s_priv->nb_unbound_attributes++;
+
+    attr_binding->buffer = p_buffer;
+
+    ngfx::Buffer **vertex_buffers = (ngfx::Buffer **)ngli_darray_data(&s_priv->vertex_buffers);
+    if (p_buffer) {
+        buffer_ngfx *buffer = (struct buffer_ngfx *)p_buffer;
+        vertex_buffers[index] = buffer->v;
+    } else {
+        vertex_buffers[index] = NULL;
+    }
+
     return 0;
 }
-int ngli_pipeline_ngfx_update_texture(pipeline *s, int index, texture *texture) {
+
+int ngli_pipeline_ngfx_update_uniform(pipeline *s, int index, const void *value) {
+    return pipeline_update_uniform(s, index, value);
+}
+
+int ngli_pipeline_ngfx_update_texture(pipeline *s, int index, texture *p_texture) {
     gctx_ngfx *gctx = (gctx_ngfx *)s->gctx;
     pipeline_ngfx *s_priv = (pipeline_ngfx *)s;
 
     texture_binding *binding = (texture_binding *)ngli_darray_get(&s_priv->texture_bindings, index);
     ngli_assert(binding);
 
-    binding->texture = texture;
+    binding->texture = p_texture;
+
+    return 0;
+}
+
+int ngli_pipeline_ngfx_update_buffer(pipeline *s, int index, buffer *p_buffer)
+{
+    gctx_ngfx *gctx = (struct gctx_ngfx *)s->gctx;
+    pipeline_ngfx *s_priv = (pipeline_ngfx *)s;
+
+    if (index == -1)
+        return NGL_ERROR_NOT_FOUND;
+
+    buffer_binding *binding = (buffer_binding *)ngli_darray_get(&s_priv->buffer_bindings, index);
+    ngli_assert(binding);
+
+    binding->buffer = p_buffer;
+
     return 0;
 }
 
@@ -332,12 +360,14 @@ void ngli_pipeline_ngfx_draw(pipeline *s, int nb_vertices, int nb_instances) {
     gctx_ngfx *gctx = (gctx_ngfx *)s->gctx;
     CommandBuffer *cmd_buf = gctx->cur_command_buffer;
 
-    upload_uniforms(s);
+    pipeline_set_uniforms(s);
 
     bind_pipeline(s);
+
     bind_vertex_buffers(cmd_buf, s);
     bind_buffers(cmd_buf, s);
     bind_textures(cmd_buf, s);
+
     gctx->graphics->draw(cmd_buf, nb_vertices, nb_instances);
 
 }
@@ -345,14 +375,16 @@ void ngli_pipeline_ngfx_draw_indexed(pipeline *s, buffer *indices, int indices_f
     gctx_ngfx *gctx = (gctx_ngfx *)s->gctx;
     CommandBuffer *cmd_buf = gctx->cur_command_buffer;
 
-    upload_uniforms(s);
+    pipeline_set_uniforms(s);
 
     bind_pipeline(s);
+
     bind_vertex_buffers(cmd_buf, s);
     bind_buffers(cmd_buf, s);
     bind_textures(cmd_buf, s);
 
     gctx->graphics->bindIndexBuffer(cmd_buf, ((buffer_ngfx *)indices)->v, to_ngfx_index_format(indices_format));
+
     gctx->graphics->drawIndexed(cmd_buf, nb_indices, nb_instances);
 
 }
@@ -360,7 +392,7 @@ void ngli_pipeline_ngfx_dispatch(pipeline *s, int nb_group_x, int nb_group_y, in
     gctx_ngfx *gctx = (gctx_ngfx *)s->gctx;
     CommandBuffer *cmd_buf = gctx->cur_command_buffer;
 
-    upload_uniforms(s);
+    pipeline_set_uniforms(s);
 
     bind_pipeline(s);
     bind_vertex_buffers(cmd_buf, s);
@@ -382,4 +414,6 @@ void ngli_pipeline_ngfx_freep(pipeline **sp) {
     ngli_darray_reset(&s_priv->texture_bindings);
     ngli_darray_reset(&s_priv->buffer_bindings);
     ngli_darray_reset(&s_priv->attribute_bindings);
+
+    ngli_darray_reset(&s_priv->vertex_buffers);
 }

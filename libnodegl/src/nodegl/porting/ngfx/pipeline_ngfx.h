@@ -35,6 +35,9 @@ struct pipeline_ngfx {
     struct darray buffer_bindings;        // buffer_binding
     struct darray texture_bindings;       // texture_binding
     struct darray attribute_bindings;     // attribute_binding
+    int nb_unbound_attributes;
+
+    struct darray vertex_buffers;         // ngfx::Buffer*
 
     ngfx::GraphicsPipeline *gp = nullptr;
     ngfx::ComputePipeline *cp = nullptr;
