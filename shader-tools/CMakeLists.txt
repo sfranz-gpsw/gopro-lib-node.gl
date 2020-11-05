@@ -1,0 +1,45 @@
+cmake_minimum_required(VERSION 3.14)
+project (shader-tools)
+set(CMAKE_CXX_STANDARD 20)
+file (GLOB_RECURSE SHADER_TOOLS_SRC_FILES src/*.cpp src/*.h)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+set(SHADER_TOOLS_BUILD_TYPE STATIC)
+else()
+set(SHADER_TOOLS_BUILD_TYPE SHARED)
+endif()
+add_library(shader_tools ${SHADER_TOOLS_BUILD_TYPE} ${SHADER_TOOLS_SRC_FILES})
+target_compile_options(shader_tools PUBLIC ${NGFX_CFLAGS})
+target_include_directories(shader_tools PUBLIC src
+    ${JSON_INCLUDE_DIRS}
+    ${NGFX_INCLUDE_DIRS}
+    ${SHADERC_INCLUDE_DIRS}
+    ${SPIRV_CROSS_INCLUDE_DIRS}
+)
+
+target_link_libraries(shader_tools PUBLIC ngfx
+    ${SHADERC_LIBRARIES}
+    ${SPIRV_CROSS_LIBRARIES}
+)
+target_link_directories(shader_tools PUBLIC
+    ${SHADERC_LIBRARY_DIRS}
+    ${SPIRV_CROSS_LIBRARY_DIRS}
+)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+target_link_libraries(shader_tools PUBLIC stdc++fs)
+endif()
+
+function(build_tool name)
+file (GLOB_RECURSE TOOL_SOURCE_FILES tools/${name}*.cpp tools/${name}*.h)
+add_executable(${name} ${TOOL_SOURCE_FILES})
+target_include_directories(${name} PUBLIC src)
+target_link_libraries(${name} shader_tools)
+endfunction()
+
+if (NGFX_GRAPHICS_BACKEND_VULKAN)
+#build_tool(compile_shaders_vk)
+elseif(NGFX_GRAPHICS_BACKEND_DIRECT3D12)
+build_tool(compile_shaders_dx12)
+elseif(NGFX_GRAPHICS_BACKEND_METAL)
+#build_tool(compile_shaders_mtl)
+endif()
