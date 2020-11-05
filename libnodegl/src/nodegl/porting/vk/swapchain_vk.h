@@ -19,11 +19,16 @@
  * under the License.
  */
 
-#ifndef VKUTILS_H
-#define VKUTILS_H
+#ifndef SWAPCHAIN_VK_H
+#define SWAPCHAIN_VK_H
 
-#include <vulkan/vulkan.h>
+#include "nodegl/core/swapchain.h"
+#include "nodegl/porting/vk/vkcontext.h"
 
-const char *vk_res2str(VkResult res);
-uint32_t clip_u32(uint32_t x, uint32_t min, uint32_t max);
+int ngli_swapchain_vk_create(struct gctx *s);
+void ngli_swapchain_vk_destroy(struct gctx *s);
+int ngli_swapchain_vk_acquire_image(struct gctx *s, uint32_t *image_index);
+int ngli_swapchain_vk_swap_buffers(struct gctx *s);
+typedef int (*swapchain_vk_reset_callback)(struct gctx *gctx, struct vkcontext *vk);
+void ngli_swapchain_vk_set_reset_callback(swapchain_vk_reset_callback cb);
 #endif
