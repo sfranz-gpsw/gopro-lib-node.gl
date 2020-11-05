@@ -1217,6 +1217,11 @@ const struct gctx_class ngli_gctx_vk = {
     .rendertarget_read_pixels = ngli_rendertarget_vk_read_pixels,
     .rendertarget_freep       = ngli_rendertarget_vk_freep,
 
+    .swapchain_create         = ngli_swapchain_vk_create,
+    .swapchain_destroy        = ngli_swapchain_vk_destroy,
+    .swapchain_acquire_image  = ngli_swapchain_vk_acquire_image,
+    .swapchain_swap_buffers   = ngli_swapchain_vk_swap_buffers,
+
     .texture_create           = ngli_texture_vk_create,
     .texture_init             = ngli_texture_vk_init,
     .texture_has_mipmap       = ngli_texture_vk_has_mipmap,

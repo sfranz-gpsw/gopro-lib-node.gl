@@ -105,6 +105,7 @@ struct gctx_class {
     int (*swapchain_create)(struct gctx *gctx);
     void (*swapchain_destroy)(struct gctx *gctx);
     int (*swapchain_acquire_image)(struct gctx *gctx, uint32_t *image_index);
+    int (*swapchain_swap_buffers)(struct gctx *gctx);
 
     struct texture *(*texture_create)(struct gctx *ctx);
     int (*texture_init)(struct texture *s, const struct texture_params *params);

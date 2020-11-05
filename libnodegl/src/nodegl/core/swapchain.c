@@ -42,3 +42,10 @@ int ngli_swapchain_acquire_image(struct gctx *gctx, uint32_t *image_index)
         return NGL_ERROR_UNSUPPORTED;
     return gctx->clazz->swapchain_acquire_image(gctx, image_index);
 }
+
+int ngli_swapchain_swap_buffers(struct gctx *gctx)
+{
+    if (!gctx->clazz->swapchain_swap_buffers)
+        return NGL_ERROR_UNSUPPORTED;
+    return gctx->clazz->swapchain_swap_buffers(gctx);
+}
