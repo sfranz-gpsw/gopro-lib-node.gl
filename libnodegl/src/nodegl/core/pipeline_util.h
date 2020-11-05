@@ -28,6 +28,8 @@ extern "C" {
 #endif
 
 int pipeline_update_blocks(struct pipeline *s,  const struct pipeline_resource_params *params);
+int pipeline_set_uniforms(struct pipeline *s);
+int pipeline_update_uniform(struct pipeline *s, int index, const void *value);
 
 #ifdef __cplusplus
 }

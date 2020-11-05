@@ -39,3 +39,33 @@ int pipeline_update_blocks(struct pipeline *s,  const struct pipeline_resource_p
     }
     return 0;
 }
+
+int pipeline_set_uniforms(struct pipeline *s)
+{
+    for (int i = 0; i < NGLI_PROGRAM_SHADER_NB; i++) {
+        const uint8_t *udata = s->udata[i];
+        if (!udata)
+            continue;
+        struct buffer *ubuffer = s->ubuffer[i];
+        const struct block *ublock = s->ublock[i];
+        int ret = ngli_buffer_upload(ubuffer, udata, ublock->size, 0);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
+int pipeline_update_uniform(struct pipeline *s, int index, const void *value) {
+    if (index == -1)
+        return NGL_ERROR_NOT_FOUND;
+
+    const int stage = index >> 16;
+    const int field_index = index & 0xffff;
+    const struct block *p_block = s->ublock[stage];
+    const struct block_field *field_info = (const struct block_field *)ngli_darray_data(&p_block->fields);
+    const struct block_field *fi = &field_info[field_index];
+    uint8_t *dst = s->udata[stage] + fi->offset;
+    ngli_block_field_copy(fi, dst, (const uint8_t *)value);
+    return 0;
+}
