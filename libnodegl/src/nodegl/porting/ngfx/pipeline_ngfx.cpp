@@ -21,7 +21,7 @@
 
 #include "nodegl/porting/ngfx/pipeline_ngfx.h"
 #include "nodegl/core/memory.h"
-#include "nodegl/core/log.h"
+#include "nodegl/porting/ngfx/debugutil_ngfx.h"
 #include "ngfx/graphics/Graphics.h"
 #include "ngfx/compute/ComputePipeline.h"
 #include "ngfx/graphics/GraphicsPipeline.h"

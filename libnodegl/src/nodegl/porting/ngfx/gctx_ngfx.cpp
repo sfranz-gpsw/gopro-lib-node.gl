@@ -28,10 +28,11 @@
 #include "nodegl/porting/ngfx/swapchain_ngfx.h"
 #include "nodegl/porting/ngfx/texture_ngfx.h"
 #include "nodegl/core/memory.h"
-#include "nodegl/core/log.h"
 #include "nodegl/core/math_utils.h"
 #include "nodegl/core/format.h"
 #include "nodegl/porting/ngfx/util_ngfx.h"
+#include "nodegl/porting/ngfx/debugutil_ngfx.h"
+
 #ifdef ENABLE_CAPTURE
 #include "tools/capture/capture.h"
 static bool DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != NULL);

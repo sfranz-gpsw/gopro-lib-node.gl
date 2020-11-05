@@ -19,18 +19,11 @@
  * under the License.
  */
 
-#include "nodegl/porting/ngfx/gtimer_ngfx.h"
-#include "nodegl/core/memory.h"
+#ifndef DEBUGUTIL_NGFX_H
+#define DEBUGUTIL_NGFX_H
+
 #include "nodegl/core/log.h"
-#include "nodegl/porting/ngfx/debugutil_ngfx.h"
 
-struct gtimer *ngli_gtimer_ngfx_create(struct gctx *gctx)
-{ TODO();
-    return NULL;
-}
+#define TODO(fmt, ...) LOG(WARNING, "TODO " fmt, ##__VA_ARGS__)
 
-int ngli_gtimer_ngfx_init(struct gtimer *s) { TODO(); return 0; }
-int ngli_gtimer_ngfx_start(struct gtimer *s) { TODO(); return 0; }
-int ngli_gtimer_ngfx_stop(struct gtimer *s) { TODO(); return 0; }
-int64_t ngli_gtimer_ngfx_read(struct gtimer *s) { TODO(); return 0; }
-void ngli_gtimer_ngfx_freep(struct gtimer **sp) { TODO();}
+#endif

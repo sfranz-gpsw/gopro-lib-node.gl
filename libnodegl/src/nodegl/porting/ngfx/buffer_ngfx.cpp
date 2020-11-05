@@ -23,7 +23,8 @@
 #include "nodegl/porting/ngfx/buffer_ngfx.h"
 #include "nodegl/porting/ngfx/gctx_ngfx.h"
 #include "ngfx/graphics/Buffer.h"
-#include "nodegl/core/log.h"
+#include "nodegl/porting/ngfx/debugutil_ngfx.h"
+
 using namespace ngfx;
 
 struct buffer *ngli_buffer_ngfx_create(struct gctx *gctx)
