@@ -20,6 +20,7 @@
  */
 #pragma once
 #include <vulkan/vulkan.h>
+#include <string>
 #include <vector>
 
 namespace ngfx {
@@ -27,11 +28,12 @@ namespace ngfx {
     public:
         void create(const char *appName, const char *engineName, uint32_t apiVersion, bool enableValidation);
         virtual ~VKInstance();
+        bool hasInstanceLayer(const char* name);
         struct {
-            bool validation = false;
+            bool enableValidation = false;
         } settings;
         std::vector<const char*> instanceExtensions;
-        std::vector<const char*> enabledInstanceExtensions;
+        std::vector<const char*> instanceLayers;
         std::vector<VkLayerProperties> instanceLayerProperties;
         VkInstance v = VK_NULL_HANDLE;
         VkInstanceCreateInfo createInfo;

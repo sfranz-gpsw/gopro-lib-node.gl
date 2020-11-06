@@ -28,12 +28,7 @@ using namespace ngfx;
 void VKInstance::create(const char* appName, const char* engineName, uint32_t apiVersion, bool enableValidation)
 {
     VkResult vkResult;
-    this->settings.validation = enableValidation;
-
-    // Validation can also be forced via a define
-#if defined(_VALIDATION)
-    this->settings.validation = true;
-#endif
+    this->settings.enableValidation = enableValidation;
 
     appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -41,15 +36,33 @@ void VKInstance::create(const char* appName, const char* engineName, uint32_t ap
     appInfo.pEngineName = engineName;
     appInfo.apiVersion = apiVersion;
 
+    //Get instance layer properties
+    uint32_t instanceLayerCount;
+    vkEnumerateInstanceLayerProperties(&instanceLayerCount, nullptr);
+    instanceLayerProperties.resize(instanceLayerCount);
+    vkEnumerateInstanceLayerProperties(&instanceLayerCount, instanceLayerProperties.data());
+
+    //Set instance layers
+    if (settings.enableValidation)
+    {
+        const char* validationLayerName = "VK_LAYER_KHRONOS_validation";
+        //Check if this layer is available
+        bool validationLayerPresent = hasInstanceLayer(validationLayerName);
+        if (validationLayerPresent) {
+            instanceLayers.push_back(validationLayerName);
+        } else {
+            ERR("Validation layer VK_LAYER_KHRONOS_validation not found");
+        }
+    }
+
+    //Set instance extensions
     instanceExtensions = { VK_KHR_SURFACE_EXTENSION_NAME };
 
-    // Enable surface extensions depending on os
     std::vector<const char*> surfaceExtensions = { VK_SURFACE_EXTENSION_NAMES };
     for (auto& ext: surfaceExtensions) instanceExtensions.push_back(ext);
-
-    if (enabledInstanceExtensions.size() > 0) {
-        for (auto enabledExtension : enabledInstanceExtensions) {
-            instanceExtensions.push_back(enabledExtension);
+    if (instanceExtensions.size() > 0) {
+        if (settings.enableValidation) {
+            instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
     }
 
@@ -57,40 +70,21 @@ void VKInstance::create(const char* appName, const char* engineName, uint32_t ap
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pNext = NULL;
     createInfo.pApplicationInfo = &appInfo;
-    if (instanceExtensions.size() > 0)
-    {
-        if (settings.validation)
-        {
-            instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        }
-        createInfo.enabledExtensionCount = (uint32_t)instanceExtensions.size();
-        createInfo.ppEnabledExtensionNames = instanceExtensions.data();
-    }
-    if (settings.validation)
-    {
-        // The VK_LAYER_KHRONOS_validation contains all current validation functionality.
-        // Note that on Android this layer requires at least NDK r20
-        const char* validationLayerName = "VK_LAYER_KHRONOS_validation";
-        // Check if this layer is available at v level
-        uint32_t instanceLayerCount;
-        vkEnumerateInstanceLayerProperties(&instanceLayerCount, nullptr);
-        instanceLayerProperties.resize(instanceLayerCount);
-        vkEnumerateInstanceLayerProperties(&instanceLayerCount, instanceLayerProperties.data());
-        bool validationLayerPresent = false;
-        for (VkLayerProperties layer : instanceLayerProperties) {
-            if (strcmp(layer.layerName, validationLayerName) == 0) {
-                validationLayerPresent = true;
-                break;
-            }
-        }
-        if (validationLayerPresent) {
-            createInfo.ppEnabledLayerNames = &validationLayerName;
-            createInfo.enabledLayerCount = 1;
-        } else {
-            ERR("Validation layer VK_LAYER_KHRONOS_validation not present, validation is disabled");
-        }
-    }
+    createInfo.ppEnabledExtensionNames = instanceExtensions.data();
+    createInfo.enabledExtensionCount = (uint32_t)instanceExtensions.size();
+    createInfo.ppEnabledLayerNames = instanceLayers.data();
+    createInfo.enabledLayerCount = (uint32_t)instanceLayers.size();
+
     V(vkCreateInstance(&createInfo, nullptr, &v));
+}
+
+bool VKInstance::hasInstanceLayer(const char* name) {
+    for (VkLayerProperties &props : instanceLayerProperties) {
+        if (strcmp(props.layerName, name) == 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 VKInstance::~VKInstance() {

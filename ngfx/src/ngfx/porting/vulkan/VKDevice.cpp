@@ -62,7 +62,7 @@ void VKDevice::getQueueCreateInfos(VkQueueFlags requestedQueueTypes) {
     // Get queue family indices for the requested queue family types
     // Note that the indices may overlap depending on the implementation
     static const float defaultQueuePriority = 0.0f;
-    // Graphics v
+    // Graphics queue
     if (requestedQueueTypes & VK_QUEUE_GRAPHICS_BIT)
     {
         queueFamilyIndices.graphics = getQueueFamilyIndex(VK_QUEUE_GRAPHICS_BIT);
@@ -78,13 +78,13 @@ void VKDevice::getQueueCreateInfos(VkQueueFlags requestedQueueTypes) {
         queueFamilyIndices.graphics = VK_NULL_HANDLE;
     }
 
-    // Compute v
+    // Compute queue
     if (requestedQueueTypes & VK_QUEUE_COMPUTE_BIT)
     {
         queueFamilyIndices.compute = getQueueFamilyIndex(VK_QUEUE_COMPUTE_BIT);
         if (queueFamilyIndices.compute != queueFamilyIndices.graphics)
         {
-            // Found dedicated compute v
+            // Found dedicated compute queue
             VkDeviceQueueCreateInfo queueInfo{};
             queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
             queueInfo.queueFamilyIndex = queueFamilyIndices.compute;
@@ -95,17 +95,17 @@ void VKDevice::getQueueCreateInfos(VkQueueFlags requestedQueueTypes) {
     }
     else
     {
-        // Use the same v
+        // Use the same queue
         queueFamilyIndices.compute = queueFamilyIndices.graphics;
     }
 
-    // Transfer v
+    // Transfer queue
     if (requestedQueueTypes & VK_QUEUE_TRANSFER_BIT)
     {
         queueFamilyIndices.transfer = getQueueFamilyIndex(VK_QUEUE_TRANSFER_BIT);
         if ((queueFamilyIndices.transfer != queueFamilyIndices.graphics) && (queueFamilyIndices.transfer != queueFamilyIndices.compute))
         {
-            //Found dedicated transfer v
+            //Found dedicated transfer queue
             VkDeviceQueueCreateInfo queueInfo{};
             queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
             queueInfo.queueFamilyIndex = queueFamilyIndices.transfer;
@@ -116,7 +116,7 @@ void VKDevice::getQueueCreateInfos(VkQueueFlags requestedQueueTypes) {
     }
     else
     {
-        // Use the same v
+        // Use the same queue
         queueFamilyIndices.transfer = queueFamilyIndices.graphics;
     }
 }
