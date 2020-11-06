@@ -30,13 +30,19 @@
 
 struct gctx_ngfx {
     struct gctx parent;
-    struct rendertarget_desc default_rendertarget_desc;
+
     ngfx::GraphicsContext* graphics_context = nullptr;
     ngfx::Graphics* graphics = nullptr;
     ngfx::CommandBuffer* cur_command_buffer = nullptr;
+
+    struct rendertarget *default_rendertarget;
+    struct rendertarget_desc default_rendertarget_desc;
+
+    rendertarget *cur_rendertarget;
     int viewport[4];
     int scissor[4];
     float clear_color[4];
+
     struct {
         texture *color_texture = nullptr, *depth_texture = nullptr;
         rendertarget *rt = nullptr;

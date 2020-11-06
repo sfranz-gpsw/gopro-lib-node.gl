@@ -52,7 +52,7 @@ struct texture_binding {
     struct texture *texture;
 };
 
-static int build_attribute_descs(pipeline *s, const pipeline_params *params)
+static int init_attributes_data(pipeline *s, const pipeline_params *params)
 {
     gctx_ngfx *gtctx = (gctx_ngfx *)s->gctx;
     pipeline_ngfx *s_priv = (pipeline_ngfx *)s;
@@ -60,12 +60,8 @@ static int build_attribute_descs(pipeline *s, const pipeline_params *params)
     ngli_darray_init(&s_priv->vertex_buffers, sizeof(ngfx::Buffer *), 0);
 
     for (int i = 0; i < params->nb_attributes; i++) {
-        const pipeline_attribute_desc *desc = &params->attributes_desc[i];
-
-        attribute_binding attr_binding = {
-            .desc = *desc,
-        };
-        if (!ngli_darray_push(&s_priv->attribute_bindings, &attr_binding))
+        ngfx::Buffer *buffer = NULL;
+        if (!ngli_darray_push(&s_priv->vertex_buffers, &buffer))
             return NGL_ERROR_MEMORY;
     }
     return 0;
@@ -89,6 +85,48 @@ static std::set<std::string> get_instance_attributes(const pipeline_attribute_de
     return instance_attrs;
 }
 
+static int init_bindings(pipeline *s, const pipeline_params *params)
+{
+    gctx_ngfx *gctx = (gctx_ngfx *)s->gctx;
+    pipeline_ngfx *s_priv = (pipeline_ngfx *)s;
+
+    ngli_darray_init(&s_priv->attribute_bindings, sizeof(attribute_binding), 0);
+    ngli_darray_init(&s_priv->buffer_bindings,  sizeof(buffer_binding), 0);
+    ngli_darray_init(&s_priv->texture_bindings, sizeof(texture_binding), 0);
+
+    for (int i = 0; i < params->nb_attributes; i++) {
+        const pipeline_attribute_desc *desc = &params->attributes_desc[i];
+
+        attribute_binding binding = {
+            .desc = *desc,
+        };
+        if (!ngli_darray_push(&s_priv->attribute_bindings, &binding))
+            return NGL_ERROR_MEMORY;
+    }
+
+    for (int i = 0; i < params->nb_buffers; i++) {
+        const pipeline_buffer_desc *desc = &params->buffers_desc[i];
+
+        buffer_binding binding = {
+            .desc = *desc,
+        };
+        if (!ngli_darray_push(&s_priv->buffer_bindings, &binding))
+            return NGL_ERROR_MEMORY;
+    }
+
+    for (int i = 0; i < params->nb_textures; i++) {
+        const pipeline_texture_desc *desc = &params->textures_desc[i];
+
+        texture_binding binding = {
+            .desc = *desc,
+        };
+        if (!ngli_darray_push(&s_priv->texture_bindings, &binding))
+            return NGL_ERROR_MEMORY;
+    }
+
+    return 0;
+}
+
 static int pipeline_graphics_init(pipeline *s, const pipeline_params *params)
 {
     gctx_ngfx* gctx = (gctx_ngfx*)s->gctx;
@@ -101,7 +139,7 @@ static int pipeline_graphics_init(pipeline *s, const pipeline_params *params)
     const attachment_desc *color_attachment_desc = &rt_desc->colors[0];
     const attachment_desc* depth_attachment_desc = &rt_desc->depth_stencil;
 
-    int ret = build_attribute_descs(s, params);
+    int ret = init_attributes_data(s, params);
     if (ret < 0)
         return ret;
 
@@ -170,9 +208,7 @@ int ngli_pipeline_ngfx_init(pipeline *s, const pipeline_params *params)
     s->graphics = params->graphics;
     s->program  = params->program;
 
-    ngli_darray_init(&s_priv->texture_bindings, sizeof(texture_binding), 0);
-    ngli_darray_init(&s_priv->buffer_bindings,  sizeof(buffer_binding), 0);
-    ngli_darray_init(&s_priv->attribute_bindings, sizeof(attribute_binding), 0);
+    init_bindings(s, params);
 
     int ret;
     if (params->type == NGLI_PIPELINE_TYPE_GRAPHICS) {

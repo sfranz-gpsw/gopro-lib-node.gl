@@ -122,8 +122,6 @@ struct gctx {
     int version;
     uint64_t features;
     struct glimits limits;
-    struct rendertarget *cur_rendertarget;
-    struct rendertarget *default_rendertarget;
 };
 
 struct gctx *ngli_gctx_create(const struct ngl_config *config);

@@ -35,8 +35,6 @@ struct rendertarget *ngli_rendertarget_ngfx_create(struct gctx *gctx);
 int ngli_rendertarget_ngfx_init(struct rendertarget *s, const struct rendertarget_params *params);
 void ngli_rendertarget_ngfx_resolve(struct rendertarget *s);
 void ngli_rendertarget_ngfx_read_pixels(struct rendertarget *s, uint8_t *data);
-void ngli_rendertarget_ngfx_begin_pass(struct rendertarget *s);
-void ngli_rendertarget_ngfx_end_pass(struct rendertarget *s);
 void ngli_rendertarget_ngfx_freep(struct rendertarget **sp);
 
 #endif

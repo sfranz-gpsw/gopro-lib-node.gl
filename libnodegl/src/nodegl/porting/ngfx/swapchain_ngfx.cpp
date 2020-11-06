@@ -27,3 +27,4 @@ void ngli_swapchain_ngfx_destroy(struct gctx *s) {}
 
 int ngli_swapchain_ngfx_acquire_image(struct gctx *s, uint32_t *image_index) { return 0; }
 
+int ngli_swapchain_ngfx_swap_buffers(struct gctx *s) { return 0; }

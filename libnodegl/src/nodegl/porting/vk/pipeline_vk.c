@@ -64,7 +64,7 @@ struct texture_binding {
     struct texture *texture;
 };
 
-static int build_attribute_descs(struct pipeline *s, const struct pipeline_params *params)
+static int init_attributes_data(struct pipeline *s, const struct pipeline_params *params)
 {
     struct gctx_vk *gctx_vk = (struct gctx_vk *)s->gctx;
     struct vkcontext *vk = gctx_vk->vkcontext;
@@ -77,12 +77,6 @@ static int build_attribute_descs(struct pipeline *s, const struct pipeline_param
 
     for (int i = 0; i < params->nb_attributes; i++) {
         const struct pipeline_attribute_desc *desc = &params->attributes_desc[i];
-
-        struct attribute_binding attribute_binding = {
-            .desc = *desc,
-        };
-        if (!ngli_darray_push(&s_priv->attribute_bindings, &attribute_binding))
-            return NGL_ERROR_MEMORY;
 
         VkVertexInputBindingDescription binding_desc = {
             .binding   = i,
@@ -137,7 +131,7 @@ static int pipeline_graphics_init(struct pipeline *s, const struct pipeline_para
     struct pipeline_graphics *graphics = &s->graphics;
     struct graphicstate *state = &graphics->state;
 
-    int ret = build_attribute_descs(s, params);
+    int ret = init_attributes_data(s, params);
     if (ret < 0)
         return ret;
 
@@ -332,6 +326,48 @@ static int pipeline_compute_init(struct pipeline *s)
 static int create_desc_set_layout_bindings(struct pipeline *s, const struct pipeline_params *params);
 static int create_pipeline_layout(struct pipeline *s);
 
+static int init_bindings(struct pipeline *s, const struct pipeline_params *params)
+{
+    struct gctx_vk *gctx = (struct gctx_vk *)s->gctx;
+    struct pipeline_vk *s_priv = (struct pipeline_vk *)s;
+
+    ngli_darray_init(&s_priv->attribute_bindings, sizeof(struct attribute_binding), 0);
+    ngli_darray_init(&s_priv->buffer_bindings,  sizeof(struct buffer_binding), 0);
+    ngli_darray_init(&s_priv->texture_bindings, sizeof(struct texture_binding), 0);
+
+    for (int i = 0; i < params->nb_attributes; i++) {
+        const struct pipeline_attribute_desc *desc = &params->attributes_desc[i];
+
+        struct attribute_binding binding = {
+            .desc = *desc,
+        };
+        if (!ngli_darray_push(&s_priv->attribute_bindings, &binding))
+            return NGL_ERROR_MEMORY;
+    }
+
+    for (int i = 0; i < params->nb_buffers; i++) {
+        const struct pipeline_buffer_desc *desc = &params->buffers_desc[i];
+
+        struct buffer_binding binding = {
+            .desc = *desc,
+        };
+        if (!ngli_darray_push(&s_priv->buffer_bindings, &binding))
+            return NGL_ERROR_MEMORY;
+    }
+
+    for (int i = 0; i < params->nb_textures; i++) {
+        const struct pipeline_texture_desc *desc = &params->textures_desc[i];
+
+        struct texture_binding binding = {
+            .desc = *desc,
+        };
+        if (!ngli_darray_push(&s_priv->texture_bindings, &binding))
+            return NGL_ERROR_MEMORY;
+    }
+
+    return 0;
+}
+
 int ngli_pipeline_vk_init(struct pipeline *s, const struct pipeline_params *params)
 {
     struct pipeline_vk *s_priv = (struct pipeline_vk *)s;
@@ -340,9 +376,7 @@ int ngli_pipeline_vk_init(struct pipeline *s, const struct pipeline_params *para
     s->graphics = params->graphics;
     s->program  = params->program;
 
-    ngli_darray_init(&s_priv->texture_bindings, sizeof(struct texture_binding), 0);
-    ngli_darray_init(&s_priv->buffer_bindings,  sizeof(struct buffer_binding), 0);
-    ngli_darray_init(&s_priv->attribute_bindings, sizeof(struct attribute_binding), 0);
+    init_bindings(s, params);
 
     int ret;
     if ((ret = create_desc_set_layout_bindings(s, params)) < 0)
@@ -397,12 +431,6 @@ static int create_desc_set_layout_bindings(struct pipeline *s, const struct pipe
         if (!ngli_darray_push(&s_priv->desc_set_layout_bindings, &binding))
             return NGL_ERROR_MEMORY;
 
-        struct buffer_binding buffer_binding = {
-            .desc = *desc,
-        };
-        if (!ngli_darray_push(&s_priv->buffer_bindings, &buffer_binding))
-            return NGL_ERROR_MEMORY;
-
         desc_pool_size_map[desc->type].descriptorCount += gctx_vk->nb_in_flight_frames;
     }
 
@@ -417,12 +445,6 @@ static int create_desc_set_layout_bindings(struct pipeline *s, const struct pipe
             .stageFlags      = get_stage_flags(desc->stage),
         };
         if (!ngli_darray_push(&s_priv->desc_set_layout_bindings, &binding))
-            return NGL_ERROR_MEMORY;
-
-        struct texture_binding texture_binding = {
-            .desc = *desc,
-        };
-        if (!ngli_darray_push(&s_priv->texture_bindings, &texture_binding))
             return NGL_ERROR_MEMORY;
 
         desc_pool_size_map[desc->type].descriptorCount += gctx_vk->nb_in_flight_frames;

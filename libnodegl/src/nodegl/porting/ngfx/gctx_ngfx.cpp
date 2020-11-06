@@ -32,6 +32,7 @@
 #include "nodegl/core/format.h"
 #include "nodegl/porting/ngfx/util_ngfx.h"
 #include "nodegl/porting/ngfx/debugutil_ngfx.h"
+#include <glm/gtc/type_ptr.hpp>
 
 #ifdef ENABLE_CAPTURE
 #include "tools/capture/capture.h"
@@ -47,11 +48,11 @@ static struct gctx *ngfx_create(const struct ngl_config *config)
 }
 
 static int create_offscreen_resources(struct gctx *s) {
-    gctx_ngfx *ctx = (gctx_ngfx *)s;
+    gctx_ngfx *s_priv = (gctx_ngfx *)s;
     const ngl_config *config = &s->config;
     bool enable_depth_stencil = true;
 
-    auto &color_texture = ctx->offscreen_resources.color_texture;
+    auto &color_texture = s_priv->offscreen_resources.color_texture;
     color_texture = ngli_texture_create(s);
     texture_params color_texture_params = {
         .type = NGLI_TEXTURE_TYPE_2D,
@@ -65,12 +66,12 @@ static int create_offscreen_resources(struct gctx *s) {
 
     ngli_texture_init(color_texture, &color_texture_params);
 
-    auto &depth_texture = ctx->offscreen_resources.depth_texture;
+    auto &depth_texture = s_priv->offscreen_resources.depth_texture;
     if (enable_depth_stencil) {
         depth_texture = ngli_texture_create(s);
         texture_params depth_texture_params = {
             .type = NGLI_TEXTURE_TYPE_2D,
-            .format = to_ngli_format(ctx->graphics_context->depthFormat),
+            .format = to_ngli_format(s_priv->graphics_context->depthFormat),
             .width = config->width,
             .height = config->height,
             .samples = config->samples,
@@ -89,7 +90,7 @@ static int create_offscreen_resources(struct gctx *s) {
     rt_params.depth_stencil.attachment = depth_texture,
     rt_params.readable = 1;
 
-    auto &rt = ctx->offscreen_resources.rt;
+    auto &rt = s_priv->offscreen_resources.rt;
     rt = ngli_rendertarget_create(s);
     if (!rt)
         return NGL_ERROR_MEMORY;
@@ -98,7 +99,7 @@ static int create_offscreen_resources(struct gctx *s) {
     if (ret < 0)
         return ret;
 
-    s->default_rendertarget = rt;
+    s_priv->default_rendertarget = rt;
 
     return 0;
 }
@@ -175,21 +176,38 @@ static int ngfx_resize(struct gctx *s, int width, int height, const int *viewpor
     return 0;
 }
 
-static void ngfx_bind_rendertarget(struct gctx *s, struct rendertarget *rt);
+static int ngfx_begin_update(struct gctx *s, double t)
+{
+    return 0;
+}
+
+static int ngfx_end_update(struct gctx *s, double t)
+{
+    return 0;
+}
+
+static void ngfx_begin_render_pass(struct gctx *s, struct rendertarget *rt);
+static void ngfx_end_render_pass(struct gctx *s);
 
 static int ngfx_begin_draw(struct gctx *s, double t)
 {
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     s_priv->cur_command_buffer = s_priv->graphics_context->drawCommandBuffer();
-    s_priv->cur_command_buffer->begin();
-    ngfx_bind_rendertarget(s, nullptr);
+    CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
+    cmd_buf->begin();
+    ngfx_begin_render_pass(s, s_priv->default_rendertarget);
+    int *vp = s_priv->viewport;
+    s_priv->graphics->setViewport(cmd_buf, { vp[0], vp[1], uint32_t(vp[2]), uint32_t(vp[3]) });
+    int *sr = s_priv->scissor;
+    s_priv->graphics->setScissor(cmd_buf, { sr[0], sr[1], uint32_t(sr[2]), uint32_t(sr[3]) });
+
     return 0;
 }
 
 static int ngfx_end_draw(struct gctx *s, double t)
 {
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
-    ngfx_bind_rendertarget(s, nullptr);
+    ngfx_end_render_pass(s);
     s_priv->cur_command_buffer->end();
     s_priv->graphics_context->submit(s_priv->cur_command_buffer);
     if (s->config.offscreen && s->config.capture_buffer) {
@@ -245,24 +263,77 @@ static void ngfx_get_rendertarget_uvcoord_matrix(struct gctx *s, float *dst)
     memcpy(dst, matrix, 4 * 4 * sizeof(float));
 }
 
-static void ngfx_bind_rendertarget(struct gctx *s, struct rendertarget *rt)
-{
-    if (s->cur_rendertarget != rt) {
-        if (s->cur_rendertarget) ngli_rendertarget_ngfx_end_pass(s->cur_rendertarget);
-        if (rt) ngli_rendertarget_ngfx_begin_pass(rt);
-    }
-    s->cur_rendertarget = rt;
-}
-
 static struct rendertarget *ngfx_get_rendertarget(struct gctx *s)
 {
-    return s->cur_rendertarget;
+    struct gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
+    return s_priv->cur_rendertarget;
+}
+
+static struct rendertarget *ngfx_get_default_rendertarget(struct gctx *s)
+{
+    struct gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
+    return s_priv->default_rendertarget;
 }
 
 static const struct rendertarget_desc *ngfx_get_default_rendertarget_desc(struct gctx *s)
 {
     struct gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
     return &s_priv->default_rendertarget_desc;
+}
+
+static void begin_render_pass(struct gctx_ngfx *s_priv, rendertarget_ngfx *rt_priv)
+{
+    Graphics *graphics = s_priv->graphics;
+    CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
+    RenderPass *render_pass = rt_priv->render_pass;
+
+    Framebuffer *framebuffer = rt_priv->output_framebuffer;
+    graphics->beginRenderPass(cmd_buf, render_pass, framebuffer, glm::make_vec4(s_priv->clear_color));
+}
+
+static void end_render_pass(struct gctx_ngfx *s_priv, rendertarget_ngfx *rt_priv)
+{
+    Graphics *graphics = s_priv->graphics;
+    CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
+
+    graphics->endRenderPass(cmd_buf);
+}
+
+static void ngfx_begin_render_pass(struct gctx *s, struct rendertarget *rt)
+{
+    gctx_ngfx *s_priv = (gctx_ngfx *)s;
+    rendertarget_ngfx *rt_priv = (rendertarget_ngfx *)rt;
+    CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
+    const auto &attachments = rt_priv->output_framebuffer->attachments;
+
+    for (uint32_t j = 0; j<attachments.size(); j++) {
+        auto output_texture = attachments[j].texture;
+        if (output_texture->imageUsageFlags & IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+            output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        }
+    }
+
+    begin_render_pass(s_priv, rt_priv);
+
+    s_priv->cur_rendertarget = rt;
+}
+
+static void ngfx_end_render_pass(struct gctx *s)
+{
+    gctx_ngfx *s_priv = (gctx_ngfx *)s;
+    rendertarget_ngfx *rt_priv = (rendertarget_ngfx *)s_priv->cur_rendertarget;
+
+    end_render_pass(s_priv, rt_priv);
+
+    const auto &attachments = rt_priv->output_framebuffer->attachments;
+    for (uint32_t j = 0; j<attachments.size(); j++) {
+        auto output_texture = attachments[j].texture;
+        if (output_texture->imageUsageFlags & IMAGE_USAGE_SAMPLED_BIT) {
+            ngli_assert(output_texture->numSamples == 1);
+            output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+    }
+    s_priv->cur_rendertarget = NULL;
 }
 
 static void ngfx_set_viewport(struct gctx *s, const int *vp)
@@ -340,6 +411,8 @@ extern "C" const struct gctx_class ngli_gctx_ngfx = {
     .create       = ngfx_create,
     .init         = ngfx_init,
     .resize       = ngfx_resize,
+    .begin_update = ngfx_begin_update,
+    .end_update   = ngfx_end_update,
     .begin_draw   = ngfx_begin_draw,
     .end_draw     = ngfx_end_draw,
     .wait_idle    = ngfx_wait_idle,
@@ -349,13 +422,20 @@ extern "C" const struct gctx_class ngli_gctx_ngfx = {
     .transform_projection_matrix = ngfx_transform_projection_matrix,
     .get_rendertarget_uvcoord_matrix = ngfx_get_rendertarget_uvcoord_matrix,
 
+    .get_default_rendertarget      = ngfx_get_default_rendertarget,
     .get_default_rendertarget_desc = ngfx_get_default_rendertarget_desc,
+
+    .begin_render_pass        = ngfx_begin_render_pass,
+    .end_render_pass          = ngfx_end_render_pass,
+
     .set_viewport             = ngfx_set_viewport,
     .get_viewport             = ngfx_get_viewport,
     .set_scissor              = ngfx_set_scissor,
     .get_scissor              = ngfx_get_scissor,
-    .get_preferred_depth_format= ngfx_get_preferred_depth_format,
-    .get_preferred_depth_stencil_format=ngfx_get_preferred_depth_stencil_format,
+
+    .get_preferred_depth_format         = ngfx_get_preferred_depth_format,
+    .get_preferred_depth_stencil_format = ngfx_get_preferred_depth_stencil_format,
+
     .flush                    = ngfx_flush,
 
     .buffer_create = ngli_buffer_ngfx_create,
@@ -373,15 +453,16 @@ extern "C" const struct gctx_class ngli_gctx_ngfx = {
     .gtimer_read   = ngli_gtimer_ngfx_read,
     .gtimer_freep  = ngli_gtimer_ngfx_freep,
 
-    .pipeline_create         = ngli_pipeline_ngfx_create,
-    .pipeline_init           = ngli_pipeline_ngfx_init,
-    .pipeline_update_attribute = ngli_pipeline_ngfx_update_attribute,
-    .pipeline_update_uniform = ngli_pipeline_ngfx_update_uniform,
-    .pipeline_update_texture = ngli_pipeline_ngfx_update_texture,
-    .pipeline_draw           = ngli_pipeline_ngfx_draw,
-    .pipeline_draw_indexed   = ngli_pipeline_ngfx_draw_indexed,
-    .pipeline_dispatch       = ngli_pipeline_ngfx_dispatch,
-    .pipeline_freep          = ngli_pipeline_ngfx_freep,
+    .pipeline_create            = ngli_pipeline_ngfx_create,
+    .pipeline_init              = ngli_pipeline_ngfx_init,
+    .pipeline_set_resources     = ngli_pipeline_ngfx_set_resources,
+    .pipeline_update_attribute  = ngli_pipeline_ngfx_update_attribute,
+    .pipeline_update_uniform    = ngli_pipeline_ngfx_update_uniform,
+    .pipeline_update_texture    = ngli_pipeline_ngfx_update_texture,
+    .pipeline_draw              = ngli_pipeline_ngfx_draw,
+    .pipeline_draw_indexed      = ngli_pipeline_ngfx_draw_indexed,
+    .pipeline_dispatch          = ngli_pipeline_ngfx_dispatch,
+    .pipeline_freep             = ngli_pipeline_ngfx_freep,
 
     .program_create = ngli_program_ngfx_create,
     .program_init   = ngli_program_ngfx_init,
@@ -395,6 +476,7 @@ extern "C" const struct gctx_class ngli_gctx_ngfx = {
     .swapchain_create         = ngli_swapchain_ngfx_create,
     .swapchain_destroy        = ngli_swapchain_ngfx_destroy,
     .swapchain_acquire_image  = ngli_swapchain_ngfx_acquire_image,
+    .swapchain_swap_buffers   = ngli_swapchain_ngfx_swap_buffers,
 
     .texture_create           = ngli_texture_ngfx_create,
     .texture_init             = ngli_texture_ngfx_init,

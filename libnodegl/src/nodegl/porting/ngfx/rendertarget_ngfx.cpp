@@ -20,7 +20,6 @@
  */
 
 #include "rendertarget_ngfx.h"
-#include <glm/gtc/type_ptr.hpp>
 #include "memory.h"
 #include "log.h"
 #include "gctx_ngfx.h"
@@ -88,59 +87,6 @@ void ngli_rendertarget_ngfx_resolve(struct rendertarget *s) {
 void ngli_rendertarget_ngfx_read_pixels(struct rendertarget *s, uint8_t *data) {
 
 }
-
-static void begin_render_pass(rendertarget_ngfx *thiz, struct gctx *s)
-{
-    gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
-
-    Graphics *graphics = s_priv->graphics;
-    CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
-    RenderPass *render_pass = thiz->render_pass;
-
-    Framebuffer *framebuffer = thiz->output_framebuffer;
-    graphics->beginRenderPass(cmd_buf, render_pass, framebuffer, glm::make_vec4(s_priv->clear_color));
-}
-
-static void end_render_pass(rendertarget_ngfx *thiz, struct gctx *s)
-{
-    gctx_ngfx *s_priv = (gctx_ngfx *)s;
-    Graphics *graphics = s_priv->graphics;
-    CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
-
-    graphics->endRenderPass(cmd_buf);
-}
-
-void ngli_rendertarget_ngfx_begin_pass(struct rendertarget *s) {
-    rendertarget_ngfx *s_priv = (rendertarget_ngfx *)s;
-    gctx_ngfx *ctx = (gctx_ngfx *)s_priv->parent.gctx;
-    CommandBuffer *cmd_buf = ctx->cur_command_buffer;
-    const auto &attachments = s_priv->output_framebuffer->attachments;
-    for (uint32_t j = 0; j<attachments.size(); j++) {
-        auto output_texture = attachments[j].texture;
-        if (output_texture->imageUsageFlags & IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
-            output_texture->changeLayout(ctx->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        }
-    }
-    begin_render_pass((rendertarget_ngfx *)s, s->gctx);
-    int *vp = ctx->viewport;
-    ctx->graphics->setViewport(cmd_buf, { vp[0], vp[1], uint32_t(vp[2]), uint32_t(vp[3]) });
-    int *sr = ctx->scissor;
-    ctx->graphics->setScissor(cmd_buf, { sr[0], sr[1], uint32_t(sr[2]), uint32_t(sr[3]) });
-}
-void ngli_rendertarget_ngfx_end_pass(struct rendertarget *s) {
-    end_render_pass((rendertarget_ngfx *)s, s->gctx);
-    rendertarget_ngfx *s_priv = (rendertarget_ngfx *)s;
-    gctx_ngfx *ctx = (gctx_ngfx *)s_priv->parent.gctx;
-    const auto &attachments = s_priv->output_framebuffer->attachments;
-    for (uint32_t j = 0; j<attachments.size(); j++) {
-        auto output_texture = attachments[j].texture;
-        if (output_texture->imageUsageFlags & IMAGE_USAGE_SAMPLED_BIT) {
-            ngli_assert(output_texture->numSamples == 1);
-            output_texture->changeLayout(ctx->cur_command_buffer, IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        }
-    }
-}
-
 
 void ngli_rendertarget_ngfx_freep(struct rendertarget **sp) {
     if (!*sp)
