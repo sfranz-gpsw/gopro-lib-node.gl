@@ -180,8 +180,6 @@ void VKTexture::download(void* data, uint32_t size, uint32_t x, uint32_t y, uint
     stagingBuffer->create(ctx, nullptr, size, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
     copyCommandBuffer.begin();
     downloadFn(copyCommandBuffer.v, data, size, stagingBuffer.get(), x, y, z, w, h, d, arrayLayers);
-    vkImage.changeLayout(copyCommandBuffer.v, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        VK_ACCESS_SHADER_READ_BIT,VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
     copyCommandBuffer.end();
     vk(ctx->queue)->submit(&copyCommandBuffer, 0, {}, {}, nullptr);
     ctx->queue->waitIdle();
