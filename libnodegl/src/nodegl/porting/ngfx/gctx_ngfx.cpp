@@ -312,6 +312,9 @@ static void ngfx_begin_render_pass(struct gctx *s, struct rendertarget *rt)
         if (output_texture->imageUsageFlags & IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
             output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         }
+        else if (output_texture->imageUsageFlags & IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+            output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+        }
     }
 
     begin_render_pass(s_priv, rt_priv);
