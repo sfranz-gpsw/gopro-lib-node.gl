@@ -60,8 +60,7 @@ static int create_offscreen_resources(struct gctx *s) {
         .width = config->width,
         .height = config->height,
         .samples = config->samples,
-        .usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT | NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT |
-            NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT
+        .usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT | NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT | NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT
     };
 
     ngli_texture_init(color_texture, &color_texture_params);
@@ -75,8 +74,7 @@ static int create_offscreen_resources(struct gctx *s) {
             .width = config->width,
             .height = config->height,
             .samples = config->samples,
-            .usage = NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT |
-                NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT | NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+            .usage = NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
         };
         ngli_texture_init(depth_texture, &depth_texture_params);
     }
