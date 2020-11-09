@@ -666,18 +666,7 @@ int ngli_pipeline_vk_set_resources(struct pipeline *s, const struct pipeline_res
             return ret;
     }
 
-    /* Uniform blocks */
-    memcpy(s->ublock, params->ublock, sizeof(s->ublock));
-    memcpy(s->ubuffer, params->ubuffer, sizeof(s->ubuffer));
-    for (int i = 0; i < NGLI_PROGRAM_SHADER_NB; i++) {
-        const struct buffer *ubuffer = params->ubuffer[i];
-        if (!ubuffer)
-            continue;
-        const struct block *ublock = params->ublock[i];
-        s->udata[i] = ngli_calloc(1, ublock->size);
-        if (!s->udata[i])
-            return NGL_ERROR_MEMORY;
-    }
+    pipeline_update_blocks(s, params);
 
     return 0;
 }
