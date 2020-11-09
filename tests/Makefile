@@ -82,7 +82,7 @@ $(REF_TESTS):
 ifneq ($(TARGET_OS),Windows)
 	$(Q)ngl-test $(MODULE).py $(FUNC_NAME) refs/$(FUNC_NAME).ref $(OUT)
 else
-	../cmake-build-debug/debug-tools/pyshell/RelWithDebInfo/pyshell.exe ../nodegl-env/Scripts/ngl-test-script.py $(MODULE).py $(FUNC_NAME) refs/$(FUNC_NAME).ref $(OUT)
+	../cmake-build-debug/debug-tools/RelWithDebInfo/pyshell.exe ../nodegl-env/Scripts/ngl-test-script.py $(MODULE).py $(FUNC_NAME) refs/$(FUNC_NAME).ref $(OUT)
 endif
 
 $(SIMPLE_TESTS):
@@ -90,7 +90,7 @@ $(SIMPLE_TESTS):
 ifneq ($(TARGET_OS),Windows)
 	$(Q)$(PYTHON) -c 'from $(MODULE) import $(FUNC_NAME); $(FUNC_NAME)()' $(OUT)
 else
-	$(Q)../cmake-build-debug/debug-tools/pyshell/RelWithDebInfo/pyshell.exe -c 'from $(MODULE) import $(FUNC_NAME); $(FUNC_NAME)()' $(OUT)
+	$(Q)../cmake-build-debug/debug-tools/RelWithDebInfo/pyshell.exe -c 'from $(MODULE) import $(FUNC_NAME); $(FUNC_NAME)()' $(OUT)
 endif
 	@echo $(FUNC_NAME) passed
 
