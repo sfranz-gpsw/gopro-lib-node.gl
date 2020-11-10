@@ -29,6 +29,7 @@
 #include <sstream>
 #include <set>
 #include <cctype>
+#include <shaderc/shaderc.hpp>
 using namespace std;
 using namespace ngfx;
 auto readFile = FileUtil::readFile;
@@ -38,11 +39,9 @@ namespace fs = std::filesystem;
 
 #ifdef _WIN32
     #define PATCH string("patch.exe")
-    #define GLSLC string("glslc.exe")
     #define SPIRV_CROSS string("spirv-cross.exe")
 #else
     #define PATCH string("patch")
-    #define GLSLC string("glslc")
     #define SPIRV_CROSS string("spirv-cross")
 #endif
 
@@ -99,18 +98,43 @@ string ShaderTools::preprocess(const string &dataPath, const string &inFile) {
     return contents;
 }
 
-int ShaderTools::compileShaderGLSL(const string &inFile, const string &defines, const string &outFile, bool verbose) {
-    int result = cmd(GLSLC + " " + defines + " " + inFile + " -o " + outFile);
-    if (result == 0) {
+int ShaderTools::compileShaderGLSL(const string &inFile, const MacroDefinitions &defines, const string &outFile, bool verbose,
+        OptimizationLevel optimizationLevel) {
+    shaderc::Compiler compiler;
+    shaderc::CompileOptions compileOptions;
+    for (const MacroDefinition &define : defines) {
+        compileOptions.AddMacroDefinition(define.name, define.value);
+    }
+    static map<OptimizationLevel, shaderc_optimization_level> optimizationLevelMap = {
+        { OPTIMIZATION_LEVEL_ZERO , shaderc_optimization_level_zero },
+        { OPTIMIZATION_LEVEL_SIZE, shaderc_optimization_level_size },
+        { OPTIMIZATION_LEVEL_PERFORMANCE, shaderc_optimization_level_performance }
+    };
+    compileOptions.SetOptimizationLevel(optimizationLevelMap.at(optimizationLevel));
+    compileOptions.SetGenerateDebugInfo();
+    static map<string, shaderc_shader_kind> shadercKindMap = {
+        { ".vert", shaderc_glsl_default_vertex_shader },
+        { ".frag", shaderc_glsl_default_fragment_shader },
+        { ".comp", shaderc_glsl_default_compute_shader }
+    };
+    string src = FileUtil::readFile(inFile);
+    auto splitFilename = FileUtil::splitExt(fs::path(inFile).filename().string());
+    string ext = splitFilename[1];
+
+    auto result = compiler.CompileGlslToSpv(src, shadercKindMap.at(ext), inFile.c_str(), compileOptions);
+    if (result.GetCompilationStatus() == shaderc_compilation_status_success) {
         if (verbose) LOG("compiled file: %s", inFile.c_str());
     }
     else {
         ERR("cannot compile file: %s", inFile.c_str());
+        return 1;
     }
-    return result;
+    string spv((const char*)result.cbegin(), sizeof(uint32_t) * (result.cend() - result.cbegin()));
+    FileUtil::writeFile(outFile, spv);
+    return 0;
 }
 
-int ShaderTools::removeUnusedVariablesGLSL(const std::string &inFile, const string &defines, const std::string &outFile) {
+int ShaderTools::removeUnusedVariablesGLSL(const std::string &inFile, const MacroDefinitions &defines, const std::string &outFile) {
     int ret = 0;
     V(compileShaderGLSL(inFile, defines, outFile + ".spv", false));
     V(cmd(SPIRV_CROSS + " " + outFile + ".spv" + " --remove-unused-variables" +" --output " + outFile));
@@ -138,7 +162,7 @@ int ShaderTools::patchShaderLayoutsGLSL(const string &inFile, const string &outF
     return 0;
 }
 
-int ShaderTools::compileShaderGLSL(string filename, const string &defines, const string &outDir, vector<string> &outFiles, int flags) {
+int ShaderTools::compileShaderGLSL(string filename, const MacroDefinitions &defines, const string &outDir, vector<string> &outFiles, int flags) {
     string parentPath = fs::path(filename).parent_path().string();
     filename = fs::path(filename).filename().string();
     string inFileName = fs::path(parentPath + "/" + filename).make_preferred().string();
@@ -165,7 +189,7 @@ int ShaderTools::compileShaderGLSL(string filename, const string &defines, const
     return 0;
 }
 
-int ShaderTools::compileShaderMTL(const string &file, const string &defines, string outDir, vector<string> &outFiles) {
+int ShaderTools::compileShaderMTL(const string &file, const MacroDefinitions &defines, string outDir, vector<string> &outFiles) {
     string strippedFilename = FileUtil::splitExt(fs::path(file).filename().string())[0];
     string inFileName = fs::path(outDir +"/" + strippedFilename + ".metal").make_preferred().string();
     string outFileName = fs::path(outDir + "/" + strippedFilename + ".metallib").make_preferred().string();
@@ -187,7 +211,7 @@ int ShaderTools::compileShaderMTL(const string &file, const string &defines, str
     return result;
 }
 
-int ShaderTools::compileShaderHLSL(const string &file, const string &defines, string outDir, vector<string> &outFiles) {
+int ShaderTools::compileShaderHLSL(const string &file, const MacroDefinitions &defines, string outDir, vector<string> &outFiles) {
     string strippedFilename = FileUtil::splitExt(fs::path(file).filename().string())[0];
     string inFileName = fs::path(outDir+"/"+strippedFilename +".hlsl").make_preferred().string();
     string outFileName = fs::path(outDir +"/" +strippedFilename +".dxc").make_preferred().string();
@@ -627,7 +651,7 @@ vector<string> ShaderTools::convertShaders(const vector<string> &files, string o
     return outFiles;
 }
 
-vector<string> ShaderTools::compileShaders(const vector<string> &files, string outDir, Format fmt, string defines, int flags) {
+vector<string> ShaderTools::compileShaders(const vector<string> &files, string outDir, Format fmt, const MacroDefinitions &defines, int flags) {
 #ifdef GRAPHICS_BACKEND_VULKAN
     defines += " -DGRAPHICS_BACKEND_VULKAN=1";
 #endif
