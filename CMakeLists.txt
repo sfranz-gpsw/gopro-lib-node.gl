@@ -70,7 +70,6 @@ else()
     set (GLM_INCLUDE_DIRS /usr/local/include)
 endif()
 
-set (SPIRV_CROSS_INCLUDE_DIRS /usr/include/spirv_cross)
 set (SPIRV_CROSS_LIBRARY_DIRS /usr/lib/x86_64-linux-gnu)
 set (SPIRV_CROSS_LIBRARIES spirv-cross-cpp spirv-cross-core spirv-cross-glsl spirv-cross-reflect spirv-cross-util spirv-cross-c)
 
