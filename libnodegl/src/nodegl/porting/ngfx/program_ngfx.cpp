@@ -74,7 +74,7 @@ struct ShaderCompiler {
         //}
         string outDir = tmpDir;
         glslFiles = { tmpFile };
-        spvFiles = shaderTools.compileShaders(glslFiles, outDir, ShaderTools::FORMAT_GLSL, "",
+        spvFiles = shaderTools.compileShaders(glslFiles, outDir, ShaderTools::FORMAT_GLSL, {},
             ShaderTools::PATCH_SHADER_LAYOUTS_GLSL | ShaderTools::REMOVE_UNUSED_VARIABLES);
         spvMapFiles = shaderTools.generateShaderMaps(glslFiles, outDir, ShaderTools::FORMAT_GLSL);
 #if defined(NGFX_GRAPHICS_BACKEND_DIRECT3D12)
