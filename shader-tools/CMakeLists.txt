@@ -14,13 +14,16 @@ target_include_directories(shader_tools PUBLIC src
     ${JSON_INCLUDE_DIRS}
     ${NGFX_INCLUDE_DIRS}
     ${SHADERC_INCLUDE_DIRS}
+    ${SPIRV_CROSS_INCLUDE_DIRS}
 )
 
 target_link_libraries(shader_tools PUBLIC ngfx
     ${SHADERC_LIBRARIES}
+    ${SPIRV_CROSS_LIBRARIES}
 )
 target_link_directories(shader_tools PUBLIC
     ${SHADERC_LIBRARY_DIRS}
+    ${SPIRV_CROSS_LIBRARY_DIRS}
 )
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 target_link_libraries(shader_tools PUBLIC stdc++fs)
