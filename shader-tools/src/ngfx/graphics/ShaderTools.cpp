@@ -30,6 +30,7 @@
 #include <set>
 #include <cctype>
 #include <shaderc/shaderc.hpp>
+#include <spirv_glsl.hpp>
 using namespace std;
 using namespace ngfx;
 auto readFile = FileUtil::readFile;
@@ -137,7 +138,13 @@ int ShaderTools::compileShaderGLSL(const string &inFile, const MacroDefinitions 
 int ShaderTools::removeUnusedVariablesGLSL(const std::string &inFile, const MacroDefinitions &defines, const std::string &outFile) {
     int ret = 0;
     V(compileShaderGLSL(inFile, defines, outFile + ".spv", false));
-    V(cmd(SPIRV_CROSS + " " + outFile + ".spv" + " --remove-unused-variables" +" --output " + outFile));
+    std::string spv = FileUtil::readFile(outFile + ".spv");
+    spirv_cross::CompilerGLSL compilerGLSL((const uint32_t *)spv.data(), spv.size() / sizeof(uint32_t));
+    auto activeVariables = compilerGLSL.get_active_interface_variables();
+    compilerGLSL.get_shader_resources(activeVariables);
+    compilerGLSL.set_enabled_interface_variables(move(activeVariables));
+    string compiledOutput = compilerGLSL.compile();
+    FileUtil::writeFile(outFile, compiledOutput);
     return 0;
 }
 
