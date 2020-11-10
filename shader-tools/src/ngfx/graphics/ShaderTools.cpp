@@ -30,7 +30,8 @@
 #include <set>
 #include <cctype>
 #include <shaderc/shaderc.hpp>
-#include <spirv_glsl.hpp>
+#include <spirv_cross/spirv_glsl.hpp>
+#include <spirv_cross/spirv_reflect.hpp>
 using namespace std;
 using namespace ngfx;
 auto readFile = FileUtil::readFile;
@@ -265,22 +266,17 @@ int ShaderTools::genShaderReflectionGLSL(const string &file, string outDir) {
     string outFileName = fs::path(outDir + "/" + filename + ".spv.reflect").make_preferred().string();
     if (!FileUtil::srcFileNewerThanOutFile(inFileName, outFileName))
         return 0;
-    int result = cmd(SPIRV_CROSS+" "+inFileName+" --reflect --output "+outFileName);
 
-    inFileName = fs::path(outDir + "/" + filename + ".spv.reflect").make_preferred().string();
-    outFileName = inFileName;
-
-    auto reflectData = json::parse(readFile(inFileName));
+    std::string spv = FileUtil::readFile(inFileName);
+    spirv_cross::CompilerReflection compilerReflection((const uint32_t *)spv.data(), spv.size() / sizeof(uint32_t));
+    auto reflectOutput = compilerReflection.compile();
+    auto reflectData = json::parse(reflectOutput);
 
     FileUtil::writeFile(outFileName, reflectData.dump(4));
 
-    if (result == 0)
-        LOG("generated reflection map: %s", outFileName.c_str());
-    else {
-        ERR("cannot generate reflection map for file: %s", file.c_str());
-    }
+    LOG("generated reflection map: %s", outFileName.c_str());
 
-    return result;
+    return 0;
 }
 
 bool ShaderTools::findMetalReflectData(const vector<RegexUtil::Match> &metalReflectData, const string &name, RegexUtil::Match &match) {
