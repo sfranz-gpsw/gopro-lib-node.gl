@@ -27,7 +27,11 @@
 #include <vector>
 #include <json.hpp>
 #include "ngfx/regex/RegexUtil.h"
+#include <shaderc/shaderc.hpp>
+#include <spirv_cross/spirv_glsl.hpp>
+#include <spirv_cross/spirv_reflect.hpp>
 using json = nlohmann::json;
+using CompilerReflection = spirv_cross::CompilerReflection;
 
 namespace ngfx {
 class ShaderTools {
@@ -48,7 +52,7 @@ private:
     void applyPatches(const std::vector<std::string> &patchFiles, std::string outDir);
     int cmd(std::string str);
     int compileShaderGLSL(const std::string &src, const MacroDefinitions &defines, const std::string &outFile, bool verbose = true,
-        OptimizationLevel optimizationLevel = OPTIMIZATION_LEVEL_PERFORMANCE);
+        shaderc_optimization_level optimizationLevel = shaderc_optimization_level_performance);
     int compileShaderGLSL(std::string filename, const MacroDefinitions &defines, const std::string &outDir,
                           std::vector<std::string> &outFiles, int flags = 0);
     int compileShaderHLSL(const std::string &file, const MacroDefinitions &defines, std::string outDir, std::vector<std::string> &outFiles);
@@ -63,13 +67,13 @@ private:
         std::vector<RegexUtil::Match> attributes, buffers, textures;
     };
     bool findMetalReflectData(const std::vector<RegexUtil::Match> &metalReflectData, const std::string &name, RegexUtil::Match &match);
-    int genShaderReflectionGLSL(const std::string &file, std::string outDir);
-    int genShaderReflectionHLSL(const std::string &file, std::string outDir);
-    int genShaderReflectionMSL(const std::string &file, std::string outDir);
+    std::unique_ptr<CompilerReflection> genShaderReflectionGLSL(const std::string &file, std::string outDir);
+    std::unique_ptr<CompilerReflection> genShaderReflectionHLSL(const std::string &file, std::string outDir);
+    std::unique_ptr<CompilerReflection> genShaderReflectionMSL(const std::string &file, std::string outDir);
     int generateShaderMapGLSL(const std::string &file, std::string outDir, std::vector<std::string> &outFiles);
     int generateShaderMapHLSL(const std::string &file, std::string outDir, std::vector<std::string> &outFiles);
     int generateShaderMapMSL(const std::string &file, std::string outDir, std::vector<std::string> &outFiles);
-    std::string parseReflectionData(const json &reflectData, std::string ext);
+    std::string parseReflectionData(const CompilerReflection *reflectData, std::string ext);
     json patchShaderReflectionDataMSL(const std::string &file, json &reflectData, const std::string &ext);
     json patchShaderReflectionDataHLSL(const std::string &hlslFile, json &reflectData, std::string ext);
     int patchShaderLayoutsGLSL(const std::string &inFile, const std::string &outFile);

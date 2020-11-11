@@ -29,11 +29,9 @@
 #include <sstream>
 #include <set>
 #include <cctype>
-#include <shaderc/shaderc.hpp>
-#include <spirv_cross/spirv_glsl.hpp>
-#include <spirv_cross/spirv_reflect.hpp>
 using namespace std;
 using namespace ngfx;
+using namespace spirv_cross;
 auto readFile = FileUtil::readFile;
 auto toLower = StringUtil::toLower;
 namespace fs = std::filesystem;
@@ -101,18 +99,13 @@ string ShaderTools::preprocess(const string &dataPath, const string &inFile) {
 }
 
 int ShaderTools::compileShaderGLSL(const string &inFile, const MacroDefinitions &defines, const string &outFile, bool verbose,
-        OptimizationLevel optimizationLevel) {
+        shaderc_optimization_level optimizationLevel) {
     shaderc::Compiler compiler;
     shaderc::CompileOptions compileOptions;
     for (const MacroDefinition &define : defines) {
         compileOptions.AddMacroDefinition(define.name, define.value);
     }
-    static map<OptimizationLevel, shaderc_optimization_level> optimizationLevelMap = {
-        { OPTIMIZATION_LEVEL_ZERO , shaderc_optimization_level_zero },
-        { OPTIMIZATION_LEVEL_SIZE, shaderc_optimization_level_size },
-        { OPTIMIZATION_LEVEL_PERFORMANCE, shaderc_optimization_level_performance }
-    };
-    compileOptions.SetOptimizationLevel(optimizationLevelMap.at(optimizationLevel));
+    compileOptions.SetOptimizationLevel(optimizationLevel);
     compileOptions.SetGenerateDebugInfo();
     static map<string, shaderc_shader_kind> shadercKindMap = {
         { ".vert", shaderc_glsl_default_vertex_shader },
@@ -260,23 +253,9 @@ int ShaderTools::convertShader(const string &file, const string &extraArgs, stri
     return result;
 }
 
-int ShaderTools::genShaderReflectionGLSL(const string &file, string outDir) {
-    string filename = fs::path(file).filename().string();
-    string inFileName = fs::path(outDir + "/" + filename + ".spv").make_preferred().string();
-    string outFileName = fs::path(outDir + "/" + filename + ".spv.reflect").make_preferred().string();
-    if (!FileUtil::srcFileNewerThanOutFile(inFileName, outFileName))
-        return 0;
-
-    std::string spv = FileUtil::readFile(inFileName);
-    spirv_cross::CompilerReflection compilerReflection((const uint32_t *)spv.data(), spv.size() / sizeof(uint32_t));
-    auto reflectOutput = compilerReflection.compile();
-    auto reflectData = json::parse(reflectOutput);
-
-    FileUtil::writeFile(outFileName, reflectData.dump(4));
-
-    LOG("generated reflection map: %s", outFileName.c_str());
-
-    return 0;
+unique_ptr<CompilerReflection> ShaderTools::genShaderReflectionGLSL(const string &file, string outDir) {
+    std::string spv = FileUtil::readFile(file);
+    return make_unique<CompilerReflection>((const uint32_t *)spv.data(), spv.size() / sizeof(uint32_t));
 }
 
 bool ShaderTools::findMetalReflectData(const vector<RegexUtil::Match> &metalReflectData, const string &name, RegexUtil::Match &match) {
@@ -386,7 +365,8 @@ json ShaderTools::patchShaderReflectionDataHLSL(const string &hlslFile, json &re
     return reflectData;
 }
 
-int ShaderTools::genShaderReflectionMSL(const string &file, string outDir) {
+unique_ptr<CompilerReflection> ShaderTools::genShaderReflectionMSL(const string &file, string outDir) {
+#if 0 //TDOO
     auto splitFilename = FileUtil::splitExt(fs::path(file).filename().string());
     string strippedFilename = splitFilename[0];
     string inFileName = fs::path(outDir + "/" + strippedFilename + ".spv.reflect").make_preferred().string();
@@ -401,16 +381,19 @@ int ShaderTools::genShaderReflectionMSL(const string &file, string outDir) {
     reflectData = patchShaderReflectionDataMSL(mslFile, reflectData, ext);
     if (reflectData.empty()) {
         ERR("cannot generate reflection map for file: %s", file.c_str());
-        return 1;
+        return nullptr;
     }
         
     FileUtil::writeFile(outFileName, reflectData.dump(4));
 
     LOG("generated reflection map: %s", outFileName.c_str());
-    return 0;
+    return reflectData;
+#endif
+    return nullptr;
 }
 
-int ShaderTools::genShaderReflectionHLSL(const string &file, string outDir) {
+unique_ptr<CompilerReflection> ShaderTools::genShaderReflectionHLSL(const string &file, string outDir) {
+#if 0 //TODO
     auto splitFilename = FileUtil::splitExt(fs::path(file).filename().string());
     string strippedFilename = splitFilename[0];
     string inFileName = fs::path(outDir + "/" + strippedFilename + ".spv.reflect").make_preferred().string();
@@ -432,33 +415,75 @@ int ShaderTools::genShaderReflectionHLSL(const string &file, string outDir) {
 
     LOG("generated reflection map: %s", outFileName.c_str());
     return 0;
+#endif
+    return nullptr;
 }
 
-string ShaderTools::parseReflectionData(const json &reflectData, string ext) {
+static string toGLSLType(const SPIRType& type) {
+    if (type.vecsize == 1 && type.columns == 1) {
+        switch (type.basetype) {
+        case SPIRType::Float:
+            return "float";
+        case SPIRType::Int:
+            return "int";
+        default:
+            ERR();
+        }
+    }
+    else if (type.vecsize > 1 && type.columns == 1) {
+        switch (type.basetype) {
+        case SPIRType::Float:
+            return "vec" + to_string(type.vecsize);
+        case SPIRType::Int:
+            return "ivec" + to_string(type.vecsize);
+        default:
+            ERR();
+        }
+    }
+    else if (type.vecsize == type.columns) {
+        switch (type.basetype) {
+        case SPIRType::Float:
+            return "mat" + to_string(type.vecsize);
+        case SPIRType::Int:
+            return "imat" + to_string(type.vecsize);
+        default:
+            ERR();
+        }
+    }
+    ERR();
+    return "";
+}
+
+string ShaderTools::parseReflectionData(const CompilerReflection *reflectData, string ext) {
     string contents = "";
+    auto get = [&](ID id, spv::Decoration decoration) { return reflectData->get_decoration(id, decoration); };
+    const auto &shaderResources = reflectData->get_shader_resources();
     if (ext == ".vert") {
-        json* inputs = getEntry(reflectData, "inputs");
-        contents += "INPUT_ATTRIBUTES "+to_string(inputs->size())+"\n";
-        for (const json &input: *inputs) {
-            string inputName = input["name"];
+        const auto &inputs = shaderResources.stage_inputs;
+        contents += "INPUT_ATTRIBUTES "+to_string(inputs.size())+"\n";
+        for (const auto &input: inputs) {
+            string inputName = input.name;
             string inputSemantic = "";
             string inputNameLower = toLower(inputName);
             inputSemantic = "UNDEFINED";
-            if (input.find("semantic") != input.end()) inputSemantic = input["semantic"];
+            //if (input.find("semantic") != input.end()) inputSemantic = input["semantic"];
             map<string, string> inputTypeMap = {
                 { "float", "VERTEXFORMAT_FLOAT" }, { "vec2", "VERTEXFORMAT_FLOAT2" }, { "vec3" , "VERTEXFORMAT_FLOAT3" }, { "vec4", "VERTEXFORMAT_FLOAT4" },
                 { "ivec2", "VERTEXFORMAT_INT2" }, { "ivec3", "VERTEXFORMAT_INT3" }, { "ivec4", "VERTEXFORMAT_INT4" },
                 { "mat2", "VERTEXFORMAT_MAT2" }, { "mat3", "VERTEXFORMAT_MAT3" }, { "mat4", "VERTEXFORMAT_MAT4" }
             };
-            string inputType = inputTypeMap[input["type"]];
-            contents += "\t"+inputName+" "+inputSemantic+" "+to_string(input["location"].get<int>())+" "+inputType+"\n";
+            const auto &spirType = reflectData->get_type(input.type_id);
+            string inputType = inputTypeMap[toGLSLType(spirType)];
+            int inputLocation = get(input.id, spv::DecorationLocation);
+            contents += "\t"+inputName+" "+inputSemantic+" "+to_string(inputLocation)+" "+inputType+"\n";
         }
     }
-    json *textures = getEntry(reflectData, "textures"),
-         *ubos = getEntry(reflectData, "ubos"),
-         *ssbos = getEntry(reflectData, "ssbos"),
-         *images = getEntry(reflectData, "images"),
-         *types = getEntry(reflectData, "types");
+    shaderResources.sampled_images;
+    const auto &textures = shaderResources.sampled_images,
+        &ubos = shaderResources.uniform_buffers,
+        &ssbos = shaderResources.storage_buffers,
+        &images = shaderResources.storage_images;
+    const auto &types = getEntry(reflectData, "types");
     json uniformBufferInfos;
     json shaderStorageBufferInfos;
 
@@ -494,32 +519,34 @@ string ShaderTools::parseReflectionData(const json &reflectData, string ext) {
         }
     };
 
-    auto parseBuffers = [&](const json &buffers, json &bufferInfos) {
-        for (const json &buffer: buffers) {
+    auto parseBuffers = [&](const SmallVector<Resource> &buffers, json &bufferInfos) {
+        for (const Resource &buffer: buffers) {
             const json &bufferType = (*types)[buffer["type"].get<string>()];
             json bufferMembers = {};
             parseMembers(bufferType["members"], bufferMembers, 0, "");
             json bufferInfo = {
-                { "name",buffer["name"].get<string>() },
-                { "set", buffer["set"].get<int>() },
-                { "binding", buffer["binding"].get<int>() },
+                { "name", buffer.name },
+                { "set", get(buffer.id, spv::DecorationDescriptorSet) },
+                { "binding", get(buffer.id, spv::DecorationBinding) },
                 { "members", bufferMembers }
             };
             bufferInfos.push_back(bufferInfo);
         }
     };
-    if (ubos) parseBuffers(*ubos, uniformBufferInfos);
-    if (ssbos) parseBuffers(*ssbos, shaderStorageBufferInfos);
+    if (!ubos.empty()) parseBuffers(ubos, uniformBufferInfos);
+    if (!ssbos.empty()) parseBuffers(ssbos, shaderStorageBufferInfos);
 
     json textureDescriptors = {};
     json bufferDescriptors = {};
-    if (textures) for (const json &texture: *textures) {
-        textureDescriptors[to_string(texture["set"].get<int>())] = {
-            { "type", texture["type"] },
-            { "name", texture["name"] },
-            { "set", texture["set"] },
-            { "binding", texture["binding"] }
-        };
+    if (!textures.empty()) {
+        for (const Resource &texture: textures) {
+            textureDescriptors[to_string(get(texture.id, spv::DecorationDescriptorSet))] = {
+                { "type", texture["type"] },
+                { "name", texture["name"] },
+                { "set", texture["set"] },
+                { "binding", texture["binding"] }
+            };
+        }
     }
     if (images) for (const json &image: *images) {
         textureDescriptors[to_string(image["set"].get<int>())] = {
@@ -584,20 +611,18 @@ string ShaderTools::parseReflectionData(const json &reflectData, string ext) {
 }
 
 int ShaderTools::generateShaderMapGLSL(const string &file, string outDir, vector<string> &outFiles) {
-    genShaderReflectionGLSL(file, outDir);
-    string dataPath = fs::path(file).parent_path().string();
     string filename = fs::path(file).filename().string();
     string ext = FileUtil::splitExt(filename)[1];
 
-    string inFileName = fs::path(outDir + "/" + filename + ".spv.reflect").make_preferred().string();
+    string inFileName = fs::path(outDir + "/" + filename + ".spv").make_preferred().string();
     string outFileName = fs::path(outDir + "/" + filename + ".spv.map").make_preferred().string();
     if (!FileUtil::srcFileNewerThanOutFile(inFileName, outFileName)) {
         outFiles.push_back(outFileName);
         return 0;
     }
 
-    auto reflectData = json::parse(readFile(inFileName));
-    string contents = parseReflectionData(reflectData, ext);
+    auto reflectData = genShaderReflectionGLSL(inFileName, outDir);
+    string contents = parseReflectionData(reflectData.get(), ext);
 
     FileUtil::writeFile(outFileName, contents);
     outFiles.push_back(outFileName);
@@ -605,21 +630,19 @@ int ShaderTools::generateShaderMapGLSL(const string &file, string outDir, vector
 }
 
 int ShaderTools::generateShaderMapMSL(const string &file, string outDir, vector<string> &outFiles) {
-    genShaderReflectionMSL(file, outDir);
-    string dataPath = fs::path(file).parent_path().string();
     auto splitFilename = FileUtil::splitExt(fs::path(file).filename().string());
     string filename = splitFilename[0];
     string ext = FileUtil::splitExt(splitFilename[0])[1];
 
-    string inFileName = fs::path(outDir + "/" + filename + ".metal.reflect").make_preferred().string();
+    string inFileName = fs::path(outDir + "/" + filename + ".metal").make_preferred().string();
     string outFileName = fs::path(outDir + "/" + filename + ".metal.map").make_preferred().string();
     if (!FileUtil::srcFileNewerThanOutFile(inFileName, outFileName)) {
         outFiles.push_back(outFileName);
         return 0;
     }
 
-    auto reflectData = json::parse(readFile(inFileName));
-    string contents = parseReflectionData(reflectData, ext);
+    auto reflectData = genShaderReflectionMSL(file, outDir);
+    string contents = parseReflectionData(reflectData.get(), ext);
 
     FileUtil::writeFile(outFileName, contents);
     outFiles.push_back(outFileName);
@@ -627,7 +650,6 @@ int ShaderTools::generateShaderMapMSL(const string &file, string outDir, vector<
 }
 
 int ShaderTools::generateShaderMapHLSL(const string &file, string outDir, vector<string> &outFiles) {
-    genShaderReflectionHLSL(file, outDir);
     string dataPath = fs::path(file).parent_path().string();
     auto splitFilename = FileUtil::splitExt(fs::path(file).filename().string());
     string filename = splitFilename[0];
@@ -640,8 +662,8 @@ int ShaderTools::generateShaderMapHLSL(const string &file, string outDir, vector
         return 0;
     }
 
-    auto reflectData = json::parse(readFile(inFileName));
-    string contents = parseReflectionData(reflectData, ext);
+    auto reflectData = genShaderReflectionHLSL(file, outDir);
+    string contents = parseReflectionData(reflectData.get(), ext);
 
     FileUtil::writeFile(outFileName, contents);
     outFiles.push_back(outFileName);
