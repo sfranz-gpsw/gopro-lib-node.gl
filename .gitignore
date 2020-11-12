@@ -1,3 +1,5 @@
 builddir
 nodegl-env/
+MoltenVK*
+shaderc*
 sxplayer*
