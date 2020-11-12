@@ -38,6 +38,8 @@ $(error "Python $(PYTHON_MAJOR) not found")
 endif
 
 SXPLAYER_VERSION ?= 9.6.0
+MOLTENVK_VERSION ?= 1.1.0
+SHADERC_VERSION  ?= 2020.3
 
 ACTIVATE = $(PREFIX)/bin/activate
 
@@ -139,6 +141,39 @@ sxplayer-$(SXPLAYER_VERSION): sxplayer-$(SXPLAYER_VERSION).tar.gz
 sxplayer-$(SXPLAYER_VERSION).tar.gz:
 	$(CURL) -L https://github.com/Stupeflix/sxplayer/archive/v$(SXPLAYER_VERSION).tar.gz -o $@
 
+shaderc-install: SHADERC_LIB_FILENAME = libshaderc_shared.1.dylib
+shaderc-install: shaderc-$(SHADERC_VERSION) $(PREFIX)
+	(cd $< && ./utils/git-sync-deps)
+	cmake -B $</build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PREFIX) $<
+	ninja -C $</build install
+	# XXX: mac only, test on linux without this; also maybe a cmake option
+	install_name_tool -id @rpath/$(SHADERC_LIB_FILENAME) $(PREFIX)/lib/$(SHADERC_LIB_FILENAME)
+
+shaderc-$(SHADERC_VERSION): shaderc-$(SHADERC_VERSION).tar.gz
+	$(TAR) xf $<
+
+shaderc-$(SHADERC_VERSION).tar.gz:
+	$(CURL) -L https://github.com/google/shaderc/archive/v$(SHADERC_VERSION).tar.gz -o $@
+
+# Note: somehow xcodebuild sets name @rpath/libMoltenVK.dylib automatically
+# (according to otool -l) so we don't have to do anything special
+MoltenVK-install: MoltenVK $(PREFIX)
+	(cd $< && ./fetchDependencies -v --macos)
+	$(MAKE) -C $< macos
+	install -d $(PREFIX)/include
+	install -d $(PREFIX)/lib
+	cp -v $</Package/Latest/MoltenVK/dylib/macOS/libMoltenVK.dylib $(PREFIX)/lib
+	cp -vr $</Package/Latest/MoltenVK/include $(PREFIX)
+
+MoltenVK: MoltenVK-$(MOLTENVK_VERSION)
+	ln -snf $< $@
+
+MoltenVK-$(MOLTENVK_VERSION): MoltenVK-$(MOLTENVK_VERSION).tar.gz
+	$(TAR) xf $<
+
+MoltenVK-$(MOLTENVK_VERSION).tar.gz:
+	$(CURL) -L https://github.com/KhronosGroup/MoltenVK/archive/v$(MOLTENVK_VERSION).tar.gz -o $@
+
 #
 # We do not pull meson from pip on Windows for the same reasons we don't pull
 # Pillow and PySide2. We require the users to have it on their system.
@@ -190,6 +225,8 @@ coverage-xml:
 .PHONY: pynodegl-install pynodegl-deps-install
 .PHONY: nodegl-install
 .PHONY: sxplayer-install
+.PHONY: shaderc-install
+.PHONY: MoltenVK-install
 .PHONY: tests
 .PHONY: clean clean_py
 .PHONY: coverage-html coverage-xml

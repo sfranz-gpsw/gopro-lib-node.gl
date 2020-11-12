@@ -322,11 +322,19 @@ gbackends_cfg = {
         'deps': ['shaderc', 'vulkan'],
       },
       'darwin': {
+        'src': files('hwupload_videotoolbox_darwin_vk.m'),
+        'deps': ['shaderc'],
+        'libs': ['MoltenVK'],
+        'frameworks': ['Metal'],
       },
       'android': {
         'deps': ['shaderc'],
       },
       'iphone': {
+        'src': files('hwupload_videotoolbox_darwin_vk.m'),
+        'deps': ['shaderc'],
+        'libs': ['MoltenVK'],
+        'frameworks': ['Metal'],
       },
       'windows': {
         'deps': ['shaderc'],
@@ -348,7 +356,7 @@ foreach gbackend_name, gbackend_cfg : gbackends_cfg
     gbackend_deps += dependency(dep, required: opt_gbackend)
   endforeach
   foreach dep : host_backend_cfg.get('libs', [])
-    gbackend_deps += cc.find_library(dep, required: opt_gbackend)
+    gbackend_deps += cc.find_library(dep, required: opt_gbackend, dirs: get_option('prefix') / get_option('libdir'))
   endforeach
   if 'frameworks' in host_backend_cfg
     gbackend_deps += dependency('appleframeworks', modules: host_backend_cfg.get('frameworks'), required: opt_gbackend)

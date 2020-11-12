@@ -24,6 +24,10 @@
 # define VK_USE_PLATFORM_WAYLAND_KHR
 #elif defined(TARGET_ANDROID)
 # define VK_USE_PLATFORM_ANDROID_KHR
+#elif defined(TARGET_DARWIN)
+# define VK_USE_PLATFORM_MACOS_MVK
+#elif defined(TARGET_IPHONE)
+# define VK_USE_PLATFORM_IOS_MVK
 #elif defined(TARGET_MINGW_W64)
 # define VK_USE_PLATFORM_WIN32_KHR
 #endif
@@ -70,6 +74,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverity
 static const char *platform_ext_names[] = {
     [NGL_PLATFORM_XLIB]    = "VK_KHR_xlib_surface",
     [NGL_PLATFORM_ANDROID] = "VK_KHR_android_surface",
+    [NGL_PLATFORM_MACOS]   = "VK_MVK_macos_surface",
+    [NGL_PLATFORM_IOS]     = "VK_MVK_ios_surface",
     [NGL_PLATFORM_WINDOWS] = "VK_KHR_win32_surface",
     [NGL_PLATFORM_WAYLAND] = "VK_KHR_wayland_surface",
 };
@@ -139,6 +145,13 @@ static VkResult create_instance(struct vkcontext *s, int platform)
     const char *mandatory_extensions[] = {
         VK_KHR_SURFACE_EXTENSION_NAME,
         surface_extension_name,
+#ifdef VK_USE_PLATFORM_MACOS_MVK
+        "VK_MVK_moltenvk",
+        "VK_MVK_macos_surface",
+        "VK_EXT_metal_surface",
+        //"VK_EXT_debug_report",
+        //"VK_EXT_debug_utils",
+#endif
     };
 
     struct darray extensions;
@@ -292,6 +305,38 @@ static VkResult create_window_surface(struct vkcontext *s, const struct ngl_conf
             return res;
 #else
         return VK_ERROR_EXTENSION_NOT_PRESENT;
+#endif
+    } else if (platform == NGL_PLATFORM_MACOS) {
+#if defined(TARGET_DARWIN)
+        const VkMacOSSurfaceCreateInfoMVK surface_create_info = {
+            .sType = VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK,
+            .pView = (const void *)config->window,
+        };
+
+        VK_LOAD_FUN(s->instance, CreateMacOSSurfaceMVK);
+        if (!CreateMacOSSurfaceMVK) {
+            return VK_ERROR_EXTENSION_NOT_PRESENT;
+        }
+
+        VkResult res = CreateMacOSSurfaceMVK(s->instance, &surface_create_info, NULL, &s->surface);
+        if (res != VK_SUCCESS)
+            return res;
+#endif
+    } else if (platform == NGL_PLATFORM_IOS) {
+#if defined(TARGET_IPHONE)
+        const VkIOSSurfaceCreateInfoMVK surface_create_info = {
+            .sType = VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK,
+            .pView = (const void *)config->window,
+        };
+
+        VK_LOAD_FUN(s->instance, CreateIOSSurfaceMVK);
+        if (!CreateIOSSurfaceMVK) {
+            return VK_ERROR_EXTENSION_NOT_PRESENT;
+        }
+
+        VkResult res = CreateIOSSurfaceMVK(s->instance, &surface_create_info, NULL, &s->surface);
+        if (res != VK_SUCCESS)
+            return res;
 #endif
     } else if (platform == NGL_PLATFORM_WINDOWS) {
         ngli_assert(0);
