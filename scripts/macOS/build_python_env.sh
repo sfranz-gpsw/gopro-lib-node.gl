@@ -4,9 +4,10 @@
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
-cd cmake-build-debug/pyshell/Debug && ln -fs /Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/ .; cd -
+cd cmake-build-debug/debug-tools/Debug && ln -fs /Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/ .; cd -
 
 echo -e "${GREEN}Setting up python virtual environment${NC}"
+git clean -fxd nodegl-env
 python3 -m venv nodegl-env
 
 install -C -d nodegl-env/share

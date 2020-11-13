@@ -5,7 +5,7 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
 echo -e "${GREEN}Setting up python virtual environment${NC}"
-
+git clean -fxd nodegl-env
 python3 -m venv nodegl-env
 
 install -C -d nodegl-env/share
