@@ -108,6 +108,11 @@ end:;
     return ret;
 }
 
+int ngli_gctx_query_draw_time(struct gctx *s, int64_t *time)
+{
+    return s->class->query_draw_time(s, time);
+}
+
 void ngli_gctx_freep(struct gctx **sp)
 {
     if (!*sp)
