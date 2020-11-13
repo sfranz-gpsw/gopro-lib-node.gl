@@ -140,6 +140,8 @@ def run():
     err = test_func(func_name, tester, ref_filepath, dump)
     if err:
         sys.stderr.write('\n'.join(err) + '\n')
+        print(func_name + ' failed', file=sys.stderr)
         sys.exit(1)
-
+    else:
+        print(func_name + ' passed')
     sys.exit(0)

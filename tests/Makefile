@@ -78,6 +78,7 @@ $(REF_TESTS):
 $(SIMPLE_TESTS):
 	@echo $@
 	$(Q)ngl-test $(MODULE).py $(FUNC_NAME) $(OUT)
+	@echo $(FUNC_NAME) passed
 
 TESTS = $(SIMPLE_TESTS) $(REF_TESTS)
 
