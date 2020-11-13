@@ -1,7 +1,7 @@
 diff -ruN tmp/sxplayer-9.5.1/CMakeLists.txt sxplayer-9.5.1/CMakeLists.txt
 --- tmp/sxplayer-9.5.1/CMakeLists.txt	1969-12-31 16:00:00.000000000 -0800
 +++ sxplayer-9.5.1/CMakeLists.txt	2020-09-21 12:58:43.396933959 -0700
-@@ -0,0 +1,37 @@
+@@ -0,0 +1,43 @@
 +cmake_minimum_required(VERSION 3.14)
 +project (sxplayer)
 +
@@ -33,6 +33,12 @@ diff -ruN tmp/sxplayer-9.5.1/CMakeLists.txt sxplayer-9.5.1/CMakeLists.txt
 +        ${GLEW_LIBRARIES}
 +        ${GLFW_LIBRARIES}
 +)
++if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
++    target_link_libraries(sxplayer PUBLIC
++        "-framework CoreFoundation -framework VideoToolbox -framework CoreMedia -framework QuartzCore"
++        "-framework OpenGL"
++    )
++endif()
 +target_link_directories(sxplayer PUBLIC 
 +        ${PTHREADS_LIBRARY_DIRS}
 +        ${FFMPEG_LIBRARY_DIRS}
