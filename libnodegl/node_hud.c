@@ -41,7 +41,6 @@
 #include "pipeline.h"
 #include "type.h"
 #include "topology.h"
-#include "gtimer.h"
 #include "graphicstate.h"
 
 struct hud_priv {
@@ -281,7 +280,6 @@ struct latency_measure {
 
 struct widget_latency {
     struct latency_measure measures[NB_LATENCY];
-    struct gtimer *timer;
 };
 
 struct widget_memory {
@@ -326,18 +324,8 @@ struct widget_spec {
 
 static int widget_latency_init(struct ngl_node *node, struct widget *widget)
 {
-    struct ngl_ctx *ctx = node->ctx;
-    struct gctx *gctx = ctx->gctx;
     struct hud_priv *s = node->priv_data;
     struct widget_latency *priv = widget->priv_data;
-
-    priv->timer = ngli_gtimer_create(gctx);
-    if (!priv->timer)
-        return NGL_ERROR_MEMORY;
-
-    int ret = ngli_gtimer_init(priv->timer);
-    if (ret < 0)
-        return ret;
 
     ngli_assert(NB_LATENCY == NGLI_ARRAY_NB(priv->measures));
 
@@ -468,14 +456,13 @@ static void widget_latency_make_stats(struct ngl_node *node, struct widget *widg
     struct hud_priv *s = node->priv_data;
     struct widget_latency *priv = widget->priv_data;
 
-    ngli_gtimer_start(priv->timer);
     const int64_t draw_start = ngli_gettime_relative();
     ngli_node_draw(s->child);
     const int64_t draw_end = ngli_gettime_relative();
-    ngli_gtimer_stop(priv->timer);
 
     int64_t cpu_tdraw = draw_end - draw_start;
-    int64_t gpu_tdraw = ngli_gtimer_read(priv->timer);
+    int64_t gpu_tdraw;
+    ngli_gctx_query_draw_time(node->ctx->gctx, &gpu_tdraw);
     register_time(s, &priv->measures[LATENCY_DRAW_CPU], cpu_tdraw);
     register_time(s, &priv->measures[LATENCY_DRAW_GPU], gpu_tdraw);
 
@@ -852,7 +839,6 @@ static void widget_latency_uninit(struct ngl_node *node, struct widget *widget)
     struct widget_latency *priv = widget->priv_data;
     for (int i = 0; i < NB_LATENCY; i++)
         ngli_free(priv->measures[i].times);
-    ngli_gtimer_freep(&priv->timer);
 }
 
 static void widget_memory_uninit(struct ngl_node *node, struct widget *widget)
