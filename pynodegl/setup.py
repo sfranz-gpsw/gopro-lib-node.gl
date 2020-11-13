@@ -43,12 +43,15 @@ class LibNodeGLConfig:
                 'pthreadVC2', 
                 'sxplayer', 
                 'avcodec', 'avdevice', 'avformat', 'avfilter', 'avutil', 
-                'OpenGL32', 'gdi32', 'user32'
+                'OpenGL32', 'gdi32', 'user32',
             ]
+            spirv_cross_libs = [ 'spirv-cross-cpp', 'spirv-cross-core','spirv-cross-glsl', 'spirv-cross-hlsl', 'spirv-cross-msl', 'spirv-cross-reflect', 'spirv-cross-util', 'spirv-cross-c' ]
             if GRAPHICS_BACKEND_DIRECT3D12:
-                self.libraries.extend(['d3d12', 'shader_tools', 'dxgi', 'd3dcompiler'])
+                self.libraries.extend(['d3d12', 'shader_tools', 'dxgi', 'd3dcompiler', 'shaderc_combined'])
+                self.libraries.extend(spirv_cross_libs)
             elif GRAPHICS_BACKEND_VULKAN:
                 self.libraries.extend(['vulkan-1', 'shaderc_combined'])
+                self.libraries.extend(spirv_cross_libs)
             self.data_root_dir = op.join(os.getcwd(),'..', 'nodegl-env', 'share')
         else:
             import subprocess
