@@ -165,6 +165,7 @@ lib_src = files(
   'transforms.c',
   'utils.c',
 )
+lib_c_args = []
 
 if host_machine.cpu_family() == 'aarch64'
   lib_src += files('asm_aarch64.S')
@@ -389,6 +390,41 @@ foreach gbackend_name, gbackend_cfg : gbackends_cfg
   endif
 endforeach
 
+#
+# GPU capture dependencies
+#
+
+if host_system == 'windows' or host_system == 'linux'
+    enable_renderdoc_capture = true
+elif host_system == 'darwin'
+    enable_metal_capture = true
+endif
+
+if enable_renderdoc_capture
+    message('Enabling RenderDoc Capture')
+    if host_system == 'windows'
+        #set (RENDERDOC_DIR C:/Program\ Files/RenderDoc)
+        #set (RENDERDOC_INCLUDE_DIRS ${RENDERDOC_DIR})
+        #set (RENDERDOC_LIBRARY_DIRS ${RENDERDOC_DIR})
+    elif host_system == 'linux'
+        #TODO: fix
+        renderdoc_dir= '../renderdoc_1.10'
+        renderdoc_include_dirs = include_directories(renderdoc_dir + '/renderdoc/api/app')
+        renderdoc_library_dirs = renderdoc_dir+'/cmake-build-debug/lib'
+        message ('renderdoc include: @0@'.format(renderdoc_include_dirs))
+    endif
+    
+    renderdoc = declare_dependency(
+        include_directories: renderdoc_include_dirs,
+        link_args: [ '-L' + renderdoc_library_dirs, '-ldl' ],
+    )
+    lib_src += 'renderdoc_capture.c'
+    lib_deps += renderdoc
+    lib_c_args += '-DENABLE_CAPTURE'
+elif enable_metal_capture
+    lib_src += 'mtl_capture.mm'
+    lib_c_args += '-DENABLE_CAPTURE'
+endif
 
 #
 # Library
@@ -418,6 +454,7 @@ libnodegl = library(
   install: true,
   install_rpath: install_rpath,
   version: meson.project_version(),
+  c_args : lib_c_args,
   link_args: lib_link_args,
 )
 lib_header = configure_file(
