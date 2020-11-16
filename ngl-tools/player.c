@@ -221,6 +221,24 @@ static void reset_running_time(void)
     p->clock_off = gettime_relative() - p->frame_ts;
 }
 
+static int toggle_hud(void)
+{
+    struct player *p = g_player;
+    struct ngl_config *config = &p->ngl_config;
+
+    int ww, wh, dw, dh;
+    SDL_GetWindowSize(p->window, &ww, &wh);
+    SDL_GL_GetDrawableSize(p->window, &dw, &dh);
+
+    p->hud ^= 1;
+    config->hud = p->hud;
+    config->hud_refresh_rate[0] = p->framerate[1];
+    config->hud_refresh_rate[1] = p->framerate[0];
+    config->hud_scale = dw / ww;
+
+    return ngl_configure(p->ngl, config);
+}
+
 static int key_callback(SDL_Window *window, SDL_KeyboardEvent *event)
 {
     struct player *p = g_player;
@@ -238,6 +256,8 @@ static int key_callback(SDL_Window *window, SDL_KeyboardEvent *event)
         p->fullscreen ^= 1;
         SDL_SetWindowFullscreen(window, p->fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
         break;
+    case SDLK_h:
+        return toggle_hud();
     case SDLK_s:
         screenshot();
         break;
