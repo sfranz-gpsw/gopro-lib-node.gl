@@ -24,7 +24,6 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
 #include "buffer.h"
 #include "log.h"
@@ -127,14 +126,14 @@ static int buffer_init_from_filename(struct ngl_node *node)
 {
     struct buffer_priv *s = node->priv_data;
 
-    s->fd = open(s->filename, O_RDONLY);
-    if (s->fd < 0) {
+    s->fp = fopen(s->filename, "r");
+    if (!s->fp) {
         LOG(ERROR, "could not open '%s'", s->filename);
         return NGL_ERROR_IO;
     }
 
-    off_t filesize = lseek(s->fd, 0, SEEK_END);
-    off_t ret      = lseek(s->fd, 0, SEEK_SET);
+    int filesize = fseek(s->fp, 0, SEEK_END);
+    int ret      = fseek(s->fp, 0, SEEK_SET);
     if (filesize < 0 || ret < 0) {
         LOG(ERROR, "could not seek in '%s'", s->filename);
         return NGL_ERROR_IO;
@@ -155,7 +154,7 @@ static int buffer_init_from_filename(struct ngl_node *node)
     if (!s->data)
         return NGL_ERROR_MEMORY;
 
-    ssize_t n = read(s->fd, s->data, s->data_size);
+    size_t n = fread(s->data, 1, s->data_size, s->fp);
     if (n < 0) {
         LOG(ERROR, "could not read '%s': %zd", s->filename, n);
         return NGL_ERROR_IO;
@@ -256,8 +255,8 @@ static void buffer_uninit(struct ngl_node *node)
         ngli_freep(&s->data);
         s->data_size = 0;
 
-        if (s->fd) {
-            int ret = close(s->fd);
+        if (s->fp) {
+            int ret = fclose(s->fp);
             if (ret < 0) {
                 LOG(ERROR, "could not properly close '%s'", s->filename);
             }
