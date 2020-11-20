@@ -19,8 +19,6 @@
 # under the License.
 #
 
-PREFIX ?= $(PWD)/nodegl-env
-
 PYTHON_MAJOR = 3
 
 #
@@ -29,9 +27,20 @@ PYTHON_MAJOR = 3
 DEBUG      ?= no
 COVERAGE   ?= no
 CURL       ?= curl
-PYTHON     ?= python$(if $(shell which python$(PYTHON_MAJOR) 2> /dev/null),$(PYTHON_MAJOR),)
 TAR        ?= tar
 TARGET_OS  ?= $(shell uname -s)
+ifeq ($(TARGET_OS),Windows)
+PYTHON     ?= python.exe
+PREFIX     ?= nodegl-env
+W_PWD = $(shell wslpath -w .)
+W_PREFIX ?= $(W_PWD)\$(PREFIX)
+$(info PYTHON: $(PYTHON))
+$(info PREFIX: $(PREFIX))
+$(info W_PREFIX: $(W_PREFIX))
+else
+PYTHON     ?= python$(if $(shell which python$(PYTHON_MAJOR) 2> /dev/null),$(PYTHON_MAJOR),)
+PREFIX     ?= $(PWD)/nodegl-env
+endif
 
 ifneq ($(shell $(PYTHON) -c "import sys;print(sys.version_info.major)"),$(PYTHON_MAJOR))
 $(error "Python $(PYTHON_MAJOR) not found")
@@ -41,14 +50,28 @@ SXPLAYER_VERSION ?= 9.6.0
 MOLTENVK_VERSION ?= 1.1.0
 SHADERC_VERSION  ?= 2020.3
 
+ifeq ($(TARGET_OS), Windows)
+#TODO: identify correct path
+VCVARS64 = "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
+ACTIVATE = $(VCVARS64) \&\& $(PREFIX)\\Scripts\\activate.bat
+else
 ACTIVATE = $(PREFIX)/bin/activate
+endif
 
 RPATH_LDFLAGS ?= -Wl,-rpath,$(PREFIX)/lib
 
+ifeq ($(TARGET_OS),Windows)
+MESON_SETUP   = meson setup --backend vs --prefix="$(W_PREFIX)" --pkg-config-path=$(PREFIX)\\lib\\pkgconfig -Drpath=true
+else
 MESON_SETUP   = meson setup --prefix=$(PREFIX) --pkg-config-path=$(PREFIX)/lib/pkgconfig -Drpath=true
+endif
 # MAKEFLAGS= is a workaround for the issue described here:
 # https://github.com/ninja-build/ninja/issues/1139#issuecomment-724061270
+ifeq ($(TARGET_OS),Windows)
+MESON_COMPILE = meson compile
+else
 MESON_COMPILE = MAKEFLAGS= meson compile
+endif
 MESON_INSTALL = meson install
 ifeq ($(COVERAGE),yes)
 MESON_SETUP += -Db_coverage=true
@@ -113,10 +136,18 @@ pynodegl-deps-install: $(PREFIX) nodegl-install
 	(. $(ACTIVATE) && pip install -r ./pynodegl/requirements.txt)
 
 nodegl-install: sxplayer-install
+ifeq ($(TARGET_OS),Windows)
+	(cmd.exe /C $(ACTIVATE) \&\& $(MESON_SETUP) libnodegl builddir\\libnodegl \&\& $(MESON_COMPILE) -C builddir\\libnodegl \&\& $(MESON_INSTALL) -C builddir\\libnodegl)
+else
 	(. $(ACTIVATE) && $(MESON_SETUP) libnodegl builddir/libnodegl && $(MESON_COMPILE) -C builddir/libnodegl && $(MESON_INSTALL) -C builddir/libnodegl)
+endif
 
 sxplayer-install: sxplayer $(PREFIX)
+ifeq ($(TARGET_OS),Windows)
+	(cmd.exe /C $(ACTIVATE) \&\& $(MESON_SETUP) --default-library static sxplayer builddir\\sxplayer \&\& $(MESON_COMPILE) -C builddir\\sxplayer \&\& $(MESON_INSTALL) -C builddir\\sxplayer)
+else
 	(. $(ACTIVATE) && $(MESON_SETUP) sxplayer builddir/sxplayer && $(MESON_COMPILE) -C builddir/sxplayer && $(MESON_INSTALL) -C builddir/sxplayer)
+endif
 
 # Note for developers: in order to customize the sxplayer you're building
 # against, you can use your own sources post-install:
@@ -179,7 +210,10 @@ MoltenVK-$(MOLTENVK_VERSION).tar.gz:
 # Pillow and PySide2. We require the users to have it on their system.
 #
 $(PREFIX):
-ifeq ($(TARGET_OS),MinGW-w64)
+ifeq ($(TARGET_OS),Windows)
+	$(PYTHON) -m venv $(PREFIX)
+	(cmd.exe /C $(ACTIVATE) \&\& pip install meson ninja)
+else ifeq ($(TARGET_OS),MinGW-w64)
 	$(PYTHON) -m venv --system-site-packages $(PREFIX)
 else
 	$(PYTHON) -m venv $(PREFIX)
