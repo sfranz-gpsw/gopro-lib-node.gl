@@ -347,6 +347,12 @@ if host_system in ['darwin', 'iphone']
   add_languages('objc')
 endif
 
+cc_lib_dirs = [ get_option('prefix') / get_option('libdir') ]
+if host_system == 'windows'
+  #TODO: detect correct path
+  cc_lib_dirs += 'C:\\Program Files (x86)\\Windows Kits\\10\lib\\10.0.18362.0\\um\\x64'
+endif
+
 foreach gbackend_name, gbackend_cfg : gbackends_cfg
   opt_gbackend = get_option('gbackend-' + gbackend_name)
 
@@ -356,7 +362,7 @@ foreach gbackend_name, gbackend_cfg : gbackends_cfg
     gbackend_deps += dependency(dep, required: opt_gbackend)
   endforeach
   foreach dep : host_backend_cfg.get('libs', [])
-    gbackend_deps += cc.find_library(dep, required: opt_gbackend, dirs: get_option('prefix') / get_option('libdir'))
+    gbackend_deps += cc.find_library(dep, required: opt_gbackend, dirs: cc_lib_dirs)
   endforeach
   if 'frameworks' in host_backend_cfg
     gbackend_deps += dependency('appleframeworks', modules: host_backend_cfg.get('frameworks'), required: opt_gbackend)
