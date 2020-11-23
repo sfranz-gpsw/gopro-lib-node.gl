@@ -61,7 +61,7 @@ endif
 RPATH_LDFLAGS ?= -Wl,-rpath,$(PREFIX)/lib
 
 ifeq ($(TARGET_OS),Windows)
-MESON_SETUP   = meson setup --backend vs --prefix="$(W_PREFIX)" --pkg-config-path=$(PREFIX)\\lib\\pkgconfig -Drpath=true
+MESON_SETUP   = meson setup --backend vs --prefix="$(W_PREFIX)" --pkg-config-path=$(PREFIX)\\Lib\\pkgconfig -Drpath=true
 else
 MESON_SETUP   = meson setup --prefix=$(PREFIX) --pkg-config-path=$(PREFIX)/lib/pkgconfig -Drpath=true
 endif
@@ -211,7 +211,11 @@ MoltenVK-$(MOLTENVK_VERSION).tar.gz:
 #
 $(PREFIX):
 ifeq ($(TARGET_OS),Windows)
+	(cd external && bash scripts/sync.sh win64)
 	$(PYTHON) -m venv $(PREFIX)
+	(cmd.exe /C copy external\\win64\\pkg-config.exe nodegl-env\\Scripts)
+	(cmd.exe /C mkdir $(PREFIX)\\Lib\\pkgconfig)
+	(cmd.exe /C copy external\\win64\\ffmpeg_x64-windows\\lib\\pkgconfig\\* $(PREFIX)\\Lib\\pkgconfig)
 	(cmd.exe /C $(ACTIVATE) \&\& pip install meson ninja)
 else ifeq ($(TARGET_OS),MinGW-w64)
 	$(PYTHON) -m venv --system-site-packages $(PREFIX)
