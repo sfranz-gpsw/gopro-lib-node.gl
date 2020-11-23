@@ -298,7 +298,7 @@ gbackends_cfg = {
       'windows': {
         'src': files('glcontext_wgl.c'),
         'cfg': 'HAVE_GLPLATFORM_WGL',
-        'deps': ['opengl']
+        'libs': ['OpenGL32', 'gdi32'],
       },
     },
   },
