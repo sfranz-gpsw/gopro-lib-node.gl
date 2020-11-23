@@ -103,7 +103,11 @@ all: ngl-tools-install pynodegl-utils-install
 	@echo
 
 ngl-tools-install: nodegl-install
+ifeq ($(TARGET_OS),Windows)
+	(cmd.exe /C $(ACTIVATE) \&\& $(MESON_SETUP) ngl-tools builddir\\ngl-tools \&\& $(MESON_COMPILE) -C builddir\\ngl-tools \&\& $(MESON_INSTALL) -C builddir\\ngl-tools)
+else
 	(. $(ACTIVATE) && $(MESON_SETUP) ngl-tools builddir/ngl-tools && $(MESON_COMPILE) -C builddir/ngl-tools && $(MESON_INSTALL) -C builddir/ngl-tools)
+endif
 
 pynodegl-utils-install: pynodegl-utils-deps-install
 	(. $(ACTIVATE) && pip -v install -e ./pynodegl-utils)
@@ -137,7 +141,7 @@ pynodegl-deps-install: $(PREFIX) nodegl-install
 
 nodegl-install: sxplayer-install
 ifeq ($(TARGET_OS),Windows)
-	(cmd.exe /C $(ACTIVATE) \&\& $(MESON_SETUP) libnodegl builddir\\libnodegl \&\& $(MESON_COMPILE) -C builddir\\libnodegl \&\& $(MESON_INSTALL) -C builddir\\libnodegl)
+	(cmd.exe /C $(ACTIVATE) \&\& $(MESON_SETUP) --default-library static libnodegl builddir\\libnodegl \&\& $(MESON_COMPILE) -C builddir\\libnodegl \&\& $(MESON_INSTALL) -C builddir\\libnodegl)
 else
 	(. $(ACTIVATE) && $(MESON_SETUP) libnodegl builddir/libnodegl && $(MESON_COMPILE) -C builddir/libnodegl && $(MESON_INSTALL) -C builddir/libnodegl)
 endif
