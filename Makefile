@@ -134,10 +134,18 @@ ifneq ($(TARGET_OS),MinGW-w64)
 endif
 
 pynodegl-install: pynodegl-deps-install
+ifeq ($(TARGET_OS),Windows)
+	(cmd.exe /C $(ACTIVATE) \&\& pip -v install -e .\\pynodegl)
+else
 	(. $(ACTIVATE) && PKG_CONFIG_PATH=$(PREFIX)/lib/pkgconfig LDFLAGS=$(RPATH_LDFLAGS) pip -v install -e ./pynodegl)
+endif
 
 pynodegl-deps-install: $(PREFIX) nodegl-install
+ifeq ($(TARGET_OS),Windows)
+	(cmd.exe /C $(ACTIVATE) \&\& pip install -r pynodegl\\requirements.txt)
+else
 	(. $(ACTIVATE) && pip install -r ./pynodegl/requirements.txt)
+endif
 
 nodegl-install: sxplayer-install
 ifeq ($(TARGET_OS),Windows)
