@@ -202,6 +202,9 @@ lib_deps = [
   dependency('threads'),
 ]
 
+lib_include_dirs = []
+lib_link_args = []
+
 host_cfg = hosts_cfg.get(host_system, {})
 foreach dep : host_cfg.get('deps', [])
   lib_deps += dependency(dep)
@@ -348,9 +351,16 @@ if host_system in ['darwin', 'iphone']
 endif
 
 cc_lib_dirs = [ get_option('prefix') / get_option('libdir') ]
+
 if host_system == 'windows'
-  #TODO: detect correct path
-  cc_lib_dirs += 'C:\\Program Files (x86)\\Windows Kits\\10\lib\\10.0.18362.0\\um\\x64'
+
+  #TODO: set correct path
+  windows_sdk_dir = 'C:\\Program Files (x86)\\Windows Kits\\10'
+  windows_sdk_library_directories = [ windows_sdk_dir + '\\lib\\10.0.18362.0\\um\\x64' ]
+
+  cc_lib_dirs += windows_sdk_library_directories
+  lib_include_dirs += include_directories('..\\external\\win64\\gl\\include')
+
 endif
 
 foreach gbackend_name, gbackend_cfg : gbackends_cfg
@@ -412,7 +422,7 @@ add_project_arguments(c_args, language: 'c')
 
 # See https://github.com/mesonbuild/meson/pull/4747 to follow advancement on
 # the native support for symbol visibility
-lib_link_args = cc.get_supported_link_arguments([
+lib_link_args += cc.get_supported_link_arguments([
   '-Wl,--version-script,@0@'.format(meson.current_source_dir() / 'libnodegl.symexport'),  # GNU ld
   '-Wl,-exported_symbols_list,@0@'.format(meson.current_source_dir() / 'libnodegl.darwin.symexport'),  # Darwin
 ])
@@ -425,6 +435,7 @@ libnodegl = library(
   install_rpath: install_rpath,
   version: meson.project_version(),
   link_args: lib_link_args,
+  include_directories: lib_include_dirs
 )
 lib_header = configure_file(
   input: files('nodegl.h.in'),
