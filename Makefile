@@ -68,7 +68,7 @@ endif
 # MAKEFLAGS= is a workaround for the issue described here:
 # https://github.com/ninja-build/ninja/issues/1139#issuecomment-724061270
 ifeq ($(TARGET_OS),Windows)
-MESON_COMPILE = meson compile
+MESON_COMPILE = meson compile -v
 else
 MESON_COMPILE = MAKEFLAGS= meson compile
 endif
@@ -216,6 +216,7 @@ ifeq ($(TARGET_OS),Windows)
 	(cmd.exe /C copy external\\win64\\pkg-config.exe nodegl-env\\Scripts)
 	(cmd.exe /C mkdir $(PREFIX)\\Lib\\pkgconfig)
 	(cmd.exe /C copy external\\win64\\ffmpeg_x64-windows\\lib\\pkgconfig\\* $(PREFIX)\\Lib\\pkgconfig)
+	(cmd.exe /C copy external\\win64\\pthreads_x64-windows\\lib\\pkgconfig\\* $(PREFIX)\\Lib\\pkgconfig)
 	(cmd.exe /C $(ACTIVATE) \&\& pip install meson ninja)
 else ifeq ($(TARGET_OS),MinGW-w64)
 	$(PYTHON) -m venv --system-site-packages $(PREFIX)
