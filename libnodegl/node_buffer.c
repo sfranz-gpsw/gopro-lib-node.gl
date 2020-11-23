@@ -132,9 +132,10 @@ static int buffer_init_from_filename(struct ngl_node *node)
         return NGL_ERROR_IO;
     }
 
-    int filesize = fseek(s->fp, 0, SEEK_END);
-    int ret      = fseek(s->fp, 0, SEEK_SET);
-    if (filesize < 0 || ret < 0) {
+    fseek(s->fp, 0, SEEK_END);
+    int filesize = ftell(s->fp);
+    fseek(s->fp, 0, SEEK_SET);
+    if (filesize < 0) {
         LOG(ERROR, "could not seek in '%s'", s->filename);
         return NGL_ERROR_IO;
     }
