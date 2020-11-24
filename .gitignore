@@ -1,6 +1,6 @@
-builddir
+/builddir
 nodegl-env/
-MoltenVK*
-shaderc*
-sxplayer*
+/MoltenVK*
+/shaderc*
+/sxplayer*
 external/win64
