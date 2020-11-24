@@ -135,7 +135,7 @@ endif
 
 pynodegl-install: pynodegl-deps-install
 ifeq ($(TARGET_OS),Windows)
-	(cmd.exe /C $(ACTIVATE) \&\& pip -v install -e .\\pynodegl)
+	(PKG_CONFIG_PATH="$(W_PREFIX)\Lib\pkgconfig" WSLENV=PKG_CONFIG_PATH/w cmd.exe /C $(ACTIVATE) \&\& call echo %PKG_CONFIG_PATH% \&\& pip -v install -e .\\pynodegl)
 else
 	(. $(ACTIVATE) && PKG_CONFIG_PATH=$(PREFIX)/lib/pkgconfig LDFLAGS=$(RPATH_LDFLAGS) pip -v install -e ./pynodegl)
 endif
