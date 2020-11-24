@@ -99,7 +99,11 @@ all: ngl-tools-install pynodegl-utils-install
 	@echo "    Install completed."
 	@echo
 	@echo "    You can now enter the venv with:"
+ifeq ($(TARGET_OS),Windows)
+	@echo "        . $(PREFIX)\\Scripts\\activate.bat"
+else
 	@echo "        . $(ACTIVATE)"
+endif
 	@echo
 
 ngl-tools-install: nodegl-install
@@ -110,7 +114,11 @@ else
 endif
 
 pynodegl-utils-install: pynodegl-utils-deps-install
+ifeq ($(TARGET_OS),Windows)
+	(cmd.exe /C $(ACTIVATE) \&\& pip -v install -e pynodegl-utils)
+else
 	(. $(ACTIVATE) && pip -v install -e ./pynodegl-utils)
+endif
 
 #
 # pynodegl-install is in dependency to prevent from trying to install pynodegl
@@ -129,7 +137,9 @@ pynodegl-utils-install: pynodegl-utils-deps-install
 # decorator and other related utils.
 #
 pynodegl-utils-deps-install: pynodegl-install
-ifneq ($(TARGET_OS),MinGW-w64)
+ifeq ($(TARGET_OS),Windows)
+	(cmd.exe /C $(ACTIVATE) \&\& pip install -r pynodegl-utils\\requirements.txt)
+else ifneq ($(TARGET_OS),MinGW-w64)
 	(. $(ACTIVATE) && pip install -r ./pynodegl-utils/requirements.txt)
 endif
 
