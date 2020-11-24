@@ -42,9 +42,13 @@ add_project_arguments(
 # Main dependencies
 #
 tool_deps = [
-  cc.find_library('m', required: false),
   dependency('libnodegl'),
 ]
+
+if host_system != 'windows'
+  tool_deps += cc.find_library('m', required: false)
+endif
+
 sxplayer_dep = dependency('libsxplayer')  # for media probing
 threads_dep = dependency('threads', required: false)
 
