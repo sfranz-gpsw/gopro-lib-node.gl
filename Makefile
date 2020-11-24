@@ -146,6 +146,9 @@ endif
 pynodegl-install: pynodegl-deps-install
 ifeq ($(TARGET_OS),Windows)
 	(PKG_CONFIG_PATH="$(W_PREFIX)\Lib\pkgconfig" WSLENV=PKG_CONFIG_PATH/w cmd.exe /C $(ACTIVATE) \&\& pip -v install -e .\\pynodegl)
+	#Copy DLLs to runtime search path
+	(cp external/win64/ffmpeg_x64-windows/bin/*.dll pynodegl/.)
+	(cp external/win64/pthreads_x64-windows/bin/*.dll pynodegl/.)
 else
 	(. $(ACTIVATE) && PKG_CONFIG_PATH=$(PREFIX)/lib/pkgconfig LDFLAGS=$(RPATH_LDFLAGS) pip -v install -e ./pynodegl)
 endif

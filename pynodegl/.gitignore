@@ -5,3 +5,4 @@ pynodegl.egg-info
 pynodegl.*.so
 .eggs
 *.pyd
+*.dll
