@@ -20,8 +20,16 @@
 #
 
 BACKEND ?= auto
-HAS_COMPUTE := $(or $(shell ngl-probe -l quiet -b $(BACKEND) --cap compute | tail -n1),0)
-MAX_SAMPLES := $(or $(shell ngl-probe -l quiet -b $(BACKEND) --cap max_samples | tail -n1),0)
+ifeq ($(TARGET_OS),Windows)
+	NGL_PROBE := ngl-probe.exe
+	NGL_TEST  := ngl-test.exe
+else
+	NGL_PROBE := ngl-probe
+	NGL_TEST  := ngl-test
+endif
+
+HAS_COMPUTE := $(or $(shell $(NGL_PROBE) -l quiet -b $(BACKEND) --cap compute | tail -n1),0)
+MAX_SAMPLES := $(or $(shell $(NGL_PROBE) -l quiet -b $(BACKEND) --cap max_samples | tail -n1),0)
 
 ifeq ($(V),)
 Q   := @
@@ -73,11 +81,11 @@ include transform.mak
 
 $(REF_TESTS):
 	@echo $@
-	$(Q)ngl-test $(MODULE).py $(FUNC_NAME) refs/$(FUNC_NAME).ref $(OUT)
+	$(Q)$(NGL_TEST) $(MODULE).py $(FUNC_NAME) refs/$(FUNC_NAME).ref $(OUT)
 
 $(SIMPLE_TESTS):
 	@echo $@
-	$(Q)ngl-test $(MODULE).py $(FUNC_NAME) $(OUT)
+	$(Q)$(NGL_TEST) $(MODULE).py $(FUNC_NAME) $(OUT)
 
 TESTS = $(SIMPLE_TESTS) $(REF_TESTS)
 
@@ -85,7 +93,7 @@ tests: $(TESTS)
 
 $(TESTS): tests-info
 tests-info:
-	$(Q)ngl-probe -l info -b $(BACKEND)
+	$(Q)$(NGL_PROBE) -l info -b $(BACKEND)
 
 tests-list:
 	@for test in $(TESTS); do echo $$test; done
