@@ -68,7 +68,7 @@ endif
 # MAKEFLAGS= is a workaround for the issue described here:
 # https://github.com/ninja-build/ninja/issues/1139#issuecomment-724061270
 ifeq ($(TARGET_OS),Windows)
-MESON_COMPILE = meson compile -v
+MESON_COMPILE = meson compile
 else
 MESON_COMPILE = MAKEFLAGS= meson compile
 endif
