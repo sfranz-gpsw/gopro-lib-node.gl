@@ -154,6 +154,8 @@ ifneq ($(TARGET_OS),MinGW-w64)
 else
 	cp -r $< $@
 endif
+#TODO: submit PR for sxplayer changes
+	patch -u sxplayer/meson.build -i external/patches/sxplayer/meson.build.patch
 
 sxplayer-$(SXPLAYER_VERSION): sxplayer-$(SXPLAYER_VERSION).tar.gz
 	$(TAR) xf $<
