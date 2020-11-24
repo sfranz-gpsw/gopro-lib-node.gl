@@ -119,6 +119,12 @@ tools_specs = {
   },
 }
 
+if host_system == 'windows'
+  tool_install_dir = 'Scripts'
+else
+  tool_install_dir = 'bin'
+endif
+
 foreach tool_name, tool_info : tools_specs
   all_dep_found = true
   foreach dep : tool_info.get('deps')
@@ -131,6 +137,7 @@ foreach tool_name, tool_info : tools_specs
       tool_info.get('src') + files('common.c'),
       dependencies: tool_info.get('deps'),
       install: true,
+      install_dir: tool_install_dir,
       install_rpath: get_option('rpath') ? get_option('prefix') / 'lib' : '',
     )
   endif
