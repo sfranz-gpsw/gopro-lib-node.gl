@@ -204,6 +204,9 @@ lib_deps = [
   dependency('threads'),
 ]
 
+lib_include_dirs = []
+lib_link_args = []
+
 host_cfg = hosts_cfg.get(host_system, {})
 foreach dep : host_cfg.get('deps', [])
   lib_deps += dependency(dep)
@@ -309,6 +312,18 @@ if host_system in ['darwin', 'iphone']
   add_languages('objc')
 endif
 
+cc_lib_dirs = [ get_option('prefix') / get_option('libdir') ]
+
+if host_system == 'windows' and cc.get_id() == 'msvc'
+
+  #TODO: set correct path
+  windows_sdk_dir = 'C:\\Program Files (x86)\\Windows Kits\\10'
+  windows_sdk_library_directories = [ windows_sdk_dir + '\\Lib\\10.0.18362.0\\um\\x64' ]
+
+  cc_lib_dirs += windows_sdk_library_directories
+
+endif
+
 foreach gbackend_name, gbackend_cfg : gbackends_cfg
   opt_gbackend = get_option('gbackend-' + gbackend_name)
 
@@ -318,7 +333,11 @@ foreach gbackend_name, gbackend_cfg : gbackends_cfg
     gbackend_deps += dependency(dep, required: opt_gbackend)
   endforeach
   foreach dep : host_backend_cfg.get('libs', [])
-    gbackend_deps += cc.find_library(dep, required: opt_gbackend)
+    gbackend_dep = cc.find_library(dep, required: opt_gbackend)
+    if not gbackend_dep.found()
+      gbackend_dep = cc.find_library(dep, required: opt_gbackend, dirs: cc_lib_dirs)
+    endif
+    gbackend_deps += gbackend_dep
   endforeach
   if 'frameworks' in host_backend_cfg
     gbackend_deps += dependency('appleframeworks', modules: host_backend_cfg.get('frameworks'), required: opt_gbackend)
@@ -343,7 +362,6 @@ foreach gbackend_name, gbackend_cfg : gbackends_cfg
   endif
 endforeach
 
-
 #
 # Library
 #
@@ -355,6 +373,18 @@ if get_option('default_library') == 'shared'
   lib_c_args += '-DBUILD_NODEGL_SHARED_LIB'
 endif
 
+lib_name_prefix = []
+lib_name_suffix = []
+if host_system == 'windows' and get_option('default_library') == 'static'
+  # Meson names static libraries with .a extension by default on Windows,
+  # in order to distinguish between static and import libraries.
+  # This is a Linux convention, not a Windows convention.
+  # On Windows, both static and import libraries have .lib extension.
+  # Let's follow Windows library naming convention.
+  lib_name_prefix = ''
+  lib_name_suffix = 'lib'
+endif
+
 libnodegl = library(
   'nodegl',
   lib_src,
@@ -363,6 +393,10 @@ libnodegl = library(
   install_rpath: install_rpath,
   version: meson.project_version(),
   c_args: lib_c_args,
+  link_args: lib_link_args,
+  include_directories: lib_include_dirs,
+  name_prefix: lib_name_prefix,
+  name_suffix: lib_name_suffix,
   gnu_symbol_visibility: 'hidden',
 )
 lib_header = configure_file(
@@ -374,9 +408,16 @@ install_headers(lib_header)
 
 pkg = import('pkgconfig')
 pkg_extra_cflags = []
+pkg_libs_private = []
 
 if get_option('default_library') == 'static'
   pkg_extra_cflags += '-DUSE_NODEGL_STATIC_LIB'
+endif
+
+if cc.get_id() == 'msvc'
+  # add pthread cflags and libs to pkg-config file
+  pkg_extra_cflags += [ '-D_TIMESPEC_DEFINED' ]
+  pkg_libs_private += 'pthreadVC3.lib'
 endif
 
 pkg.generate(
@@ -384,6 +425,7 @@ pkg.generate(
   name: 'libnodegl',  # not specifying the name would fallback on "nodegl.pc" instead of "libnodegl.pc"
   description: 'Node/Graph based OpenGL engine',
   extra_cflags: pkg_extra_cflags,
+  libraries_private: pkg_libs_private,
   variables: ['datarootdir=${prefix}/share'],
 )
 
