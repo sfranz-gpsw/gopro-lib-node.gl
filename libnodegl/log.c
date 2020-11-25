@@ -22,8 +22,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef _WIN32
 #include <unistd.h>
-
+#endif
 #include "config.h"
 #include "log.h"
 
