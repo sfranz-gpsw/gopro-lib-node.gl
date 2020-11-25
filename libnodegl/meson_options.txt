@@ -36,5 +36,5 @@ option('tests', type: 'boolean', value: true)
 
 option('logtrace', type: 'boolean', value: false,
        description: 'log tracing (slow and verbose)')
-option('debug_opts', type: 'array', choices: ['gl', 'mem', 'scene'], value: [],
+option('debug_opts', type: 'array', choices: ['gl', 'mem', 'scene', 'capture'], value: [],
        description: 'debugging options for developers')

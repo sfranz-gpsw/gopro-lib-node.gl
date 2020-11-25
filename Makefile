@@ -36,6 +36,7 @@ TARGET_OS  ?= $(shell uname -s)
 DEBUG_GL    ?= no
 DEBUG_MEM   ?= no
 DEBUG_SCENE ?= no
+DEBUG_CAPTURE ?= no
 TESTS_SUITE ?=
 V           ?=
 
@@ -44,6 +45,7 @@ $(error "Python $(PYTHON_MAJOR) not found")
 endif
 
 SXPLAYER_VERSION ?= 9.6.0
+RENDERDOC_VERSION ?= 1.10
 
 ACTIVATE = $(PREFIX)/bin/activate
 
@@ -69,9 +71,13 @@ endif
 ifneq ($(V),)
 MESON_COMPILE += -v
 endif
+ifeq ($(DEBUG_CAPTURE),yes)
+NODEGL_INSTALL_DEPS = renderdoc-install
+endif
 NODEGL_DEBUG_OPTS-$(DEBUG_GL)    += gl
 NODEGL_DEBUG_OPTS-$(DEBUG_MEM)   += mem
 NODEGL_DEBUG_OPTS-$(DEBUG_SCENE) += scene
+NODEGL_DEBUG_OPTS-$(DEBUG_CAPTURE) += capture
 ifneq ($(NODEGL_DEBUG_OPTS-yes),)
 NODEGL_DEBUG_OPTS = -Ddebug_opts=$(shell echo $(NODEGL_DEBUG_OPTS-yes) | tr ' ' ',')
 endif
@@ -132,7 +138,7 @@ pynodegl-deps-install: $(PREFIX) nodegl-install
 nodegl-install: nodegl-setup
 	(. $(ACTIVATE) && $(MESON_COMPILE) -C builddir/libnodegl && $(MESON_INSTALL) -C builddir/libnodegl)
 
-nodegl-setup: sxplayer-install
+nodegl-setup: sxplayer-install $(NODEGL_INSTALL_DEPS)
 	(. $(ACTIVATE) && $(MESON_SETUP) $(NODEGL_DEBUG_OPTS) libnodegl builddir/libnodegl)
 
 sxplayer-install: sxplayer $(PREFIX)
@@ -160,6 +166,22 @@ sxplayer-$(SXPLAYER_VERSION): sxplayer-$(SXPLAYER_VERSION).tar.gz
 
 sxplayer-$(SXPLAYER_VERSION).tar.gz:
 	$(CURL) -L https://github.com/Stupeflix/sxplayer/archive/v$(SXPLAYER_VERSION).tar.gz -o $@
+
+renderdoc-install: renderdoc $(PREFIX)
+	cmake -DCMAKE_BUILD_TYPE=Release -Srenderdoc -Bbuilddir/renderdoc && $(MAKE) -C builddir/renderdoc
+
+renderdoc: renderdoc-$(RENDERDOC_VERSION)
+ifneq ($(TARGET_OS),MinGW-w64)
+	ln -snf $< $@
+else
+	cp -r $< $@
+endif
+
+renderdoc-$(RENDERDOC_VERSION): renderdoc-$(RENDERDOC_VERSION).tar.gz
+	$(TAR) xf $<
+
+renderdoc-$(RENDERDOC_VERSION).tar.gz:
+	$(CURL) -L https://github.com/baldurk/renderdoc/archive/v1.10.tar.gz -o $@
 
 #
 # We do not pull meson from pip on Windows for the same reasons we don't pull
@@ -200,6 +222,7 @@ clean: clean_py
 	$(RM) -r builddir/libnodegl
 	$(RM) -r builddir/ngl-tools
 	$(RM) -r builddir/tests
+	$(RM) -r builddir/renderdoc
 
 # You need to build and run with COVERAGE set to generate data.
 # For example: `make clean && make -j8 tests COVERAGE=yes`
@@ -216,6 +239,7 @@ coverage-xml:
 .PHONY: pynodegl-install pynodegl-deps-install
 .PHONY: nodegl-install nodegl-setup
 .PHONY: sxplayer-install
+.PHONY: renderdoc-install
 .PHONY: tests tests-setup
 .PHONY: clean clean_py
 .PHONY: coverage-html coverage-xml
