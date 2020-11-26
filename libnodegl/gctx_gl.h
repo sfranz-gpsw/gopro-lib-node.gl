@@ -50,6 +50,9 @@ struct gctx_gl {
     int viewport[4];
     int scissor[4];
     int timer_active;
+#ifdef ENABLE_CAPTURE    
+    int debug_capture;
+#endif
     struct rendertarget *rt;
     /* Offscreen render target resources */
     struct texture *color;
