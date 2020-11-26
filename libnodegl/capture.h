@@ -19,15 +19,11 @@
  * under the License.
  */
 
-#pragma once
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef CAPTURE_H
+#define CAPTURE_H
 
 void init_capture(void);
 void begin_capture(void);
 void end_capture(void);
 
-#ifdef __cplusplus
-}
 #endif
