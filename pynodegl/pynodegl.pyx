@@ -76,7 +76,8 @@ cdef extern from "nodegl.h":
         int  samples
         int  set_surface_pts
         float clear_color[4]
-        uint8_t *capture_buffer
+        void *capture_buffer
+        int capture_buffer_type
 
     ngl_ctx *ngl_create()
     int ngl_configure(ngl_ctx *s, ngl_config *config)
@@ -193,7 +194,7 @@ cdef class Viewer:
             config.clear_color[i] = clear_color[i]
         self.capture_buffer = kwargs.get('capture_buffer')
         if self.capture_buffer is not None:
-            config.capture_buffer = self.capture_buffer
+            config.capture_buffer = <uint8_t *>self.capture_buffer
         return ngl_configure(self.ctx, &config)
 
     def resize(self, width, height, viewport=None):

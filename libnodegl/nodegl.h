@@ -348,6 +348,14 @@ enum {
 };
 
 /**
+ * Capture buffer types
+ */
+enum {
+    NGL_CAPTURE_BUFFER_TYPE_CPU,
+    NGL_CAPTURE_BUFFER_TYPE_COREVIDEO,
+};
+
+/**
  * node.gl configuration
  */
 struct ngl_config {
@@ -383,9 +391,15 @@ struct ngl_config {
 
     float clear_color[4]; /* Clear color (red, green, blue, alpha) */
 
-    uint8_t *capture_buffer; /* RGBA offscreen capture buffer. If allocated,
-                                its size must be at least width * height * 4
-                                bytes. */
+    void *capture_buffer; /* A pointer to a capture buffer. If the capture
+                             buffer is of type NGL_CAPTURE_BUFFER_TYPE_CPU the
+                             pointer passed to nodegl must reference a memory
+                             buffer with a size of at least width * height * 4
+                             (RGBA). If the capture buffer is of type
+                             NGL_CAPTURE_BUFFER_TYPE_COREVIDEO the pointer
+                             passed to nodegl must reference a CVPixelBuffer. */
+
+    int capture_buffer_type; /* Any of NGL_CAPTURE_BUFFER_TYPE_* */
 };
 
 /**

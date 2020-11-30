@@ -155,15 +155,14 @@ static int capture_init(struct ngl_ctx *s)
 {
     struct glcontext *gl = s->glcontext;
     struct ngl_config *config = &s->config;
-    const int ios_capture = gl->platform == NGL_PLATFORM_IOS && config->window;
 
-    if (!config->capture_buffer && !ios_capture)
+    if (!config->capture_buffer)
         return 0;
 
     if (gl->features & NGLI_FEATURE_FRAMEBUFFER_OBJECT) {
-        if (ios_capture) {
+        if (config->capture_buffer_type == NGL_CAPTURE_BUFFER_TYPE_COREVIDEO) {
 #if defined(TARGET_IPHONE)
-            CVPixelBufferRef capture_cvbuffer = (CVPixelBufferRef)config->window;
+            CVPixelBufferRef capture_cvbuffer = (CVPixelBufferRef)config->capture_buffer;
             s->capture_cvbuffer = (CVPixelBufferRef)CFRetain(capture_cvbuffer);
             if (!s->capture_cvbuffer)
                 return NGL_ERROR_MEMORY;
@@ -201,8 +200,10 @@ static int capture_init(struct ngl_ctx *s)
             int ret = ngli_texture_wrap(&s->capture_rt_color, s, &attachment_params, id);
             if (ret < 0)
                 return ret;
+#else
+            return NGL_ERROR_UNSUPPORTED;
 #endif
-        } else {
+        } else if (config->capture_buffer_type == NGL_CAPTURE_BUFFER_TYPE_CPU) {
             struct texture_params attachment_params = NGLI_TEXTURE_PARAM_DEFAULTS;
             attachment_params.format = NGLI_FORMAT_R8G8B8A8_UNORM;
             attachment_params.width = config->width;
@@ -211,6 +212,8 @@ static int capture_init(struct ngl_ctx *s)
             int ret = ngli_texture_init(&s->capture_rt_color, s, &attachment_params);
             if (ret < 0)
                 return ret;
+        } else {
+            return NGL_ERROR_UNSUPPORTED;
         }
 
         struct rendertarget_params rt_params = {
@@ -248,13 +251,20 @@ static int capture_init(struct ngl_ctx *s)
             if (ret < 0)
                 return ret;
 
-            s->capture_func = config->capture_buffer ? capture_gles_msaa : capture_ios_msaa;
+            static const capture_func_type func_map[] = {
+                [NGL_CAPTURE_BUFFER_TYPE_CPU]       = capture_gles_msaa,
+                [NGL_CAPTURE_BUFFER_TYPE_COREVIDEO] = capture_ios_msaa,
+            };
+            s->capture_func = func_map[config->capture_buffer_type];
         } else {
-            s->capture_func = config->capture_buffer ? capture_default : capture_ios;
+            static const capture_func_type func_map[] = {
+                [NGL_CAPTURE_BUFFER_TYPE_CPU]       = capture_default,
+                [NGL_CAPTURE_BUFFER_TYPE_COREVIDEO] = capture_ios,
+            };
+            s->capture_func = func_map[config->capture_buffer_type];
         }
-
     } else {
-        if (ios_capture) {
+        if (config->capture_buffer_type == NGL_CAPTURE_BUFFER_TYPE_COREVIDEO) {
             LOG(WARNING, "context does not support the framebuffer object feature, "
                 "capturing to a CVPixelBuffer is not supported");
             return NGL_ERROR_UNSUPPORTED;
