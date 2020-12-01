@@ -222,7 +222,7 @@ else
 	cp -r $< $@
 endif
 #TODO: submit PR for sxplayer changes
-	patch -s -p0 < external/patches/sxplayer/sxplayer.patch
+	bash external/patches/sxplayer/apply_patch.sh
 
 sxplayer-$(SXPLAYER_VERSION): sxplayer-$(SXPLAYER_VERSION).tar.gz
 	$(TAR) xf $<
