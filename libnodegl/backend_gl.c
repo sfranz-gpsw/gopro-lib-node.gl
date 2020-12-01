@@ -393,6 +393,19 @@ static int gl_resize(struct ngl_ctx *s, int width, int height, const int *viewpo
     return 0;
 }
 
+static int gl_set_capture_buffer(struct ngl_ctx *s, void *capture_buffer)
+{
+    struct glcontext *gl = s->glcontext;
+    if (!gl->offscreen)
+        return NGL_ERROR_INVALID_USAGE;
+
+    capture_reset(s);
+
+    s->config.capture_buffer = capture_buffer;
+
+    return capture_init(s);
+}
+
 static int gl_pre_draw(struct ngl_ctx *s, double t)
 {
     ngli_gctx_clear_color(s);
@@ -438,6 +451,7 @@ const struct backend ngli_backend_gl = {
     .name         = "OpenGL",
     .configure    = gl_configure,
     .resize       = gl_resize,
+    .set_capture_buffer = gl_set_capture_buffer,
     .pre_draw     = gl_pre_draw,
     .post_draw    = gl_post_draw,
     .destroy      = gl_destroy,
@@ -447,6 +461,7 @@ const struct backend ngli_backend_gles = {
     .name         = "OpenGL ES",
     .configure    = gl_configure,
     .resize       = gl_resize,
+    .set_capture_buffer = gl_set_capture_buffer,
     .pre_draw     = gl_pre_draw,
     .post_draw    = gl_post_draw,
     .destroy      = gl_destroy,
