@@ -1,2 +1,2 @@
 #!/bin/bash
-diff -u meson.build.orig meson.build.new > meson.build.patch
+diff -u sxplayer-9.6.0 sxplayer-9.6.0.new > external/patches/sxplayer/sxplayer.patch

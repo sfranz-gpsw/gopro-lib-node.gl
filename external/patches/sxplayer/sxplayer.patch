@@ -1,0 +1,16 @@
+Common subdirectories: sxplayer-9.6.0/.github and sxplayer-9.6.0.new/.github
+diff -u sxplayer-9.6.0/sxplayer.h.in sxplayer-9.6.0.new/sxplayer.h.in
+--- sxplayer-9.6.0/sxplayer.h.in	2020-12-01 15:35:09.851547900 -0800
++++ sxplayer-9.6.0.new/sxplayer.h.in	2020-12-01 15:44:28.270556300 -0800
+@@ -39,7 +39,11 @@
+ #    define SXAPI __declspec(dllexport)
+ #  elif (defined(_DLL))
+ #    define SXAPI __declspec(dllimport)
++#  else
++#    define SXAPI extern
+ #  endif
++#else
++#  define SXAPI __attribute__((visibility("default")))
+ #endif
+ 
+ /* Stupeflix Media Player */
