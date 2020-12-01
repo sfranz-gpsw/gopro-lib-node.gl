@@ -200,7 +200,7 @@ endif
 
 sxplayer-install: sxplayer $(PREFIX)
 ifeq ($(TARGET_OS),Windows)
-	(cmd.exe /C $(ACTIVATE) \&\& $(MESON_SETUP) --default-library static sxplayer builddir\\sxplayer \&\& $(MESON_COMPILE) -C builddir\\sxplayer \&\& $(MESON_INSTALL) -C builddir\\sxplayer)
+	(cmd.exe /C $(ACTIVATE) \&\& $(MESON_SETUP) --default-library shared sxplayer builddir\\sxplayer \&\& $(MESON_COMPILE) -C builddir\\sxplayer \&\& $(MESON_INSTALL) -C builddir\\sxplayer)
 else
 	(. $(ACTIVATE) && $(MESON_SETUP) sxplayer builddir/sxplayer && $(MESON_COMPILE) -C builddir/sxplayer && $(MESON_INSTALL) -C builddir/sxplayer)
 endif
@@ -222,7 +222,7 @@ else
 	cp -r $< $@
 endif
 #TODO: submit PR for sxplayer changes
-	patch -u sxplayer/meson.build -i external/patches/sxplayer/meson.build.patch
+	patch -s -p0 < external/patches/sxplayer/sxplayer.patch
 
 sxplayer-$(SXPLAYER_VERSION): sxplayer-$(SXPLAYER_VERSION).tar.gz
 	$(TAR) xf $<
