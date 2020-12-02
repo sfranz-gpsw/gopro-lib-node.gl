@@ -169,8 +169,10 @@ ifeq ($(TARGET_OS),Windows)
 	(cp external/win64/ffmpeg_x64-windows/bin/*.exe $(PREFIX)/Scripts/.)
 	(cp external/win64/ffmpeg_x64-windows/bin/*.dll pynodegl/.)
 	(cp external/win64/pthreads_x64-windows/dll/x64/*.dll pynodegl/.)
+	(cp builddir/sxplayer/*.dll pynodegl/.)
 	(cp external/win64/ffmpeg_x64-windows/bin/*.dll $(PREFIX)/Scripts/.)
 	(cp external/win64/pthreads_x64-windows/dll/x64/*.dll $(PREFIX)/Scripts/.)
+	(cp builddir/sxplayer/*.dll $(PREFIX)/Scripts/.)
 else
 	(. $(ACTIVATE) && PKG_CONFIG_PATH=$(PREFIX)/lib/pkgconfig LDFLAGS=$(RPATH_LDFLAGS) pip -v install -e ./pynodegl)
 endif
