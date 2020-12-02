@@ -62,8 +62,12 @@ conf_data.set10('DEBUG_GL', 'gl' in debug_opts)
 conf_data.set10('DEBUG_MEM', 'mem' in debug_opts)
 conf_data.set10('DEBUG_SCENE', 'scene' in debug_opts)
 
-if host_system == 'windows' and cc.get_id() != 'msvc'
-  conf_data.set10('TARGET_MINGW_W64', true)
+if host_system == 'windows'
+  if cc.get_id() == 'msvc'
+    conf_data.set10('TARGET_MSVC', true)
+  else
+    conf_data.set10('TARGET_MINGW_W64', true)
+  endif
 endif
 
 # This trim prefix is used to make __FILE__ starts from the source dir with
