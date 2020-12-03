@@ -23,27 +23,45 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <fcntl.h>
-#include <unistd.h>
+
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <sys/time.h>
+#endif
 
 #include "common.h"
 
 int64_t gettime(void)
 {
+#ifdef _WIN32
+    return gettime_relative();
+#else
     struct timeval tv;
 
     gettimeofday(&tv, NULL);
     return 1000000 * (int64_t)tv.tv_sec + tv.tv_usec;
+#endif
 }
 
 int64_t gettime_relative(void)
 {
+#ifdef _WIN32
+    FILETIME t0;
+    GetSystemTimeAsFileTime(&t0);
+    ULARGE_INTEGER t1;
+    t1.LowPart = t0.dwLowDateTime;
+    t1.HighPart = t0.dwHighDateTime;
+    int64_t t2 = t1.QuadPart;
+    return t2 / 10;
+#else
     struct timespec ts;
-    int ret = clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ret != 0 ? 0 : ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return 1000000 * (int64_t)ts.tv_sec + ts.tv_nsec / 1000;
+#endif
 }
 
 double clipd(double v, double min, double max)
@@ -85,15 +103,15 @@ char *get_text_file_content(const char *filename)
 {
     char *buf = NULL;
 
-    int fd = filename ? open(filename, O_RDONLY) : STDIN_FILENO;
-    if (fd == -1) {
+    FILE *fp = filename ? fopen(filename, "r") : stdin;
+    if (!fp) {
         fprintf(stderr, "unable to open %s\n", filename);
         goto end;
     }
 
-    ssize_t pos = 0;
+    int pos = 0;
     for (;;) {
-        const ssize_t needed = pos + BUF_SIZE + 1;
+        const int needed = pos + BUF_SIZE + 1;
         void *new_buf = realloc(buf, needed);
         if (!new_buf) {
             free(buf);
@@ -101,7 +119,7 @@ char *get_text_file_content(const char *filename)
             goto end;
         }
         buf = new_buf;
-        const ssize_t n = read(fd, buf + pos, BUF_SIZE);
+        const int n = fread(buf + pos, 1, BUF_SIZE, fp);
         if (n < 0) {
             free(buf);
             buf = NULL;
@@ -115,7 +133,7 @@ char *get_text_file_content(const char *filename)
     }
 
 end:
-    if (fd != -1 && fd != STDIN_FILENO)
-        close(fd);
+    if (fp && fp != stdin)
+        fclose(fp);
     return buf;
 }

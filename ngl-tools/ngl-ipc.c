@@ -28,11 +28,12 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#define ssize_t int
 #else
 #include <sys/socket.h>
 #include <netdb.h>
-#endif
 #include <unistd.h>
+#endif
 #include <sys/stat.h>
 #include <fcntl.h>
 
