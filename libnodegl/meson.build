@@ -201,8 +201,13 @@ lib_deps = [
   dependency('threads'),
 ]
 
+lib_c_args = ''
 lib_include_dirs = []
 lib_link_args = []
+
+if get_option('default_library') == 'shared'
+  lib_c_args += '-DBUILD_NODEGL_SHARED_LIB'
+endif
 
 host_cfg = hosts_cfg.get(host_system, {})
 foreach dep : host_cfg.get('deps', [])
@@ -426,7 +431,7 @@ libnodegl = library(
   install: true,
   install_rpath: install_rpath,
   version: meson.project_version(),
-  c_args: '-DBUILD_NODEGL',
+  c_args: lib_c_args,
   link_args: lib_link_args,
   include_directories: lib_include_dirs,
 )
