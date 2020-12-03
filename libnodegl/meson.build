@@ -201,6 +201,9 @@ lib_deps = [
   dependency('threads'),
 ]
 
+lib_include_dirs = []
+lib_link_args = []
+
 host_cfg = hosts_cfg.get(host_system, {})
 foreach dep : host_cfg.get('deps', [])
   lib_deps += dependency(dep)
@@ -296,7 +299,7 @@ gbackends_cfg = {
       'windows': {
         'src': files('backends/gl/glcontext_wgl.c'),
         'cfg': 'HAVE_GLPLATFORM_WGL',
-        'libs': ['opengl32', 'gdi32'],
+        'libs': ['OpenGL32', 'gdi32'],
       },
     },
   },
@@ -344,6 +347,19 @@ if host_system in ['darwin', 'iphone']
   add_languages('objc')
 endif
 
+cc_lib_dirs = [ get_option('prefix') / get_option('libdir') ]
+
+if host_system == 'windows' and cc.get_id() == 'msvc'
+
+  #TODO: set correct path
+  windows_sdk_dir = 'C:\\Program Files (x86)\\Windows Kits\\10'
+  windows_sdk_library_directories = [ windows_sdk_dir + '\\lib\\10.0.18362.0\\um\\x64' ]
+
+  cc_lib_dirs += windows_sdk_library_directories
+  lib_include_dirs += include_directories('..\\external\\win64\\gl\\include')
+
+endif
+
 foreach gbackend_name, gbackend_cfg : gbackends_cfg
   opt_gbackend = get_option('gbackend-' + gbackend_name)
 
@@ -353,7 +369,7 @@ foreach gbackend_name, gbackend_cfg : gbackends_cfg
     gbackend_deps += dependency(dep, required: opt_gbackend)
   endforeach
   foreach dep : host_backend_cfg.get('libs', [])
-    gbackend_deps += cc.find_library(dep, required: opt_gbackend, dirs: get_option('prefix') / get_option('libdir'))
+    gbackend_deps += cc.find_library(dep, required: opt_gbackend, dirs: cc_lib_dirs)
   endforeach
   if 'frameworks' in host_backend_cfg
     gbackend_deps += dependency('appleframeworks', modules: host_backend_cfg.get('frameworks'), required: opt_gbackend)
@@ -363,26 +379,18 @@ foreach gbackend_name, gbackend_cfg : gbackends_cfg
   foreach dep : gbackend_deps
     all_dep_found = all_dep_found and dep.found()
   endforeach
-
+  message('backend: ' + gbackend_name + ' enabled: ' + all_dep_found.to_string())
   if all_dep_found
 
     if gbackend_name == 'gl' and vaapi_enabled
       lib_src += files('backends/gl/hwupload_vaapi_gl.c')
     endif
 
-    if 'src' in gbackend_cfg
-      lib_src += gbackend_cfg.get('src')
-    endif
-    if 'src' in host_backend_cfg
-      lib_src += host_backend_cfg.get('src')
-    endif
+    lib_src += gbackend_cfg.get('src')
+    lib_src += host_backend_cfg.get('src')
     lib_deps += gbackend_deps
-    if 'cfg' in gbackend_cfg
-      conf_data.set10(gbackend_cfg.get('cfg'), true)
-    endif
-    if 'cfg' in host_backend_cfg
-      conf_data.set10(host_backend_cfg.get('cfg'), true)
-    endif
+    conf_data.set10(gbackend_cfg.get('cfg'), true)
+    conf_data.set10(host_backend_cfg.get('cfg'), true)
   endif
 endforeach
 
@@ -395,7 +403,7 @@ configure_file(output: 'config.h', configuration: conf_data)
 
 # See https://github.com/mesonbuild/meson/pull/4747 to follow advancement on
 # the native support for symbol visibility
-lib_link_args = cc.get_supported_link_arguments([
+lib_link_args += cc.get_supported_link_arguments([
   '-Wl,--version-script,@0@'.format(meson.current_source_dir() / 'libnodegl.symexport'),  # GNU ld
   '-Wl,-exported_symbols_list,@0@'.format(meson.current_source_dir() / 'libnodegl.darwin.symexport'),  # Darwin
 ])
@@ -407,7 +415,9 @@ libnodegl = library(
   install: true,
   install_rpath: install_rpath,
   version: meson.project_version(),
+  c_args: '-DBUILD_NODEGL',
   link_args: lib_link_args,
+  include_directories: lib_include_dirs,
 )
 lib_header = configure_file(
   input: files('nodegl.h.in'),
