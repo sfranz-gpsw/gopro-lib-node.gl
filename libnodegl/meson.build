@@ -21,8 +21,8 @@
 
 project(
   'libnodegl',
-  'c',
-   default_options: ['c_std=c99'],
+  [ 'c', 'cpp' ],
+   default_options: ['c_std=c99', 'b_lundef=false'],
    license: 'Apache',
    meson_version: '>= 0.54.0',
    version: '0.0.0',
@@ -37,6 +37,12 @@ conf_data.set('version_micro', version_array[2])
 host_system = host_machine.system()
 cpu_family = host_machine.cpu_family()
 cc = meson.get_compiler('c')
+
+if cc.get_id() == 'msvc'
+  add_global_arguments('/std:c++latest', language: 'cpp')
+else
+  add_global_arguments('-std=gnu++2a', language: 'cpp')
+endif
 
 # meson currently (0.56.0) doesn't distinguish between macOS and iOS (the
 # "darwin" identifier is shared), so we need to test explicitely.
@@ -66,18 +72,6 @@ conf_data.set10('DEBUG_SCENE', 'scene' in debug_opts)
 if host_system == 'windows'
   if cc.get_id() == 'msvc'
     conf_data.set10('TARGET_MSVC', true)
-    msvc_args = [
-      # Ignore several spurious warnings
-      '/wd4018', # comparaison between signed and unsigned numbers
-      '/wd4146', # unary minus operator applied to unsigned type when its result is still unsigned (INT_MIN)
-      '/wd4244', # conversion from 'type1' to 'type2', resulting in a possible loss of data
-      '/wd4305', # value is converted to a smaller type in an initialization, resulting in a loss of information.
-      # Enable some warnings to match GCC/Clang
-      '/w14062', # enumerator 'identifier' in switch of enum 'enumeration' is not handled
-      '/w14101', # 'identifier' : unreferenced local variable
-      '/w14189', # 'identifier' : local variable is initialized but not referenced
-    ]
-    add_project_arguments(msvc_args, language: 'c')
   else
     conf_data.set10('TARGET_MINGW_W64', true)
   endif
@@ -172,6 +166,7 @@ lib_src = files(
   'pgcache.c',
   'pgcraft.c',
   'pipeline.c',
+  'pipeline_util.c',
   'precision.c',
   'program.c',
   'rendertarget.c',
@@ -217,6 +212,10 @@ lib_deps = [
   dependency('libsxplayer', version: '>= 9.7.0'),
   dependency('threads'),
 ]
+
+lib_c_args = []
+lib_include_dirs = []
+lib_link_args = []
 
 host_cfg = hosts_cfg.get(host_system, {})
 foreach dep : host_cfg.get('deps', [])
@@ -334,6 +333,7 @@ gbackends_cfg = {
     'hosts_cfg': {
       'linux': {
         'deps': ['shaderc', 'vulkan'],
+        'libs': ['dl'],
       },
       'darwin': {
         'src': files('backends/vk/hwupload_videotoolbox_darwin_vk.m'),
@@ -351,14 +351,187 @@ gbackends_cfg = {
         'frameworks': ['Metal'],
       },
       'windows': {
+        'libs': ['vulkan-1'],
         'deps': ['shaderc'],
+      },
+    },
+  },
+  'ngfx': {
+    'src': files(
+      'backends/ngfx/buffer_ngfx.cpp',
+      'backends/ngfx/format_ngfx.cpp',
+      'backends/ngfx/gctx_ngfx.cpp',
+      'backends/ngfx/surface_util_ngfx.cpp',
+      'backends/ngfx/pipeline_ngfx.cpp',
+      'backends/ngfx/program_ngfx.cpp',
+      'backends/ngfx/rendertarget_ngfx.cpp',
+      'backends/ngfx/swapchain_ngfx.cpp',
+      'backends/ngfx/texture_ngfx.cpp',
+      'backends/ngfx/topology_ngfx.cpp',
+      'backends/ngfx/util_ngfx.cpp',
+    ),
+    'cfg': 'BACKEND_NGFX',
+    'hosts_cfg': {
+      'windows': {
       },
     },
   },
 }
 
+ngfx_cflags = []
+
+ngfx_graphics_backend = get_option('ngfx_graphics_backend')
+if ngfx_graphics_backend == 'NGFX_GRAPHICS_BACKEND_DIRECT3D12' and host_system == 'windows'
+  ngfx_cflags += '-DNGFX_GRAPHICS_BACKEND_DIRECT3D12'
+elif ngfx_graphics_backend == 'NGFX_GRAPHICS_BACKEND_VULKAN'
+  ngfx_cflags += '-DNGFX_GRAPHICS_BACKEND_VULKAN'
+elif ngfx_graphics_backend == 'NGFX_GRAPHICS_BACKEND_METAL' and host_system == 'darwin'
+  ngfx_cflags += '-DNGFX_GRAPHICS_BACKEND_METAL'
+else
+  error('invalid value for ngfx_graphics_backend: @0@'.format(ngfx_graphics_backend))
+endif
+
+ngfx_window_backend = get_option('ngfx_window_backend')
+if ngfx_window_backend == 'NGFX_WINDOW_BACKEND_WINDOWS' and host_system == 'windows'
+  ngfx_cflags += '-DNGFX_WINDOW_BACKEND_WINDOWS'
+elif ngfx_window_backend == 'NGFX_WINDOW_BACKEND_GLFW'
+  ngfx_cflags += '-DNGFX_WINDOW_BACKEND_GLFW'
+elif ngfx_window_backend == 'NGFX_WINDOW_BACKEND_APPKIT' and host_system == 'darwin'
+  ngfx_cflags += '-DNGFX_WINDOW_BACKEND_APPKIT'
+else
+  error('invalid value for ngfx_window_backend: @0@'.format(ngfx_window_backend))
+endif
+
+ngfx_deps = []
+
+json_dep = declare_dependency(
+  include_directories: [ '../external/json/include' ],
+)
+ngfx_deps += json_dep
+
+if host_system == 'windows'
+  spirv_cross_link_args = [
+    '-L' + meson.current_source_dir() + '\\..\\external\\win64\\spirv_cross_x64-windows\\lib',
+    '-lspirv-cross-cpp', '-lspirv-cross-core', '-lspirv-cross-glsl', '-lspirv-cross-hlsl', '-lspirv-cross-msl', '-lspirv-cross-reflect', '-lspirv-cross-util', '-lspirv-cross-c'
+  ]
+
+  glm_dep = declare_dependency(
+    include_directories: [ '../external/win64/glm-0.9.9.8/glm' ]
+  )
+  ngfx_deps += glm_dep
+
+  ngfx_includes = [ '../external/win64/ngfx_x64-windows/include' ]
+  if ngfx_graphics_backend == 'NGFX_GRAPHICS_BACKEND_DIRECT3D12'
+    ngfx_includes += '../external/win64/d3dx12'
+  endif
+  ngfx_dep = declare_dependency(
+    compile_args: ngfx_cflags,
+    include_directories: ngfx_includes,
+    link_args: [
+      '-L' + meson.current_source_dir() + '\\..\\external\\win64\\ngfx_x64-windows\\lib', '-lngfx',
+      '-ld3d12', '-ldxgi', '-ld3dcompiler'
+    ] + spirv_cross_link_args,
+  )
+  ngfx_deps += ngfx_dep
+
+  shader_tools_dep = declare_dependency(
+    include_directories: [ '../shader-tools/src' ],
+    link_args: [ '-L' + meson.current_source_dir() + '\\..\\external\\win64\\shader_tools_x64-windows\\lib', '-lshader_tools' ],
+  )
+  ngfx_deps += shader_tools_dep
+elif host_system == 'linux'
+  spirv_cross_link_args = [
+    '-lspirv-cross-cpp', '-lspirv-cross-core', '-lspirv-cross-glsl', '-lspirv-cross-hlsl', '-lspirv-cross-msl', '-lspirv-cross-reflect', '-lspirv-cross-util', '-lspirv-cross-c'
+  ]
+
+  ngfx_dep = declare_dependency(
+    compile_args: ngfx_cflags,
+    include_directories: [ '../external/linux/ngfx_x64-linux/include' ],
+    link_args: [
+      '-L' + meson.current_source_dir() + '/../external/linux/ngfx_x64-linux/lib', '-lngfx',
+    ] + spirv_cross_link_args,
+  )
+  ngfx_deps += ngfx_dep
+
+  shader_tools_dep = declare_dependency(
+    include_directories: [ '../shader-tools/src' ],
+    link_args: [ '-L' + meson.current_source_dir() + '/../external/linux/shader_tools_x64-linux/lib', '-lshader_tools' ],
+  )
+  ngfx_deps += shader_tools_dep
+elif host_system == 'darwin'
+  spirv_cross_link_args = [
+    '-lspirv-cross-cpp', '-lspirv-cross-core', '-lspirv-cross-glsl', '-lspirv-cross-hlsl', '-lspirv-cross-msl', '-lspirv-cross-reflect', '-lspirv-cross-util', '-lspirv-cross-c'
+  ]
+
+  ngfx_dep = declare_dependency(
+    compile_args: ngfx_cflags,
+    include_directories: [ '../external/darwin/ngfx_x64-darwin/include' ],
+    link_args: [
+      '-L' + meson.current_source_dir() + '/../external/darwin/ngfx_x64-darwin/lib', '-lngfx',
+    ] + spirv_cross_link_args,
+  )
+  ngfx_deps += ngfx_dep
+
+  shader_tools_dep = declare_dependency(
+    include_directories: [ '../shader-tools/src' ],
+    link_args: [ '-L' + meson.current_source_dir() + '/../external/darwin/shader_tools_x64-darwin/lib', '-lshader_tools' ],
+  )
+  ngfx_deps += shader_tools_dep
+endif
+
 if host_system in ['darwin', 'iphone']
   add_languages('objc')
+endif
+
+cc_lib_dirs = [ get_option('prefix') / get_option('libdir') ]
+
+if host_system == 'windows' and cc.get_id() == 'msvc'
+  external_dir = get_option('external_dir')
+  windows_sdk_dir = get_option('windows_sdk_dir')
+  vulkan_sdk_dir = get_option('vulkan_sdk_dir')
+
+  windows_sdk_library_directories = [ windows_sdk_dir + '\\lib\\10.0.18362.0\\um\\x64' ]
+
+  vulkan_sdk_library_directories = [ vulkan_sdk_dir + '\\Lib']
+
+  cc_lib_dirs += windows_sdk_library_directories
+  lib_include_dirs += include_directories(external_dir + '\\win64\\gl\\include')
+
+  lib_include_dirs += include_directories(vulkan_sdk_dir + '\\Include')
+  cc_lib_dirs += vulkan_sdk_library_directories
+
+endif
+
+#GPU Capture Options
+if host_system == 'windows' or host_system == 'linux'
+  enable_renderdoc_capture = true
+  enable_metal_capture = false
+  message('enable renderdoc capture: '+enable_renderdoc_capture.to_string())
+
+elif host_system == 'darwin'
+  enable_renderdoc_capture = false
+  # TODO: port mtl_capture.mm to objective-c (not objective-c++)
+  # Meson doesn't seem to support objective c++
+  # ERROR: No host machine compiler for "tools/capture/mtl_capture.mm"
+  enable_metal_capture = false
+  message('enable metal capture: '+enable_metal_capture.to_string())
+endif
+
+if enable_renderdoc_capture
+  lib_src += 'tools/capture/renderdoc_capture.c'
+  conf_data.set10('ENABLE_CAPTURE', true)
+  if host_system == 'windows'
+    renderdoc_dep = declare_dependency(
+      include_directories: [ '..\\external\\win64\\RenderDoc_1.11_64' ]
+    )
+  else
+    renderdoc_dep = declare_dependency(
+    )
+  endif
+  lib_deps += renderdoc_dep
+elif enable_metal_capture
+  lib_src += 'tools/capture/mtl_capture.mm'
+  conf_data.set10('ENABLE_CAPTURE', true)
 endif
 
 foreach gbackend_name, gbackend_cfg : gbackends_cfg
@@ -370,13 +543,15 @@ foreach gbackend_name, gbackend_cfg : gbackends_cfg
     gbackend_deps += dependency(dep, required: opt_gbackend)
   endforeach
   foreach dep : host_backend_cfg.get('libs', [])
-    # XXX: dirs is a hack for MoltenVK; it will break for libraries that are
-    # outside the destination prefix
-    gbackend_deps += cc.find_library(dep, required: opt_gbackend, dirs: get_option('prefix') / get_option('libdir'))
+    gbackend_deps += cc.find_library(dep, required: opt_gbackend, dirs: cc_lib_dirs)
   endforeach
   if 'frameworks' in host_backend_cfg
     gbackend_deps += dependency('appleframeworks', modules: host_backend_cfg.get('frameworks'), required: opt_gbackend)
   endif
+
+   if gbackend_name == 'ngfx'
+      gbackend_deps += ngfx_deps
+    endif
 
   all_dep_found = true
   foreach dep : gbackend_deps
@@ -388,18 +563,14 @@ foreach gbackend_name, gbackend_cfg : gbackends_cfg
     if gbackend_name == 'gl' and vaapi_enabled
       lib_src += files('backends/gl/hwupload_vaapi_gl.c')
     endif
-
-    if 'src' in gbackend_cfg
-      lib_src += gbackend_cfg.get('src')
-    endif
-    if 'src' in host_backend_cfg
+    
+    lib_src += gbackend_cfg.get('src')
+    if host_backend_cfg.get('src', []) != []
       lib_src += host_backend_cfg.get('src')
     endif
     lib_deps += gbackend_deps
-    if 'cfg' in gbackend_cfg
-      conf_data.set10(gbackend_cfg.get('cfg'), true)
-    endif
-    if 'cfg' in host_backend_cfg
+    conf_data.set10(gbackend_cfg.get('cfg'), true)
+    if host_backend_cfg.get('cfg', []) != []
       conf_data.set10(host_backend_cfg.get('cfg'), true)
     endif
   endif
@@ -412,7 +583,8 @@ endforeach
 
 configure_file(output: 'config.h', configuration: conf_data)
 
-lib_c_args = []
+
+
 if get_option('default_library') == 'shared'
   lib_c_args += '-DBUILD_NODEGL_SHARED_LIB'
 endif
@@ -426,6 +598,8 @@ libnodegl = library(
   version: meson.project_version(),
   c_args: lib_c_args,
   gnu_symbol_visibility: 'hidden',
+  link_args: lib_link_args,
+  include_directories: lib_include_dirs,
 )
 lib_header = configure_file(
   input: files('nodegl.h.in'),
