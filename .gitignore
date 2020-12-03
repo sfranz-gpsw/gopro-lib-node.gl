@@ -1,5 +1,7 @@
-builddir
+/builddir
 nodegl-env/
 MoltenVK*
 shaderc*
-sxplayer*
+/sxplayer*
+/external/win64
+external/token.cfg
