@@ -1,7 +1,7 @@
 Common subdirectories: sxplayer-9.6.0/.github and ../new/sxplayer-9.6.0/.github
 diff -u sxplayer-9.6.0/meson.build ../new/sxplayer-9.6.0/meson.build
 --- sxplayer-9.6.0/meson.build	2020-11-07 01:31:58.000000000 -0800
-+++ ../new/sxplayer-9.6.0/meson.build	2020-12-01 23:23:52.896038900 -0800
++++ ../new/sxplayer-9.6.0/meson.build	2020-12-03 13:46:41.202305000 -0800
 @@ -58,6 +58,10 @@
    dependency('libavutil', version: '>= 56.14.100'),
  ]
@@ -17,24 +17,24 @@ diff -u sxplayer-9.6.0/meson.build ../new/sxplayer-9.6.0/meson.build
    install: true,
    install_rpath: install_rpath,
    version: meson.project_version(),
-+  c_args: '-DBUILD_SXPLAYER',
++  c_args: '-DBUILD_SXPLAYER_SHARED_LIB',
    link_args: lib_link_args,
  )
  
 diff -u sxplayer-9.6.0/sxplayer.h.in ../new/sxplayer-9.6.0/sxplayer.h.in
 --- sxplayer-9.6.0/sxplayer.h.in	2020-11-07 01:31:58.000000000 -0800
-+++ ../new/sxplayer-9.6.0/sxplayer.h.in	2020-12-01 23:23:52.901051600 -0800
++++ ../new/sxplayer-9.6.0/sxplayer.h.in	2020-12-03 13:46:41.202305000 -0800
 @@ -34,6 +34,18 @@
                                                    SXPLAYER_VERSION_MINOR, \
                                                    SXPLAYER_VERSION_MICRO)
  
 +#if defined(_WIN32)
-+#  if (defined (BUILD_SXPLAYER))
++#  if (defined (BUILD_SXPLAYER_SHARED_LIB))
 +#    define SXAPI __declspec(dllexport)
-+#  elif (defined(_DLL))
-+#    define SXAPI __declspec(dllimport)
-+#  else
++#  elif (defined(USE_SXPLAYER_STATIC_LIB))
 +#    define SXAPI extern
++#  else //default
++#    define SXAPI __declspec(dllimport)
 +#  endif
 +#else
 +#  define SXAPI __attribute__((visibility("default")))
