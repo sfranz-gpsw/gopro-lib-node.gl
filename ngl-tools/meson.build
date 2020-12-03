@@ -40,6 +40,12 @@ add_project_arguments(
 c_args = []
 
 if cc.get_id() == 'msvc'
+  add_global_arguments('/std:c++latest', language: 'cpp')
+else
+  add_global_arguments('-std=c++2a', language: 'cpp')
+endif
+
+if cc.get_id() == 'msvc'
   c_args += ['-DSDL_MAIN_HANDLED']
   msvc_args = [
       # Ignore several spurious warnings
@@ -60,9 +66,13 @@ endif
 # Main dependencies
 #
 tool_deps = [
-  cc.find_library('m', required: false),
   dependency('libnodegl'),
 ]
+
+if host_system != 'windows'
+  tool_deps += cc.find_library('m', required: false)
+endif
+
 sxplayer_dep = dependency('libsxplayer')  # for media probing
 threads_dep = dependency('threads', required: false)
 
@@ -105,33 +115,41 @@ endif
 tools_specs = {
   'ngl-desktop': {
     'src': files('ngl-desktop.c', 'ipc.c', 'player.c', 'opts.c') + wsi_src,
-    'deps': net_deps + wsi_deps + [threads_dep],
+    'deps': tool_deps + net_deps + wsi_deps + [threads_dep],
   },
   'ngl-ipc': {
     'src': files('ngl-ipc.c', 'ipc.c', 'opts.c'),
-    'deps': net_deps,
+    'deps': tool_deps + net_deps,
   },
   'ngl-player': {
     'src': files('ngl-player.c', 'player.c', 'opts.c') + wsi_src,
-    'deps': wsi_deps + [sxplayer_dep],
+    'deps': tool_deps + wsi_deps + [sxplayer_dep],
   },
   'ngl-probe': {
     'src': files('ngl-probe.c', 'opts.c'),
-    'deps': [],
+    'deps': tool_deps,
   },
   'ngl-python': {
     'src': files('ngl-python.c', 'player.c', 'python_utils.c', 'opts.c') + wsi_src,
-    'deps': wsi_deps + [python_dep],
+    'deps': tool_deps + wsi_deps + [python_dep],
   },
   'ngl-render': {
     'src': files('ngl-render.c', 'opts.c') + wsi_src,
-    'deps': wsi_deps,
+    'deps': tool_deps + wsi_deps,
   },
   'ngl-serialize': {
     'src': files('ngl-serialize.c', 'python_utils.c'),
-    'deps': [python_dep],
+    'deps': tool_deps + [python_dep],
   },
 }
+
+if host_system == 'windows'
+  #Python -m venv on windows creates a Scripts folder instead of a bin folder
+  #TODO: add a bin folder and add it to path in activate script
+  tool_install_dir = 'Scripts'
+else
+  tool_install_dir = 'bin'
+endif
 
 foreach tool_name, tool_info : tools_specs
   all_dep_found = true
@@ -143,8 +161,9 @@ foreach tool_name, tool_info : tools_specs
     exe = executable(
       tool_name,
       tool_info.get('src') + files('common.c'),
-      dependencies: tool_deps + tool_info.get('deps'),
+      dependencies: tool_info.get('deps'),
       install: true,
+      install_dir: tool_install_dir,
       install_rpath: get_option('rpath') ? get_option('prefix') / 'lib' : '',
       c_args: c_args,
     )
