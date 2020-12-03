@@ -239,11 +239,19 @@ sxplayer-$(SXPLAYER_VERSION).tar.gz:
 
 shaderc-install: SHADERC_LIB_FILENAME = libshaderc_shared.1.dylib
 shaderc-install: shaderc-$(SHADERC_VERSION) $(PREFIX)
+ifeq ($(TARGET_OS),Windows)
+	(cd $< && ./utils/git-sync-deps)
+	(\
+		cd $< && cmake.exe -B build -j8 -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PREFIX) . && \
+		cmake.exe --build build --target install \
+	)
+else
 	(cd $< && ./utils/git-sync-deps)
 	cmake -B $</build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PREFIX) $<
 	ninja -C $</build install
 	# XXX: mac only, test on linux without this; also maybe a cmake option
 	install_name_tool -id @rpath/$(SHADERC_LIB_FILENAME) $(PREFIX)/lib/$(SHADERC_LIB_FILENAME)
+endif
 
 shaderc-$(SHADERC_VERSION): shaderc-$(SHADERC_VERSION).tar.gz
 	$(TAR) xf $<
