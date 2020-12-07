@@ -1,3 +1,5 @@
-builddir
+/builddir
 nodegl-env/
-sxplayer*
+/sxplayer*
+/external/win64
+external/token.cfg
