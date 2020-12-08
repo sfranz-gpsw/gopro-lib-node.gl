@@ -64,9 +64,9 @@ struct ctx {
 
     struct ipc_pkt *send_pkt;
     struct ipc_pkt *recv_pkt;
-    int upload_fd;
+    FILE *upload_fp;
     uint8_t *upload_buffer;
-    struct stat upload_stat;
+    long upload_size;
     off_t uploaded_size; // same type as stat.st_size
 };
 
@@ -114,14 +114,25 @@ static int craft_packet(struct ctx *s, struct ipc_pkt *pkt)
         const size_t name_size = name_len + 1;
 
         const char *filename = s->uploadfile + name_size;
-        s->upload_fd = open(filename, O_RDONLY | O_BINARY);
-        if (s->upload_fd == -1) {
-            perror("open");
+        s->upload_fp = fopen(filename, "r");
+        if (!s->upload_fp) {
+            perror("fopen");
             return NGL_ERROR_IO;
         }
 
-        if (fstat(s->upload_fd, &s->upload_stat) < 0) {
-            perror("stat");
+        if (fseek(s->upload_fp, 0, SEEK_END) < 0) {
+            perror("fseek");
+            return NGL_ERROR_IO;
+        }
+
+        s->upload_size = ftell(s->upload_fp);
+        if (s->upload_size < 0) {
+            perror("ftell");
+            return NGL_ERROR_IO;
+        }
+
+        if (fseek(s->upload_fp, 0, SEEK_SET) < 0) {
+            perror("fseek");
             return NGL_ERROR_IO;
         }
 
@@ -181,9 +192,9 @@ static int craft_packet(struct ctx *s, struct ipc_pkt *pkt)
 
 static void close_upload_file(struct ctx *s)
 {
-    if (s->upload_fd > 0)
-        close(s->upload_fd);
-    s->upload_fd = 0;
+    if (s->upload_fp)
+        fclose(s->upload_fp);
+    s->upload_fp = NULL;
     free(s->upload_buffer);
     s->upload_buffer = NULL;
 }
@@ -203,7 +214,7 @@ static int handle_filepart(struct ctx *s, const uint8_t *data, int size)
         return NGL_ERROR_INVALID_DATA;
     const int written = IPC_U32_READ(data);
     s->uploaded_size += written;
-    fprintf(stderr, "\ruploading %s... %d%%", s->uploadfile, (int)(s->uploaded_size * 100LL / s->upload_stat.st_size));
+    fprintf(stderr, "\ruploading %s... %d%%", s->uploadfile, (int)(s->uploaded_size * 100LL / s->upload_size));
     return 0;
 }
 
@@ -252,11 +263,11 @@ static int handle_response(struct ctx *s, const struct ipc_pkt *pkt)
         data_size -= size;
     }
 
-    if (s->upload_fd > 0) {
+    if (s->upload_fp) {
         ipc_pkt_reset(s->send_pkt);
 
-        const ssize_t n = read(s->upload_fd, s->upload_buffer, UPLOAD_CHUNK_SIZE);
-        if (n < 0)
+        const size_t n = fread(s->upload_buffer, 1, UPLOAD_CHUNK_SIZE, s->upload_fp);
+        if (ferror(s->upload_fp))
             return NGL_ERROR_IO;
         int ret = ipc_pkt_add_qtag_filepart(s->send_pkt, s->upload_buffer, n);
         if (ret < 0)
@@ -351,7 +362,7 @@ int main(int argc, char *argv[])
         if (ret < 0)
             goto end;
 
-    } while (s.upload_fd > 0);
+    } while (s.upload_fp);
 
 end:
     if (addr_info)
