@@ -46,13 +46,12 @@
 #include <sys/socket.h>
 #include <sys/utsname.h>
 #include <netdb.h>
+#include <unistd.h>
 #endif
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
-
 #include <nodegl.h>
 
 #include "common.h"
@@ -192,7 +191,7 @@ static int handle_tag_file(struct ctx *s, const uint8_t *data, int size)
     if (ret < 0 || ret >= sizeof(s->upload_path))
         return NGL_ERROR_MEMORY;
 
-    s->upload_fp = fopen(s->upload_path, "w");
+    s->upload_fp = fopen(s->upload_path, "wb");
     if (!s->upload_fp) {
         perror(s->upload_path);
         return NGL_ERROR_IO;

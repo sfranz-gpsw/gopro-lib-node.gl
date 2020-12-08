@@ -28,23 +28,20 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <Handleapi.h>
+#include <Fileapi.h>
 #else
 #include <sys/socket.h>
 #include <netdb.h>
-#endif
 #include <unistd.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+#endif
 
 #include <nodegl.h>
 
 #include "common.h"
 #include "ipc.h"
 #include "opts.h"
-
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
 
 #define UPLOAD_CHUNK_SIZE (1024 * 1024)
 
@@ -66,8 +63,8 @@ struct ctx {
     struct ipc_pkt *recv_pkt;
     FILE *upload_fp;
     uint8_t *upload_buffer;
-    long upload_size;
-    off_t uploaded_size; // same type as stat.st_size
+    int64_t upload_size;
+    int64_t uploaded_size;
 };
 
 #define OFFSET(x) offsetof(struct ctx, x)
@@ -84,6 +81,32 @@ static const struct opt options[] = {
     {"-m", "--samples",       OPT_TYPE_INT,      .offset=OFFSET(samples)},
     {"-g", "--reconfigure",   OPT_TYPE_TOGGLE,   .offset=OFFSET(reconfigure)},
 };
+
+static int get_filesize(const char *filename, int64_t *size)
+{
+#ifdef _WIN32
+    HANDLE file_handle = CreateFile(TEXT(filename), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (file_handle == INVALID_HANDLE_VALUE)
+        return NGL_ERROR_IO;
+
+    LARGE_INTEGER file_size;
+    if (!GetFileSizeEx(file_handle, &file_size)) {
+        CloseHandle(file_handle);
+        return NGL_ERROR_IO;
+    }
+    *size = file_size.QuadPart;
+    CloseHandle(file_handle);
+#else
+    struct stat st;
+    int ret = stat(filename, &st);
+    if (ret == -1) {
+        perror(filename);
+        return NGL_ERROR_IO;
+    }
+    *size = st.st_size;
+#endif
+    return 0;
+}
 
 static int craft_packet(struct ctx *s, struct ipc_pkt *pkt)
 {
@@ -114,25 +137,13 @@ static int craft_packet(struct ctx *s, struct ipc_pkt *pkt)
         const size_t name_size = name_len + 1;
 
         const char *filename = s->uploadfile + name_size;
-        s->upload_fp = fopen(filename, "r");
+        int ret = get_filesize(filename, &s->upload_size);
+        if (ret < 0)
+            return ret;
+
+        s->upload_fp = fopen(filename, "rb");
         if (!s->upload_fp) {
             perror("fopen");
-            return NGL_ERROR_IO;
-        }
-
-        if (fseek(s->upload_fp, 0, SEEK_END) < 0) {
-            perror("fseek");
-            return NGL_ERROR_IO;
-        }
-
-        s->upload_size = ftell(s->upload_fp);
-        if (s->upload_size < 0) {
-            perror("ftell");
-            return NGL_ERROR_IO;
-        }
-
-        if (fseek(s->upload_fp, 0, SEEK_SET) < 0) {
-            perror("fseek");
             return NGL_ERROR_IO;
         }
 
@@ -140,7 +151,7 @@ static int craft_packet(struct ctx *s, struct ipc_pkt *pkt)
         if (!s->upload_buffer)
             return NGL_ERROR_MEMORY;
 
-        int ret = ipc_pkt_add_qtag_file(pkt, name);
+        ret = ipc_pkt_add_qtag_file(pkt, name);
         if (ret < 0)
             return ret;
     }

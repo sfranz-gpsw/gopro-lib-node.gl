@@ -22,10 +22,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #ifdef _WIN32
 #include <winsock2.h>
 #else
+#include <unistd.h>
 #include <sys/socket.h>
 #endif
 
@@ -176,24 +176,24 @@ void ipc_pkt_freep(struct ipc_pkt **pktp)
 
 int ipc_send(int fd, const struct ipc_pkt *pkt)
 {
-    const ssize_t n = send(fd, pkt->data, pkt->size, 0);
+    const int n = send(fd, pkt->data, pkt->size, 0);
     if (n < 0) {
         perror("send");
         return NGL_ERROR_IO;
     }
     // XXX: should we loop instead?
     if (n != pkt->size) {
-        fprintf(stderr, "unable write packet (%zd/%d sent)\n", n, pkt->size);
+        fprintf(stderr, "unable write packet (%d/%d sent)\n", n, pkt->size);
         return NGL_ERROR_IO;
     }
     return 0;
 }
 
-static int readbuf(int fd, uint8_t *buf, ssize_t size)
+static int readbuf(int fd, uint8_t *buf, int size)
 {
-    ssize_t nr = 0;
+    int nr = 0;
     while (nr != size) {
-        const ssize_t n = recv(fd, buf + nr, size - nr, 0);
+        const int n = recv(fd, buf + nr, size - nr, 0);
         if (n == 0)
             return 0;
         if (n < 0) {
