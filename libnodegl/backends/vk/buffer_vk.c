@@ -108,7 +108,7 @@ int ngli_buffer_vk_download(struct buffer* s, void* data, uint32_t size, uint32_
     int ret = ngli_buffer_map(s, size, offset, &src);
         if (ret < 0)
             return ret;
-    memcpy(data, src + offset, size);
+    memcpy(data, (uint32_t*)src + offset, size);
     ngli_buffer_unmap(s);
     return 0;
 }
