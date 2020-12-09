@@ -595,7 +595,6 @@ static int vk_init(struct gctx *s)
     }
 
     shaderc_compile_options_set_target_env(s_priv->spirv_compiler_opts, shaderc_target_env_vulkan, env_version);
-    shaderc_compile_options_set_invert_y(s_priv->spirv_compiler_opts, 1);
     shaderc_compile_options_set_optimization_level(s_priv->spirv_compiler_opts, shaderc_optimization_level_performance);
 
     VkCommandPoolCreateInfo command_pool_create_info = {
