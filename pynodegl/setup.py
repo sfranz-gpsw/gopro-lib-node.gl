@@ -22,13 +22,13 @@
 
 from setuptools import setup, Command, Extension
 from setuptools.command.build_ext import build_ext
-
+import os
 
 class LibNodeGLConfig:
 
     PKG_LIB_NAME = 'libnodegl'
-
-    def __init__(self, pkg_config_bin='pkg-config'):
+    pkg_config_env = os.getenv('PKG_CONFIG')
+    def __init__(self, pkg_config_bin= pkg_config_env if pkg_config_env else 'pkg-config'):
         import subprocess
 
         if subprocess.call([pkg_config_bin, '--exists', self.PKG_LIB_NAME]) != 0:
@@ -36,13 +36,18 @@ class LibNodeGLConfig:
 
         self.version       = subprocess.check_output([pkg_config_bin, '--modversion', self.PKG_LIB_NAME]).strip().decode()
         self.data_root_dir = subprocess.check_output([pkg_config_bin, '--variable=datarootdir', self.PKG_LIB_NAME]).strip().decode()
-        pkgcfg_libs_cflags = subprocess.check_output([pkg_config_bin, '--libs', '--cflags', self.PKG_LIB_NAME]).decode()
-
-        flags = pkgcfg_libs_cflags.split()
-        self.include_dirs = [f[2:] for f in flags if f.startswith('-I')]
-        self.library_dirs = [f[2:] for f in flags if f.startswith('-L')]
-        self.libraries    = [f[2:] for f in flags if f.startswith('-l')]
-
+        pkgcfg_cflags      = subprocess.check_output([pkg_config_bin, '--cflags', self.PKG_LIB_NAME]).decode()
+        pkgcfg_libs        = subprocess.check_output([pkg_config_bin, '--libs', self.PKG_LIB_NAME]).decode()
+        cflags = pkgcfg_cflags.split()
+        ldflags = pkgcfg_libs.split()
+        self.include_dirs = [f[2:] for f in cflags if f.startswith('-I')]
+        self.library_dirs = [f[2:] for f in ldflags if f.startswith('-L')]
+        self.libraries = []
+        for f in ldflags:
+            if f.startswith('-l'):
+                self.libraries.append(f[2:])
+            elif f.endswith('.lib'):
+                self.libraries.append(f[:-4])
 
 _LIB_CFG = LibNodeGLConfig()
 
