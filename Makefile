@@ -60,6 +60,11 @@ SHADERC_VERSION  ?= 2020.3
 ifeq ($(TARGET_OS), Windows)
 #TODO: identify correct path
 VCVARS64 = "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
+EXTERNAL_DIR = $(shell wslpath -w external)
+WINDOWS_SDK_DIR = C:\\Program Files (x86)\\Windows Kits\\10
+VULKAN_SDK_DIR = $(shell wslpath -w /mnt/c/VulkanSDK/*)
+NODEGL_SETUP_OPTS = -Dvulkan_sdk_dir='$(VULKAN_SDK_DIR)'
+
 ACTIVATE = $(VCVARS64) \&\& $(PREFIX)\\Scripts\\activate.bat
 else
 ACTIVATE = $(PREFIX)/bin/activate
@@ -150,10 +155,14 @@ endif
 # available on PyPi.
 #
 # We do not pull the requirements on Windows because of various issues:
-# - PySide2 can't be pulled
+# - PySide2 can't be pulled (required to be installed by the user outside the
+#   Python virtualenv)
 # - Pillow fails to find zlib (required to be installed by the user outside the
 #   Python virtualenv)
-# - ngl-control can not currently work because of temporary files handling
+# - ngl-control can not currently work because of:
+#     - temporary files handling
+#     - subprocess usage, passing fd is not supported on Windows
+#     - subprocess usage, Windows cannot execute directly hooks shell scripts
 #
 # Still, we want the module to be installed so we can access the scene()
 # decorator and other related utils.
@@ -172,10 +181,12 @@ ifeq ($(TARGET_OS),Windows)
 	(cp external/win64/ffmpeg_x64-windows/bin/*.exe $(PREFIX)/Scripts/.)
 	(cp external/win64/ffmpeg_x64-windows/bin/*.dll pynodegl/.)
 	(cp external/win64/pthreads_x64-windows/dll/x64/*.dll pynodegl/.)
+	(cp external/win64/shaderc_x64-windows/bin/*.dll pynodegl/.)
 	(cp builddir/sxplayer/*.dll pynodegl/.)
 	(cp builddir/libnodegl/*.dll pynodegl/.)
 	(cp external/win64/ffmpeg_x64-windows/bin/*.dll $(PREFIX)/Scripts/.)
 	(cp external/win64/pthreads_x64-windows/dll/x64/*.dll $(PREFIX)/Scripts/.)
+	(cp external/win64/shaderc_x64-windows/bin/*.dll $(PREFIX)/Scripts/.)
 	(cp builddir/sxplayer/*.dll $(PREFIX)/Scripts/.)
 	(cp builddir/libnodegl/*.dll $(PREFIX)/Scripts/.)
 else
@@ -200,7 +211,7 @@ endif
 
 nodegl-setup: sxplayer-install
 ifeq ($(TARGET_OS),Windows)
-	(cmd.exe /C $(ACTIVATE) \&\& $(MESON_SETUP) $(NODEGL_DEBUG_OPTS) --default-library shared libnodegl builddir\\libnodegl)
+	(cmd.exe /C $(ACTIVATE) \&\& $(MESON_SETUP) $(NODEGL_SETUP_OPTS) $(NODEGL_DEBUG_OPTS) --default-library shared libnodegl builddir\\libnodegl)
 else
 	(. $(ACTIVATE) && $(MESON_SETUP) $(NODEGL_DEBUG_OPTS) libnodegl builddir/libnodegl)
 endif
@@ -240,11 +251,7 @@ sxplayer-$(SXPLAYER_VERSION).tar.gz:
 shaderc-install: SHADERC_LIB_FILENAME = libshaderc_shared.1.dylib
 shaderc-install: shaderc-$(SHADERC_VERSION) $(PREFIX)
 ifeq ($(TARGET_OS),Windows)
-	(cd $< && ./utils/git-sync-deps)
-	(\
-		cd $< && cmake.exe -B build -j8 -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PREFIX) . && \
-		cmake.exe --build build --target install \
-	)
+	echo "prebuilt shaderc is automatically downloaded as a configuration step"
 else
 	(cd $< && ./utils/git-sync-deps)
 	cmake -B $</build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PREFIX) $<
@@ -290,6 +297,8 @@ ifeq ($(TARGET_OS),Windows)
 	(cmd.exe /C mkdir $(PREFIX)\\Lib\\pkgconfig)
 	(cmd.exe /C pushd external\\win64\\ffmpeg_x64-windows \&\& python.exe scripts/install.py "$(W_PREFIX)" \& popd)
 	(cmd.exe /C pushd external\\win64\\pthreads_x64-windows \&\& python.exe scripts/install.py "$(W_PREFIX)" \& popd)
+	(cmd.exe /C pushd external\\win64\\sdl2_x64-windows \&\& python.exe scripts/install.py "$(W_PREFIX)" \& popd)
+	(cmd.exe /C pushd external\\win64\\shaderc_x64-windows \&\& python.exe scripts/install.py "$(W_PREFIX)" \& popd)
 	(cmd.exe /C $(ACTIVATE) \&\& pip install meson ninja)
 else ifeq ($(TARGET_OS),MinGW-w64)
 	$(PYTHON) -m venv --system-site-packages $(PREFIX)

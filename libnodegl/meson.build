@@ -355,13 +355,16 @@ endif
 cc_lib_dirs = [ get_option('prefix') / get_option('libdir') ]
 
 if host_system == 'windows' and cc.get_id() == 'msvc'
-
-  #TODO: set correct path
-  windows_sdk_dir = 'C:\\Program Files (x86)\\Windows Kits\\10'
+  external_dir = get_option('external_dir')
+  windows_sdk_dir = get_option('windows_sdk_dir')
+  vulkan_sdk_dir = get_option('vulkan_sdk_dir')
+  
   windows_sdk_library_directories = [ windows_sdk_dir + '\\lib\\10.0.18362.0\\um\\x64' ]
 
   cc_lib_dirs += windows_sdk_library_directories
-  lib_include_dirs += include_directories('..\\external\\win64\\gl\\include')
+  lib_include_dirs += include_directories(external_dir + '\\win64\\gl\\include')
+
+  lib_include_dirs += include_directories(vulkan_sdk_dir + '\\Include')
 
 endif
 
@@ -392,10 +395,14 @@ foreach gbackend_name, gbackend_cfg : gbackends_cfg
     endif
 
     lib_src += gbackend_cfg.get('src')
-    lib_src += host_backend_cfg.get('src')
+    if host_backend_cfg.get('src', []) != []
+      lib_src += host_backend_cfg.get('src')
+    endif
     lib_deps += gbackend_deps
     conf_data.set10(gbackend_cfg.get('cfg'), true)
-    conf_data.set10(host_backend_cfg.get('cfg'), true)
+    if host_backend_cfg.get('cfg', []) != []
+      conf_data.set10(host_backend_cfg.get('cfg'), true)
+    endif
   endif
 endforeach
 
