@@ -1,40 +1,29 @@
 Common subdirectories: sxplayer-9.6.0/.github and ../new/sxplayer-9.6.0/.github
 diff -u sxplayer-9.6.0/meson.build ../new/sxplayer-9.6.0/meson.build
 --- sxplayer-9.6.0/meson.build	2020-11-07 01:31:58.000000000 -0800
-+++ ../new/sxplayer-9.6.0/meson.build	2020-12-03 13:46:41.202305000 -0800
-@@ -58,6 +58,10 @@
-   dependency('libavutil', version: '>= 56.14.100'),
- ]
- 
-+if host_system == 'windows'  and cc.get_id() == 'msvc'
-+  lib_deps += dependency('libpthreads')
-+endif
-+
- vaapi_dep = dependency('libva', version: '>= 1.1.0', required: get_option('vaapi'))
- if vaapi_dep.found()
-   lib_deps += vaapi_dep
-@@ -102,6 +106,7 @@
++++ ../new/sxplayer-9.6.0/meson.build	2020-12-07 14:30:29.573943200 -0800
+@@ -102,6 +102,7 @@
    install: true,
    install_rpath: install_rpath,
    version: meson.project_version(),
-+  c_args: '-DBUILD_SXPLAYER_SHARED_LIB',
++  c_args: '-DBUILD_SXPLAYER',
    link_args: lib_link_args,
  )
  
 diff -u sxplayer-9.6.0/sxplayer.h.in ../new/sxplayer-9.6.0/sxplayer.h.in
 --- sxplayer-9.6.0/sxplayer.h.in	2020-11-07 01:31:58.000000000 -0800
-+++ ../new/sxplayer-9.6.0/sxplayer.h.in	2020-12-03 13:46:41.202305000 -0800
++++ ../new/sxplayer-9.6.0/sxplayer.h.in	2020-12-07 14:30:29.589586400 -0800
 @@ -34,6 +34,18 @@
                                                    SXPLAYER_VERSION_MINOR, \
                                                    SXPLAYER_VERSION_MICRO)
  
 +#if defined(_WIN32)
-+#  if (defined (BUILD_SXPLAYER_SHARED_LIB))
++#  if (defined (BUILD_SXPLAYER))
 +#    define SXAPI __declspec(dllexport)
-+#  elif (defined(USE_SXPLAYER_STATIC_LIB))
-+#    define SXAPI extern
-+#  else //default
++#  elif (defined(_DLL))
 +#    define SXAPI __declspec(dllimport)
++#  else
++#    define SXAPI extern
 +#  endif
 +#else
 +#  define SXAPI __attribute__((visibility("default")))
