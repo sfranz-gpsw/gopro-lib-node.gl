@@ -63,8 +63,12 @@ conf_data.set10('DEBUG_VK', 'vk' in debug_opts)
 conf_data.set10('DEBUG_MEM', 'mem' in debug_opts)
 conf_data.set10('DEBUG_SCENE', 'scene' in debug_opts)
 
-if host_system == 'windows' and cc.get_id() != 'msvc'
-  conf_data.set10('TARGET_MINGW_W64', true)
+if host_system == 'windows'
+  if cc.get_id() == 'msvc'
+    conf_data.set10('TARGET_MSVC', true)
+  else
+    conf_data.set10('TARGET_MINGW_W64', true)
+  endif
 endif
 
 # This trim prefix is used to make __FILE__ starts from the source dir with
@@ -201,13 +205,9 @@ lib_deps = [
   dependency('threads'),
 ]
 
-lib_c_args = ''
+lib_c_args = []
 lib_include_dirs = []
 lib_link_args = []
-
-if get_option('default_library') == 'shared'
-  lib_c_args += '-DBUILD_NODEGL_SHARED_LIB'
-endif
 
 host_cfg = hosts_cfg.get(host_system, {})
 foreach dep : host_cfg.get('deps', [])
@@ -417,12 +417,11 @@ endforeach
 
 configure_file(output: 'config.h', configuration: conf_data)
 
-# See https://github.com/mesonbuild/meson/pull/4747 to follow advancement on
-# the native support for symbol visibility
-lib_link_args += cc.get_supported_link_arguments([
-  '-Wl,--version-script,@0@'.format(meson.current_source_dir() / 'libnodegl.symexport'),  # GNU ld
-  '-Wl,-exported_symbols_list,@0@'.format(meson.current_source_dir() / 'libnodegl.darwin.symexport'),  # Darwin
-])
+
+
+if get_option('default_library') == 'shared'
+  lib_c_args += '-DBUILD_NODEGL_SHARED_LIB'
+endif
 
 libnodegl = library(
   'nodegl',
@@ -432,6 +431,11 @@ libnodegl = library(
   install_rpath: install_rpath,
   version: meson.project_version(),
   c_args: lib_c_args,
+
+
+
+
+  gnu_symbol_visibility: 'hidden',
   link_args: lib_link_args,
   include_directories: lib_include_dirs,
 )
@@ -443,10 +447,17 @@ lib_header = configure_file(
 install_headers(lib_header)
 
 pkg = import('pkgconfig')
+pkg_extra_cflags = []
+if get_option('default_library') == 'static'
+  pkg_extra_cflags += '-DUSE_NODEGL_STATIC_LIB'
+endif
+
 pkg.generate(
   libnodegl,
   name: 'libnodegl',  # not specifying the name would fallback on "nodegl.pc" instead of "libnodegl.pc"
   description: 'Node/Graph based graphic engine',
+
+  extra_cflags:  pkg_extra_cflags,
   variables: ['datarootdir=${prefix}/share'],
 )
 
@@ -488,23 +499,25 @@ run_target(
 # Doc
 #
 
-gen_doc = executable(
-  'gen_doc',
-  lib_src + files('gen_doc.c'),
-  dependencies: lib_deps,
-  build_by_default: false,
-  native: true,
-)
-doc_file = custom_target(
-  'libnodegl.md',
-  command: gen_doc,
-  capture: true,
-  output: 'libnodegl.md',
-)
-run_target(
-  'updatedoc',
-  command: [cp, doc_file, meson.current_source_dir() / 'doc'],
-)
+if not get_option('small')
+  gen_doc = executable(
+    'gen_doc',
+    lib_src + files('gen_doc.c'),
+    dependencies: lib_deps,
+    build_by_default: false,
+    native: true,
+  )
+  doc_file = custom_target(
+    'libnodegl.md',
+    command: gen_doc,
+    capture: true,
+    output: 'libnodegl.md',
+  )
+  run_target(
+    'updatedoc',
+    command: [cp, doc_file, meson.current_source_dir() / 'doc'],
+  )
+endif
 
 
 #

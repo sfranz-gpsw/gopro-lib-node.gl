@@ -62,7 +62,7 @@
 #define NGLI_ALIGNED_VEC(vname) float NGLI_ATTR_ALIGNED vname[4]
 #define NGLI_ALIGNED_MAT(mname) float NGLI_ATTR_ALIGNED mname[4*4]
 
-#ifdef CONFIG_SMALL
+#if CONFIG_SMALL
 #define NGLI_DOCSTRING(s) (NULL)
 #else
 #define NGLI_DOCSTRING(s) (s)
@@ -102,7 +102,6 @@
 
 
 char *ngli_strdup(const char *s);
-int64_t ngli_gettime(void);
 int64_t ngli_gettime_relative(void);
 char *ngli_asprintf(const char *fmt, ...) ngli_printf_format(1, 2);
 uint32_t ngli_crc32(const char *s);
