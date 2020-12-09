@@ -342,6 +342,7 @@ gbackends_cfg = {
         'frameworks': ['Metal'],
       },
       'windows': {
+        'libs': ['vulkan-1'],
         'deps': ['shaderc'],
       },
     },
@@ -358,13 +359,16 @@ if host_system == 'windows' and cc.get_id() == 'msvc'
   external_dir = get_option('external_dir')
   windows_sdk_dir = get_option('windows_sdk_dir')
   vulkan_sdk_dir = get_option('vulkan_sdk_dir')
-  
+
   windows_sdk_library_directories = [ windows_sdk_dir + '\\lib\\10.0.18362.0\\um\\x64' ]
+
+  vulkan_sdk_library_directories = [ vulkan_sdk_dir + '\\Lib']
 
   cc_lib_dirs += windows_sdk_library_directories
   lib_include_dirs += include_directories(external_dir + '\\win64\\gl\\include')
 
   lib_include_dirs += include_directories(vulkan_sdk_dir + '\\Include')
+  cc_lib_dirs += vulkan_sdk_library_directories
 
 endif
 
