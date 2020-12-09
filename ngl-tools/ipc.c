@@ -24,7 +24,6 @@
 #include <string.h>
 #ifdef _WIN32
 #include <winsock2.h>
-#define ssize_t int
 #else
 #include <unistd.h>
 #include <sys/socket.h>
@@ -177,7 +176,7 @@ void ipc_pkt_freep(struct ipc_pkt **pktp)
 
 int ipc_send(int fd, const struct ipc_pkt *pkt)
 {
-    const ssize_t n = send(fd, pkt->data, pkt->size, 0);
+    const int n = send(fd, pkt->data, pkt->size, 0);
     if (n < 0) {
         perror("send");
         return NGL_ERROR_IO;
@@ -190,11 +189,11 @@ int ipc_send(int fd, const struct ipc_pkt *pkt)
     return 0;
 }
 
-static int readbuf(int fd, uint8_t *buf, ssize_t size)
+static int readbuf(int fd, uint8_t *buf, int size)
 {
-    ssize_t nr = 0;
+    int nr = 0;
     while (nr != size) {
-        const ssize_t n = recv(fd, buf + nr, size - nr, 0);
+        const int n = recv(fd, buf + nr, size - nr, 0);
         if (n == 0)
             return 0;
         if (n < 0) {

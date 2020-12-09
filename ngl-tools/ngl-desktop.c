@@ -41,17 +41,17 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <direct.h>
+#define SHUT_RDWR SD_BOTH
 #else
 #include <sys/socket.h>
 #include <sys/utsname.h>
 #include <netdb.h>
+#include <unistd.h>
 #endif
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
-
 #include <nodegl.h>
 
 #include "common.h"
@@ -88,7 +88,7 @@ struct ctx {
     int own_session_file;
     struct ipc_pkt *send_pkt;
     struct ipc_pkt *recv_pkt;
-    int upload_fd;
+    FILE *upload_fp;
     char upload_path[1024];
 };
 
@@ -168,7 +168,7 @@ static int handle_tag_file(struct ctx *s, const uint8_t *data, int size)
     if (size < 1 || data[size - 1] != 0) // check if string is nul-terminated
         return NGL_ERROR_INVALID_DATA;
 
-    if (s->upload_fd) {
+    if (s->upload_fp) {
         fprintf(stderr, "a file is already uploading");
         return NGL_ERROR_INVALID_USAGE;
     }
@@ -191,8 +191,8 @@ static int handle_tag_file(struct ctx *s, const uint8_t *data, int size)
     if (ret < 0 || ret >= sizeof(s->upload_path))
         return NGL_ERROR_MEMORY;
 
-    s->upload_fd = open(s->upload_path, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0600);
-    if (s->upload_fd == -1) {
+    s->upload_fp = fopen(s->upload_path, "w");
+    if (!s->upload_fp) {
         perror(s->upload_path);
         return NGL_ERROR_IO;
     }
@@ -202,14 +202,14 @@ static int handle_tag_file(struct ctx *s, const uint8_t *data, int size)
 
 static void close_upload_file(struct ctx *s)
 {
-    if (s->upload_fd > 0)
-        close(s->upload_fd);
-    s->upload_fd = 0;
+    if (s->upload_fp)
+        fclose(s->upload_fp);
+    s->upload_fp = NULL;
 }
 
 static int handle_tag_filepart(struct ctx *s, const uint8_t *data, int size)
 {
-    if (s->upload_fd <= 0) {
+    if (!s->upload_fp) {
         fprintf(stderr, "file is not opened\n");
         return NGL_ERROR_INVALID_USAGE;
     }
@@ -219,9 +219,9 @@ static int handle_tag_filepart(struct ctx *s, const uint8_t *data, int size)
         return ipc_pkt_add_rtag_fileend(s->send_pkt, s->upload_path);
     }
 
-    const ssize_t n = send(s->upload_fd, data, size, 0);
-    if (n < 0) {
-        perror("write");
+    const size_t n = fwrite(data, 1, size, s->upload_fp);
+    if (ferror(s->upload_fp)) {
+        perror("fwrite");
         close_upload_file(s);
         return NGL_ERROR_IO;
     }
@@ -376,9 +376,36 @@ static int handle_commands(struct ctx *s, int fd)
     }
 }
 
+static void close_socket(int socket)
+{
+    /*
+     * On Solaris and MacOS, close() is the only way to terminate the
+     * blocking accept(). The shutdown() call will fail with errno ENOTCONN
+     * on these systems.
+     *
+     * On Linux though, shutdown() is required to terminate the blocking
+     * accept(), because close() will not. The reason for this difference
+     * of behaviour is to prevent a possible race scenario where the same
+     * FD would be re-used between a close() and an accept().
+     *
+     * On Windows, the specific closesocket() function must be used instead of
+     * close() to close a socket.
+     *
+     * See https://bugzilla.kernel.org/show_bug.cgi?id=106241 for more
+     * information.
+     */
+    if (shutdown(socket, SHUT_RDWR) < 0)
+        perror("shutdown");
+#if _WIN32
+    closesocket(socket);
+#else
+    close(socket);
+#endif
+}
+
 static void close_conn(struct ctx *s, int conn_fd)
 {
-    close(conn_fd);
+    close_socket(conn_fd);
     fprintf(stderr, "<< client %d disconnected\n", conn_fd);
 
     /* close uploading file when the connection ends */
@@ -618,31 +645,8 @@ end:
     if (s.thread_started)
         stop_server(&s);
 
-    if (s.sock_fd != -1) {
-        /*
-         * On Solaris and MacOS, close() is the only way to terminate the
-         * blocking accept(). The shutdown() call will fail with errno ENOTCONN
-         * on these systems.
-         *
-         * On Linux though, shutdown() is required to terminate the blocking
-         * accept(), because close() will not. The reason for this difference
-         * of behaviour is to prevent a possible race scenario where the same
-         * FD would be re-used between a close() and an accept().
-         *
-         * On Windows, both shutdown() and close() won't work, we have to use a
-         * Windows specific one: closesocket().
-         *
-         * See https://bugzilla.kernel.org/show_bug.cgi?id=106241 for more
-         * information.
-         */
-#if _WIN32
-        closesocket(s.sock_fd);
-#else
-        if (shutdown(s.sock_fd, SHUT_RDWR) < 0)
-            perror("shutdown");
-#endif
-        close(s.sock_fd);
-    }
+    if (s.sock_fd != -1)
+        close_socket(s.sock_fd);
 
     if (s.addr_info)
         freeaddrinfo(s.addr_info);
