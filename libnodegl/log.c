@@ -22,10 +22,11 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifndef _WIN32
+#include "config.h"
+#if !defined(TARGET_IPHONE) && !defined(TARGET_ANDROID) && !defined(TARGET_WINDOWS)
 #include <unistd.h>
 #endif
-#include "config.h"
+
 #include "log.h"
 
 static void default_callback(void *arg, int level, const char *filename, int ln,
@@ -43,7 +44,7 @@ static void default_callback(void *arg, int level, const char *filename, int ln,
 
     const char *color_start = "", *color_end = "";
 
-#if !defined(TARGET_IPHONE) && !defined(TARGET_ANDROID) && !defined(TARGET_MINGW_W64)
+#if !defined(TARGET_IPHONE) && !defined(TARGET_ANDROID) && !defined(TARGET_WINDOWS)
     if (isatty(1) && getenv("TERM")) {
         static const char * const colors[] = {
             [NGL_LOG_DEBUG]   = "\033[32m",   // green

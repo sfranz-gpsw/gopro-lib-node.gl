@@ -33,11 +33,11 @@
                                               NODEGL_VERSION_MICRO)
 
 #if defined(_WIN32)
-#  if (defined (BUILD_NODEGL_SHARED_LIB))
+#  if defined (BUILD_NODEGL_SHARED_LIB)
 #    define NGL_API __declspec(dllexport)
-#  elif (defined (USE_NODEGL_STATIC_LIB))
-#    define NGL_API extern
-#  else //default
+#  elif defined(USE_NODEGL_STATIC_LIB)
+#    define NGL_API
+#  else
 #    define NGL_API __declspec(dllimport)
 #  endif
 #else

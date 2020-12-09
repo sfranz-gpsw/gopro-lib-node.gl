@@ -132,10 +132,12 @@ static int buffer_init_from_filename(struct ngl_node *node)
         return NGL_ERROR_IO;
     }
 
-    fseek(s->fp, 0, SEEK_END);
-    int filesize = ftell(s->fp);
-    fseek(s->fp, 0, SEEK_SET);
-    if (filesize < 0) {
+    if (fseek(s->fp, 0, SEEK_END) != 0) {
+        LOG(ERROR, "could not seek in '%s'", s->filename);
+        return NGL_ERROR_IO;
+    }
+    long filesize = ftell(s->fp);
+    if (fseek(s->fp, 0, SEEK_SET) != 0) {
         LOG(ERROR, "could not seek in '%s'", s->filename);
         return NGL_ERROR_IO;
     }
@@ -156,8 +158,8 @@ static int buffer_init_from_filename(struct ngl_node *node)
         return NGL_ERROR_MEMORY;
 
     size_t n = fread(s->data, 1, s->data_size, s->fp);
-    if (n < 0) {
-        LOG(ERROR, "could not read '%s': %zd", s->filename, n);
+    if (n != s->data_size) {
+        LOG(ERROR, "could not read '%s'", s->filename);
         return NGL_ERROR_IO;
     }
 
