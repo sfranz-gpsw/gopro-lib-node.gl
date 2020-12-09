@@ -30,3 +30,36 @@ jobs:
         run: |
           $env:CHERE_INVOKING = 'yes'  # Preserve the current working directory
           C:\msys64\usr\bin\bash -lc "make -j$(($(nproc)+1)) TARGET_OS=MinGW-w64"
+  
+  win-msvc:
+
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: wsl-bash {0}
+
+    steps:
+      - uses: Vampire/setup-wsl@v1
+        with:
+          distribution: Ubuntu-20.04
+
+      - uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt -y update
+          sudo apt -y install build-essential zip
+          git clone --depth 1 https://github.com/Microsoft/vcpkg
+          cd vcpkg
+          cmd.exe /C bootstrap-vcpkg.bat -disableMetrics
+          ./vcpkg.exe install pthread:x64-windows opengl-registry:x64-windows
+          ./vcpkg.exe integrate install
+
+      - name: Build
+        run: |
+          make -j8 PYTHON="C:/hostedtoolcache/windows/Python/3.9.0/x64/python.exe" TARGET_OS=Windows
+        
+      - name: Run tests
+        run: |
+          make -j8 tests PYTHON="C:/hostedtoolcache/windows/Python/3.9.0/x64/python.exe" TARGET_OS=Windows
