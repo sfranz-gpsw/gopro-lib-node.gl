@@ -24,7 +24,18 @@ CURL ?= curl
 
 SXPLAYER_VERSION ?= 9.7.0
 
-all: sxplayer
+all: sxplayer pkg-config
+
+pkgconf:
+ifeq ($(TARGET_OS), Windows)
+	$(CURL) -L https://codeload.github.com/pkgconf/pkgconf/zip/78a77dd497c4ba057613e6e93aebe89824fa71f8 -o pkgconf.zip
+	unzip pkgconf.zip && mv pkgconf-* pkgconf
+#	cd pkgconf && patch -p1 < ../patches/pkgconf/0001-args-patch-command-line-params.patch
+	rm -rf pkgconf/.git
+else
+endif
+
+pkg-config: pkgconf
 
 # Note for developers: in order to customize the sxplayer you're building
 # against, you can use your own sources post-install:
@@ -37,7 +48,7 @@ all: sxplayer
 # than the prerequisite directory of the sxplayer rule. If this isn't true, the
 # symlink will be re-recreated on the next `make` call
 sxplayer: sxplayer-$(SXPLAYER_VERSION)
-ifneq ($(TARGET_OS),MinGW-w64)
+ifneq ($(TARGET_OS),$(filter $(TARGET_OS),MinGW-w64 Windows))
 	ln -snf $< $@
 else
 	cp -r $< $@
