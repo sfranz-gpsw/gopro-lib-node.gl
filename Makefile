@@ -61,6 +61,8 @@ ifeq ($(TARGET_OS), Windows)
 #TODO: identify correct path
 VCVARS64 ?= "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
 ACTIVATE = $(VCVARS64) \&\& $(PREFIX)\\Scripts\\activate.bat
+VCPKG_DIR ?= ..\\external\\vcpkg
+PKG_CONFIG ?= C:\\msys64\\usr\\bin\\pkg-config.exe
 else
 ACTIVATE = $(PREFIX)/bin/activate
 endif
@@ -68,8 +70,8 @@ endif
 RPATH_LDFLAGS ?= -Wl,-rpath,$(PREFIX)/lib
 
 ifeq ($(TARGET_OS),Windows)
-MESON_SETUP   = meson setup --backend vs --prefix="$(W_PREFIX)" --pkg-config-path=$(PREFIX)\\Lib\\pkgconfig -Drpath=true
-MESON_SETUP_NINJA   = meson setup --backend ninja --prefix="$(W_PREFIX)" --pkg-config-path=$(PREFIX)\\Lib\\pkgconfig -Drpath=true
+MESON_SETUP   = meson setup --backend vs --prefix="$(W_PREFIX)" --pkg-config-path=${VCPKG_DIR}\\installed\\x64-windows\\lib\\pkgconfig\:$(PREFIX)\\Lib\\pkgconfig -Drpath=true
+MESON_SETUP_NINJA   = meson setup --backend ninja --prefix="$(W_PREFIX)" --pkg-config-path=${VCPKG_DIR}\\installed\\x64-windows\\lib\\pkgconfig\:$(PREFIX)\\Lib\\pkgconfig -Drpath=true
 else
 MESON_SETUP   = meson setup --prefix=$(PREFIX) --pkg-config-path=$(PREFIX)/lib/pkgconfig -Drpath=true
 endif
@@ -224,13 +226,14 @@ external-download:
 #
 $(PREFIX):
 ifeq ($(TARGET_OS),Windows)
-	(cd external && bash scripts/sync.sh win64)
+	#(cd external && bash scripts/sync.sh win64)
 	(cmd.exe /C $(PYTHON) -m venv $(PREFIX))
-	(cmd.exe /C copy external\\win64\\pkg-config.exe nodegl-env\\Scripts)
-	(cmd.exe /C mkdir $(PREFIX)\\Lib\\pkgconfig)
-	(cmd.exe /C pushd external\\win64\\ffmpeg_x64-windows \&\& $(PYTHON) scripts/install.py "$(W_PREFIX)" \& popd)
-	(cmd.exe /C pushd external\\win64\\pthreads_x64-windows \&\& $(PYTHON) scripts/install.py "$(W_PREFIX)" \& popd)
-	(cmd.exe /C pushd external\\win64\\sdl2_x64-windows \&\& $(PYTHON) scripts/install.py "$(W_PREFIX)" \& popd)
+	(cmd.exe /C copy $(PKG_CONFIG) nodegl-env\\Scripts)
+	#(cmd.exe /C copy external\\win64\\pkg-config.exe nodegl-env\\Scripts)
+	#(cmd.exe /C mkdir $(PREFIX)\\Lib\\pkgconfig)
+	#(cmd.exe /C pushd external\\win64\\ffmpeg_x64-windows \&\& $(PYTHON) scripts/install.py "$(W_PREFIX)" \& popd)
+	#(cmd.exe /C pushd external\\win64\\pthreads_x64-windows \&\& $(PYTHON) scripts/install.py "$(W_PREFIX)" \& popd)
+	#(cmd.exe /C pushd external\\win64\\sdl2_x64-windows \&\& $(PYTHON) scripts/install.py "$(W_PREFIX)" \& popd)
 	(cmd.exe /C $(ACTIVATE) \&\& pip install meson ninja)
 else ifeq ($(TARGET_OS),MinGW-w64)
 	$(PYTHON) -m venv --system-site-packages $(PREFIX)
