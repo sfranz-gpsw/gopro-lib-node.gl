@@ -27,7 +27,7 @@ SPIRV_CROSS_LIBS="spirv-cross-cpp spirv-cross-core spirv-cross-glsl spirv-cross-
 for lib in $SPIRV_CROSS_LIBS
     do install -C -m 644 external/win64/spirv_cross/cmake-build-debug/RelWithDebInfo/$lib.lib nodegl-env/Lib/
 done
-install -C -m 644 external/win64/ffmpeg-4.3.1-2020-09-21-full_build-shared/lib/*.lib nodegl-env/Lib/
+install -C -m 644 external/win64/ffmpeg-4.3.1-2020-11-08-full_build-shared/lib/*.lib nodegl-env/Lib/
 
 echo -e "${GREEN}Installing pynodegl dependencies${NC}"
 cmd "nodegl-env\\Scripts\\activate.bat && pip.exe install -r pynodegl\requirements.txt"

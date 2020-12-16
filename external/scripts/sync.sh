@@ -1,4 +1,5 @@
 #TODO: use cmake ExternalProject targets
+set -ex
 OS=$1
 echo "OS: [$OS]"
 TMP_DIR=/tmp/nodegl/external
@@ -30,8 +31,8 @@ if [ $OS == "win64" ]; then
 	wget -nc https://sourceforge.net/projects/glew/files/glew/2.1.0/glew-2.1.0-win32.zip -P $TMP_DIR
 	cd win64 && unzip -d glew-2.1.0-win32 $TMP_DIR/glew-2.1.0-win32.zip; cd -
 	
-	wget -nc https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-4.3.1-2020-09-21-full_build-shared.zip -P $TMP_DIR/ffmpeg
-	cd win64 && unzip $TMP_DIR/ffmpeg/ffmpeg-4.3.1-2020-09-21-full_build-shared.zip; cd -
+	wget -nc https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-4.3.1-2020-11-08-full_build-shared.7z -P $TMP_DIR/ffmpeg
+	cd win64 && 7z x $TMP_DIR/ffmpeg/ffmpeg-4.3.1-2020-11-08-full_build-shared.7z; cd -
 	
 	wget -nc https://github.com/g-truc/glm/releases/download/0.9.9.8/glm-0.9.9.8.zip -P $TMP_DIR/glm
 	cd win64 && unzip -d glm-0.9.9.8 $TMP_DIR/glm/glm-0.9.9.8.zip; cd -

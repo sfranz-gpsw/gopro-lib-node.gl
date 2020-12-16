@@ -19,7 +19,7 @@ set (PTHREADS_CFLAGS -DHAVE_STRUCT_TIMESPEC)
 set (PTHREADS_LIBRARY_DIRS ${PTHREADS_DIR}/lib/x64)
 set (PTHREADS_LIBRARIES pthreadVC2)
 
-set (FFMPEG_DIR ${EXTERNAL_DIR}/win64/ffmpeg-4.3.1-2020-09-21-full_build-shared)
+set (FFMPEG_DIR ${EXTERNAL_DIR}/win64/ffmpeg-4.3.1-2020-11-08-full_build-shared)
 set (FFMPEG_INCLUDE_DIRS ${FFMPEG_DIR}/include)
 set (FFMPEG_LIBRARY_DIRS ${FFMPEG_DIR}/lib)
 set (FFMPEG_LIBRARIES avcodec avdevice avformat avfilter avutil)
