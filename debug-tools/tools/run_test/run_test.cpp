@@ -30,7 +30,11 @@ int main(int argc, char** argv) {
         return 1;
     }
     chdir(TESTS_DIR);
+#ifdef _WIN32
+    setenv("PYTHONPATH", "..\\pynodegl;..\\pynodegl-utils");
+#else
     setenv("PYTHONPATH", "../pynodegl:../pynodegl-utils:../nodegl-env/lib/python3.7/site-packages", 1);
+#endif
     setenv("BACKEND", argv[1], 1);
     wstring test_name = to_wstring(argv[2]);
     wstring test_file = test_name.substr(0, test_name.find(L'_')) + L".py";
