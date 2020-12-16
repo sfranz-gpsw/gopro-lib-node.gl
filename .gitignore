@@ -17,5 +17,6 @@ pynodegl-utils/dist/*.egg
 external/win64
 external/sxplayer-*
 external/stb
+external/json
 CMakeLists.txt.user
 .DS_Store
