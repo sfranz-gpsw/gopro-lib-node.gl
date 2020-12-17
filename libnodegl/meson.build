@@ -21,8 +21,8 @@
 
 project(
   'libnodegl',
-  'c',
-   default_options: ['c_std=c99'],
+  [ 'c', 'cpp' ],
+   default_options: ['c_std=c99', 'cpp_std=c++latest'],
    license: 'Apache',
    meson_version: '>= 0.54.0',
    version: '0.0.0',
@@ -63,8 +63,12 @@ conf_data.set10('DEBUG_VK', 'vk' in debug_opts)
 conf_data.set10('DEBUG_MEM', 'mem' in debug_opts)
 conf_data.set10('DEBUG_SCENE', 'scene' in debug_opts)
 
-if host_system == 'windows' and cc.get_id() != 'msvc'
-  conf_data.set10('TARGET_MINGW_W64', true)
+if host_system == 'windows'
+  if cc.get_id() == 'msvc'
+    conf_data.set10('TARGET_MSVC', true)
+  else
+    conf_data.set10('TARGET_MINGW_W64', true)
+  endif
 endif
 
 # This trim prefix is used to make __FILE__ starts from the source dir with
@@ -155,6 +159,7 @@ lib_src = files(
   'pgcache.c',
   'pgcraft.c',
   'pipeline.c',
+  'pipeline_util.c',
   'precision.c',
   'program.c',
   'rendertarget.c',
@@ -201,13 +206,9 @@ lib_deps = [
   dependency('threads'),
 ]
 
-lib_c_args = ''
+lib_c_args = []
 lib_include_dirs = []
 lib_link_args = []
-
-if get_option('default_library') == 'shared'
-  lib_c_args += '-DBUILD_NODEGL_SHARED_LIB'
-endif
 
 host_cfg = hosts_cfg.get(host_system, {})
 foreach dep : host_cfg.get('deps', [])
@@ -347,7 +348,67 @@ gbackends_cfg = {
       },
     },
   },
+  'ngfx': {
+    'src': files(
+      'backends/ngfx/buffer_ngfx.cpp',
+      'backends/ngfx/format_ngfx.cpp',
+      'backends/ngfx/gctx_ngfx.cpp',
+      'backends/ngfx/pipeline_ngfx.cpp',
+      'backends/ngfx/program_ngfx.cpp',
+      'backends/ngfx/rendertarget_ngfx.cpp',
+      'backends/ngfx/swapchain_ngfx.cpp',
+      'backends/ngfx/texture_ngfx.cpp',
+      'backends/ngfx/topology_ngfx.cpp',
+      'backends/ngfx/util_ngfx.cpp',
+    ),
+    'cfg': 'BACKEND_NGFX',
+    'hosts_cfg': {
+      'windows': {
+      },
+    },
+  },
 }
+
+ngfx_cflags = []
+if host_system == 'windows'
+  ngfx_cflags += '-DNGFX_GRAPHICS_BACKEND_DIRECT3D12'
+endif
+
+ngfx_deps = []
+
+json_dep = declare_dependency(
+  include_directories: [ '../external/json/include' ],
+)
+ngfx_deps += json_dep
+
+if host_system == 'windows'
+  spirv_cross_link_args = [
+    '-L' + meson.current_source_dir() + '\\..\\external\\win64\\spirv_cross_x64-windows\\lib',
+    '-lspirv-cross-cpp', '-lspirv-cross-core', '-lspirv-cross-glsl', '-lspirv-cross-hlsl', '-lspirv-cross-msl', '-lspirv-cross-reflect', '-lspirv-cross-util', '-lspirv-cross-c'
+  ]
+
+  glm_dep = declare_dependency(
+    include_directories: [ '../external/win64/glm-0.9.9.8/glm' ]
+  )
+  ngfx_deps += glm_dep
+
+  ngfx_dep = declare_dependency(
+    compile_args: ngfx_cflags,
+    include_directories: [ '../external/win64/ngfx_x64-windows/include' ],
+    link_args: [
+      '-L' + meson.current_source_dir() + '\\..\\external\\win64\\ngfx_x64-windows\\lib', '-lngfx',
+      '-ld3d12', '-ldxgi', '-ld3dcompiler'
+    ] + spirv_cross_link_args,
+  )
+  ngfx_deps += ngfx_dep
+
+  shader_tools_dep = declare_dependency(
+    include_directories: [ '../shader-tools/src' ],
+    link_args: [ '-L' + meson.current_source_dir() + '\\..\\external\\win64\\shader_tools_x64-windows\\lib', '-lshader_tools' ],
+  )
+  ngfx_deps += shader_tools_dep
+
+endif
 
 if host_system in ['darwin', 'iphone']
   add_languages('objc')
@@ -387,6 +448,10 @@ foreach gbackend_name, gbackend_cfg : gbackends_cfg
     gbackend_deps += dependency('appleframeworks', modules: host_backend_cfg.get('frameworks'), required: opt_gbackend)
   endif
 
+   if gbackend_name == 'ngfx'
+      gbackend_deps += ngfx_deps
+    endif
+
   all_dep_found = true
   foreach dep : gbackend_deps
     all_dep_found = all_dep_found and dep.found()
@@ -397,7 +462,7 @@ foreach gbackend_name, gbackend_cfg : gbackends_cfg
     if gbackend_name == 'gl' and vaapi_enabled
       lib_src += files('backends/gl/hwupload_vaapi_gl.c')
     endif
-
+    
     lib_src += gbackend_cfg.get('src')
     if host_backend_cfg.get('src', []) != []
       lib_src += host_backend_cfg.get('src')
@@ -417,12 +482,11 @@ endforeach
 
 configure_file(output: 'config.h', configuration: conf_data)
 
-# See https://github.com/mesonbuild/meson/pull/4747 to follow advancement on
-# the native support for symbol visibility
-lib_link_args += cc.get_supported_link_arguments([
-  '-Wl,--version-script,@0@'.format(meson.current_source_dir() / 'libnodegl.symexport'),  # GNU ld
-  '-Wl,-exported_symbols_list,@0@'.format(meson.current_source_dir() / 'libnodegl.darwin.symexport'),  # Darwin
-])
+
+
+if get_option('default_library') == 'shared'
+  lib_c_args += '-DBUILD_NODEGL_SHARED_LIB'
+endif
 
 libnodegl = library(
   'nodegl',
@@ -432,6 +496,11 @@ libnodegl = library(
   install_rpath: install_rpath,
   version: meson.project_version(),
   c_args: lib_c_args,
+
+
+
+
+  gnu_symbol_visibility: 'hidden',
   link_args: lib_link_args,
   include_directories: lib_include_dirs,
 )
@@ -443,10 +512,17 @@ lib_header = configure_file(
 install_headers(lib_header)
 
 pkg = import('pkgconfig')
+pkg_extra_cflags = []
+if get_option('default_library') == 'static'
+  pkg_extra_cflags += '-DUSE_NODEGL_STATIC_LIB'
+endif
+
 pkg.generate(
   libnodegl,
   name: 'libnodegl',  # not specifying the name would fallback on "nodegl.pc" instead of "libnodegl.pc"
   description: 'Node/Graph based graphic engine',
+
+  extra_cflags:  pkg_extra_cflags,
   variables: ['datarootdir=${prefix}/share'],
 )
 
@@ -488,23 +564,25 @@ run_target(
 # Doc
 #
 
-gen_doc = executable(
-  'gen_doc',
-  lib_src + files('gen_doc.c'),
-  dependencies: lib_deps,
-  build_by_default: false,
-  native: true,
-)
-doc_file = custom_target(
-  'libnodegl.md',
-  command: gen_doc,
-  capture: true,
-  output: 'libnodegl.md',
-)
-run_target(
-  'updatedoc',
-  command: [cp, doc_file, meson.current_source_dir() / 'doc'],
-)
+if not get_option('small')
+  gen_doc = executable(
+    'gen_doc',
+    lib_src + files('gen_doc.c'),
+    dependencies: lib_deps,
+    build_by_default: false,
+    native: true,
+  )
+  doc_file = custom_target(
+    'libnodegl.md',
+    command: gen_doc,
+    capture: true,
+    output: 'libnodegl.md',
+  )
+  run_target(
+    'updatedoc',
+    command: [cp, doc_file, meson.current_source_dir() / 'doc'],
+  )
+endif
 
 
 #
