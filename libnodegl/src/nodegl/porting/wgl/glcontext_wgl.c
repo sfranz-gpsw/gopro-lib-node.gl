@@ -26,9 +26,9 @@
 #include <GL/glcorearb.h>
 #include <GL/wglext.h>
 
-#include "glcontext.h"
-#include "nodegl.h"
-#include "log.h"
+#include "nodegl/porting/gl/glcontext.h"
+#include "nodegl/core/nodegl.h"
+#include "nodegl/core/log.h"
 
 struct wgl_priv {
     HWND window;

@@ -57,8 +57,9 @@
 #ifdef _WIN32
 #ifdef _MSC_VER
 #include <windows.h>
-#include <GL/glew.h>
 #include <GL/gl.h>
+#include <GL/glcorearb.h>
+#include <GL/glext.h>
 #else //MINGW
 # include <GL/gl.h>
 # include <GL/glcorearb.h>
@@ -67,11 +68,7 @@
 #endif
 #endif
 
-#ifdef _WIN32
-#define NGLI_GL_APIENTRY WINAPI
-#else
 #define NGLI_GL_APIENTRY
-#endif
 
 #ifndef GL_OES_EGL_image
 typedef void* GLeglImageOES;

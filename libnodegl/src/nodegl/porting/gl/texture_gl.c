@@ -281,7 +281,9 @@ static int texture_init_fields(struct texture *s)
 
     if (params->external_oes) {
         ngli_assert(params->type == NGLI_TEXTURE_TYPE_2D);
+#ifndef _WIN32 //TODO
         s_priv->target = GL_TEXTURE_EXTERNAL_OES;
+#endif
     } else if (params->rectangle) {
         ngli_assert(params->type == NGLI_TEXTURE_TYPE_2D);
         s_priv->target = GL_TEXTURE_RECTANGLE;

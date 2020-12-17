@@ -295,8 +295,10 @@ static void set_textures(struct pipeline *s, struct glcontext *gl)
                 ngli_glBindTexture(gl, GL_TEXTURE_2D, 0);
                 if (gl->features & NGLI_FEATURE_TEXTURE_3D)
                     ngli_glBindTexture(gl, GL_TEXTURE_3D, 0);
+#ifndef _WIN32
                 if (gl->features & NGLI_FEATURE_OES_EGL_EXTERNAL_IMAGE)
                     ngli_glBindTexture(gl, GL_TEXTURE_EXTERNAL_OES, 0);
+#endif
             }
         }
     }
