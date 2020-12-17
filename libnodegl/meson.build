@@ -347,6 +347,27 @@ gbackends_cfg = {
       },
     },
   },
+  'ngfx': {
+    'src': files(
+      'backends/ngfx/buffer_ngfx.cpp',
+      'backends/ngfx/format_ngfx.cpp',
+      'backends/ngfx/gctx_ngfx.cpp',
+      'backends/ngfx/gtimer_ngfx.cpp',
+      'backends/ngfx/pipeline_ngfx.cpp',
+      'backends/ngfx/program_ngfx.cpp',
+      'backends/ngfx/rendertarget_ngfx.cpp',
+      'backends/ngfx/swapchain_ngfx.cpp',
+      'backends/ngfx/texture_ngfx.cpp',
+      'backends/ngfx/topology_ngfx.cpp',
+      'backends/ngfx/util_ngfx.cpp',
+    ),
+    'cfg': 'BACKEND_NGFX',
+    'hosts_cfg': {
+      'windows': {
+        'libs': ['ngfx'],
+      },
+    },
+  },
 }
 
 if host_system in ['darwin', 'iphone']
