@@ -10,6 +10,7 @@ set (EXTERNAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../external)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
   set (GLM_INCLUDE_DIRS ${EXTERNAL_DIR}/win64/glm-0.9.9.8/glm)
+  set (D3DX12_INCLUDE_DIRS ${EXTERNAL_DIR}/win64/d3dx12)
 else()
   find_package (PkgConfig REQUIRED)
   if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
@@ -18,6 +19,8 @@ else()
       set (GLM_INCLUDE_DIRS /usr/local/include)
   endif()
 endif()
+
+set (STB_INCLUDE_DIRS ${EXTERNAL_DIR}/stb)
 
 file (GLOB_RECURSE NGFX_SOURCE_FILES src/ngfx/core/* src/ngfx/compute/* src/ngfx/computeOps/* src/ngfx/drawOps/* src/ngfx/graphics/* src/ngfx/input/*)
 if (NGFX_GRAPHICS_BACKEND_VULKAN)

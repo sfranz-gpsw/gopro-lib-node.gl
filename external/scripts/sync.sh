@@ -32,5 +32,8 @@ if [ $OS == "win64" ]; then
     (cd win64 && unzip -q -d glm-0.9.9.8 $TMP_DIR/glm/glm-0.9.9.8.zip)
     
     wget -nc -q https://raw.githubusercontent.com/nothings/stb/master/stb_image.h -P $TMP_DIR/stb
-	mkdir -p stb && cp $TMP_DIR/stb/stb_image.h stb/.
+    mkdir -p stb && cp $TMP_DIR/stb/stb_image.h stb/.
+    
+    wget -nc -q https://raw.githubusercontent.com/microsoft/DirectX-Graphics-Samples/v10.0.17763.0/Libraries/D3DX12/d3dx12.h -P $TMP_DIR/d3dx12
+	mkdir -p win64/d3dx12 && cp $TMP_DIR/d3dx12/d3dx12.h win64/d3dx12/.
 fi
