@@ -4,5 +4,5 @@ MoltenVK*
 shaderc*
 /sxplayer*
 /external/win64
-external/token.cfg
+/external/stb
 ngfx/cmake-build-debug

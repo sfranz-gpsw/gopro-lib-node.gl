@@ -2,6 +2,23 @@ cmake_minimum_required(VERSION 3.10)
 
 project (ngfx)
 
+set(CMAKE_CXX_STANDARD 20)
+set (CMAKE_C_STANDARD 11)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set (BUILD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cmake-build-debug)
+set (EXTERNAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../external)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+  set (GLM_INCLUDE_DIRS ${EXTERNAL_DIR}/win64/glm-0.9.9.8/glm)
+else()
+  find_package (PkgConfig REQUIRED)
+  if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+      pkg_check_modules(GLM REQUIRED glm)
+  else()
+      set (GLM_INCLUDE_DIRS /usr/local/include)
+  endif()
+endif()
+
 file (GLOB_RECURSE NGFX_SOURCE_FILES src/ngfx/core/* src/ngfx/compute/* src/ngfx/computeOps/* src/ngfx/drawOps/* src/ngfx/graphics/* src/ngfx/input/*)
 if (NGFX_GRAPHICS_BACKEND_VULKAN)
     set (WINDOW_BACKEND_GLFW 1)
