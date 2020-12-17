@@ -5,3 +5,4 @@ shaderc*
 /sxplayer*
 /external/win64
 external/token.cfg
+ngfx/cmake-build-debug
