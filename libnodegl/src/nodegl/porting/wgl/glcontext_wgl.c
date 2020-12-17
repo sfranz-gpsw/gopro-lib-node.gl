@@ -45,7 +45,7 @@ static int wgl_init(struct glcontext *ctx, uintptr_t display, uintptr_t window, 
 {
     struct wgl_priv *wgl = ctx->priv_data;
 
-    wgl->module = LoadLibrary("opengl32.dll");
+    wgl->module = LoadLibrary(L"opengl32.dll");
     if (!wgl->module) {
         LOG(ERROR, "could not load opengl32.dll (%lu)", GetLastError());
         return -1;
