@@ -260,6 +260,16 @@ else
 	install_name_tool -id @rpath/$(SHADERC_LIB_FILENAME) $(PREFIX)/lib/$(SHADERC_LIB_FILENAME)
 endif
 
+ngfx-install: $(PREFIX)
+ifeq ($(TARGET_OS), Windows)
+	( \
+	  cd ngfx && \
+	  cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=RelWithDebInfo -G "Visual Studio 16 2019" -DNGFX_GRAPHICS_BACKEND_DIRECT3D12=ON && \
+	  cmake.exe --build cmake-build-debug --config RelWithDebInfo -j8 \
+	)
+endif
+
+
 shaderc-$(SHADERC_VERSION): shaderc-$(SHADERC_VERSION).tar.gz
 	$(TAR) xf $<
 
@@ -367,3 +377,4 @@ coverage-xml:
 .PHONY: tests tests-setup
 .PHONY: clean clean_py
 .PHONY: coverage-html coverage-xml
+.PHONY: ngfx-install
