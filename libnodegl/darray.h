@@ -22,38 +22,46 @@
 #ifndef DARRAY_H
 #define DARRAY_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
-struct darray {
-    uint8_t *data;
-    int count;
-    int capacity;
-    int element_size;
-    int (*reserve)(struct darray *darray, int capacity);
-    void (*release)(void *ptr);
-};
+    struct darray {
+        uint8_t* data;
+        int count;
+        int capacity;
+        int element_size;
+        int (*reserve)(struct darray* darray, int capacity);
+        void (*release)(void* ptr);
+    };
 
-void ngli_darray_init(struct darray *darray, int element_size, int aligned);
-void *ngli_darray_push(struct darray *darray, const void *element);
-void *ngli_darray_pop(struct darray *darray);
-void *ngli_darray_tail(const struct darray *darray);
-void *ngli_darray_get(const struct darray *darray, int index);
-int ngli_darray_set(const struct darray *darray, int index, const void *element);
-void ngli_darray_reset(struct darray *darray);
+    void ngli_darray_init(struct darray* darray, int element_size, int aligned);
+    void* ngli_darray_push(struct darray* darray, const void* element);
+    void* ngli_darray_pop(struct darray* darray);
+    void* ngli_darray_tail(const struct darray* darray);
+    void* ngli_darray_get(const struct darray* darray, int index);
+    int ngli_darray_set(const struct darray* darray, int index, const void* element);
+    void ngli_darray_reset(struct darray* darray);
 
-static inline int ngli_darray_count(const struct darray *darray)
-{
-    return darray->count;
+    static inline int ngli_darray_count(const struct darray* darray)
+    {
+        return darray->count;
+    }
+
+    static inline void* ngli_darray_data(const struct darray* darray)
+    {
+        return (void*)darray->data;
+    }
+
+    static inline void ngli_darray_clear(struct darray* darray)
+    {
+        darray->count = 0;
+    }
+
+#ifdef __cplusplus
 }
-
-static inline void *ngli_darray_data(const struct darray *darray)
-{
-    return (void *)darray->data;
-}
-
-static inline void ngli_darray_clear(struct darray *darray)
-{
-    darray->count = 0;
-}
+#endif
 
 #endif
