@@ -22,7 +22,7 @@
 #ifndef DEBUGUTIL_NGFX_H
 #define DEBUGUTIL_NGFX_H
 
-#include "nodegl/core/log.h"
+#include "log.h"
 
 #define TODO(fmt, ...) LOG(WARNING, "TODO " fmt, ##__VA_ARGS__)
 

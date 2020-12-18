@@ -19,11 +19,11 @@
  * under the License.
  */
 
-#include "nodegl/core/memory.h"
-#include "nodegl/porting/ngfx/buffer_ngfx.h"
-#include "nodegl/porting/ngfx/gctx_ngfx.h"
+#include "memory.h"
+#include "buffer_ngfx.h"
+#include "gctx_ngfx.h"
 #include "ngfx/graphics/Buffer.h"
-#include "nodegl/porting/ngfx/debugutil_ngfx.h"
+#include "debugutil_ngfx.h"
 
 using namespace ngfx;
 

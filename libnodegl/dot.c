@@ -103,7 +103,7 @@ static int should_print_par(uint8_t *priv, const struct node_param *par)
 
 static void print_custom_priv_options(struct bstr *b, const struct ngl_node *node)
 {
-    const struct node_param *par = node->class->params;
+    const struct node_param *par = node->clazz->params;
     uint8_t *priv = node->priv_data;
 
     if (!par)
@@ -129,17 +129,17 @@ static void print_all_decls(struct bstr *b, const struct ngl_node *node, struct 
         return;
 
     ngli_bstr_printf(b, "    %s_%p[label=<<b>%s</b><br/>",
-                    node->class->name, node, node->class->name);
-    if (!ngli_is_default_label(node->class->name, node->label) && *node->label)
+                    node->clazz->name, node, node->clazz->name);
+    if (!ngli_is_default_label(node->clazz->name, node->label) && *node->label)
         ngli_bstr_printf(b, "<i>%s</i><br/>", node->label);
     print_custom_priv_options(b, node);
     if (!node->ctx || node->is_active)
-        ngli_bstr_printf(b, ">,color="HSLFMT"]\n", get_hue(node->class->name));
+        ngli_bstr_printf(b, ">,color="HSLFMT"]\n", get_hue(node->clazz->name));
     else
         ngli_bstr_print(b, ">,color="INACTIVE_COLOR"]\n");
 
     print_decls(b, node, ngli_base_node_params, (uint8_t *)node, decls);
-    print_decls(b, node, node->class->params, node->priv_data, decls);
+    print_decls(b, node, node->clazz->params, node->priv_data, decls);
 }
 
 static void print_packed_decls(struct bstr *b, const char *label,
@@ -149,7 +149,7 @@ static void print_packed_decls(struct bstr *b, const char *label,
     ngli_bstr_printf(b, "    %s_%p[label=<<b>%s</b> (x%d)", label, children, label, nb_children);
     for (int i = 0; i < nb_children; i++) {
         const struct ngl_node *node = children[i];
-        char *info_str = node->class->info_str ? node->class->info_str(node) : NULL;
+        char *info_str = node->clazz->info_str ? node->clazz->info_str(node) : NULL;
         ngli_bstr_printf(b, LB "- %s", info_str ? info_str : "?");
         ngli_free(info_str);
     }
@@ -206,7 +206,7 @@ static void print_link(struct bstr *b,
                        const char *label)
 {
     ngli_bstr_printf(b, "    %s_%p -> %s_%p%s\n",
-                    x->class->name, x, y->class->name, y, label);
+                    x->clazz->name, x, y->clazz->name, y, label);
 }
 
 static void print_links(struct bstr *b, const struct ngl_node *node,
@@ -219,7 +219,7 @@ static void print_all_links(struct bstr *b, const struct ngl_node *node, struct 
         return;
 
     print_links(b, node, ngli_base_node_params, (uint8_t *)node, links);
-    print_links(b, node, node->class->params, node->priv_data, links);
+    print_links(b, node, node->clazz->params, node->priv_data, links);
 }
 
 static void print_links(struct bstr *b, const struct ngl_node *node,
@@ -246,7 +246,7 @@ static void print_links(struct bstr *b, const struct ngl_node *node,
 
                 if (nb_children && (p->flags & PARAM_FLAG_DOT_DISPLAY_PACKED)) {
                     ngli_bstr_printf(b, "    %s_%p -> %s_%p%s\n",
-                                    node->class->name, node, p->key, children, label);
+                                    node->clazz->name, node, p->key, children, label);
                     break;
                 }
 

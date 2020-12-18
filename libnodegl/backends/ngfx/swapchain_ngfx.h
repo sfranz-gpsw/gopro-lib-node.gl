@@ -21,7 +21,7 @@
 
 #ifndef SWAPCHAIN_NGFX_H
 #define SWAPCHAIN_NGFX_H
-#include "nodegl/core/swapchain.h"
+#include "swapchain.h"
 
 int ngli_swapchain_ngfx_create(struct gctx *s);
 void ngli_swapchain_ngfx_destroy(struct gctx *s);

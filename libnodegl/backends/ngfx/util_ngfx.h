@@ -23,9 +23,9 @@
 #define UTIL_NGFX_H
 #include "ngfx/graphics/GraphicsCore.h"
 #include "ngfx/graphics/GraphicsContext.h"
-#include "nodegl/porting/ngfx/format_ngfx.h"
-#include "nodegl/porting/ngfx/topology_ngfx.h"
-#include "nodegl/core/rendertarget.h"
+#include "format_ngfx.h"
+#include "topology_ngfx.h"
+#include "rendertarget.h"
 
 ngfx::FilterMode to_ngfx_filter_mode(int filter);
 ngfx::FilterMode to_ngfx_mip_filter_mode(int filter);

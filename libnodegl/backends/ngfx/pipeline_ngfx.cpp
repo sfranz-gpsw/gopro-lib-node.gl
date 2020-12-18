@@ -19,21 +19,21 @@
  * under the License.
  */
 
-#include "nodegl/porting/ngfx/pipeline_ngfx.h"
-#include "nodegl/core/memory.h"
-#include "nodegl/porting/ngfx/debugutil_ngfx.h"
+#include "pipeline_ngfx.h"
+#include "memory.h"
+#include "debugutil_ngfx.h"
 #include "ngfx/graphics/Graphics.h"
 #include "ngfx/compute/ComputePipeline.h"
 #include "ngfx/graphics/GraphicsPipeline.h"
 #include "ngfx/graphics/Buffer.h"
-#include "nodegl/core/format.h"
-#include "nodegl/core/type.h"
-#include "nodegl/core/pipeline_util.h"
-#include "nodegl/porting/ngfx/buffer_ngfx.h"
-#include "nodegl/porting/ngfx/gctx_ngfx.h"
-#include "nodegl/porting/ngfx/program_ngfx.h"
-#include "nodegl/porting/ngfx/texture_ngfx.h"
-#include "nodegl/porting/ngfx/util_ngfx.h"
+#include "format.h"
+#include "type.h"
+#include "pipeline_util.h"
+#include "buffer_ngfx.h"
+#include "gctx_ngfx.h"
+#include "program_ngfx.h"
+#include "texture_ngfx.h"
+#include "util_ngfx.h"
 #include <map>
 using namespace ngfx;
 

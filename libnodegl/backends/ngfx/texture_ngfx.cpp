@@ -19,13 +19,13 @@
  * under the License.
  */
 
-#include "nodegl/porting/ngfx/texture_ngfx.h"
-#include "nodegl/core/log.h"
-#include "nodegl/core/memory.h"
+#include "texture_ngfx.h"
+#include "log.h"
+#include "memory.h"
 #include <map>
 #include "ngfx/graphics/Texture.h"
-#include "nodegl/porting/ngfx/gctx_ngfx.h"
-#include "nodegl/porting/ngfx/util_ngfx.h"
+#include "gctx_ngfx.h"
+#include "util_ngfx.h"
 using namespace ngfx;
 using namespace std;
 

@@ -22,7 +22,7 @@
 #ifndef TEXTURE_NGFX_H
 #define TEXTURE_NGFX_H
 
-#include "nodegl/core/texture.h"
+#include "texture.h"
 #include "ngfx/graphics/Texture.h"
 
 struct texture_ngfx {

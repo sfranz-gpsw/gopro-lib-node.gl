@@ -19,9 +19,9 @@
  * under the License.
  */
 
-#include "nodegl/core/format.h"
-#include "nodegl/porting/ngfx/format_ngfx.h"
-#include "nodegl/core/utils.h"
+#include "format.h"
+#include "format_ngfx.h"
+#include "utils.h"
 #include <map>
 using namespace ngfx;
 using namespace std;

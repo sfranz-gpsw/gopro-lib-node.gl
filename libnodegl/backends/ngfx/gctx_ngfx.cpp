@@ -19,19 +19,18 @@
  * under the License.
  */
 
-#include "nodegl/porting/ngfx/gctx_ngfx.h"
-#include "nodegl/porting/ngfx/buffer_ngfx.h"
-#include "nodegl/porting/ngfx/gtimer_ngfx.h"
-#include "nodegl/porting/ngfx/pipeline_ngfx.h"
-#include "nodegl/porting/ngfx/program_ngfx.h"
-#include "nodegl/porting/ngfx/rendertarget_ngfx.h"
-#include "nodegl/porting/ngfx/swapchain_ngfx.h"
-#include "nodegl/porting/ngfx/texture_ngfx.h"
-#include "nodegl/core/memory.h"
-#include "nodegl/core/math_utils.h"
-#include "nodegl/core/format.h"
-#include "nodegl/porting/ngfx/util_ngfx.h"
-#include "nodegl/porting/ngfx/debugutil_ngfx.h"
+#include "gctx_ngfx.h"
+#include "buffer_ngfx.h"
+#include "pipeline_ngfx.h"
+#include "program_ngfx.h"
+#include "rendertarget_ngfx.h"
+#include "swapchain_ngfx.h"
+#include "texture_ngfx.h"
+#include "memory.h"
+#include "math_utils.h"
+#include "format.h"
+#include "util_ngfx.h"
+#include "debugutil_ngfx.h"
 #include <glm/gtc/type_ptr.hpp>
 
 #ifdef ENABLE_CAPTURE
@@ -447,13 +446,6 @@ extern "C" const struct gctx_class ngli_gctx_ngfx = {
     .buffer_map      = ngli_buffer_ngfx_map,
     .buffer_unmap    = ngli_buffer_ngfx_unmap,
     .buffer_freep  = ngli_buffer_ngfx_freep,
-
-    .gtimer_create = ngli_gtimer_ngfx_create,
-    .gtimer_init   = ngli_gtimer_ngfx_init,
-    .gtimer_start  = ngli_gtimer_ngfx_start,
-    .gtimer_stop   = ngli_gtimer_ngfx_stop,
-    .gtimer_read   = ngli_gtimer_ngfx_read,
-    .gtimer_freep  = ngli_gtimer_ngfx_freep,
 
     .pipeline_create            = ngli_pipeline_ngfx_create,
     .pipeline_init              = ngli_pipeline_ngfx_init,
