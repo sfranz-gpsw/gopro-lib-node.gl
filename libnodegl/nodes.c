@@ -435,7 +435,7 @@ int ngli_node_attach_ctx(struct ngl_node *node, struct ngl_ctx *ctx)
         if (ret < 0)
             goto done;
 
-        ret = ngli_buffer_upload(buffer, data, data_size);
+        ret = ngli_buffer_upload(buffer, data, data_size, 0);
         if (ret < 0)
             goto done;
     }
@@ -453,7 +453,7 @@ int ngli_node_attach_ctx(struct ngl_node *node, struct ngl_ctx *ctx)
         if (ret < 0)
             goto done;
 
-        ret = ngli_buffer_upload(buffer, data, data_size);
+        ret = ngli_buffer_upload(buffer, data, data_size, 0);
         if (ret < 0)
             goto done;
     }
