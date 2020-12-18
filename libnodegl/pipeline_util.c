@@ -19,9 +19,9 @@
  * under the License.
  */
 
-#include "nodegl/core/pipeline_util.h"
-#include "nodegl/core/memory.h"
-#include "nodegl/core/nodegl.h"
+#include "pipeline_util.h"
+#include "memory.h"
+#include "nodegl.h"
 #include <string.h>
 
 int pipeline_update_blocks(struct pipeline *s,  const struct pipeline_resource_params *params) {
