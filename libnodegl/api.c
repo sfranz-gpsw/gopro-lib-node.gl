@@ -518,6 +518,9 @@ static const int backend_ids[] = {
 #ifdef BACKEND_VK
     NGL_BACKEND_VULKAN,
 #endif
+#ifdef BACKEND_NGFX
+    NGL_BACKEND_NGFX,
+#endif
 };
 
 int ngl_backends_probe(const struct ngl_config *user_config, int *nb_backendsp, struct ngl_backend **backendsp)
