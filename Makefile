@@ -216,6 +216,11 @@ else
 	(. $(ACTIVATE) && $(MESON_SETUP) $(NODEGL_DEBUG_OPTS) libnodegl builddir/libnodegl)
 endif
 
+shell:
+ifeq ($(TARGET_OS),Windows)
+	(cmd.exe /K $(ACTIVATE))
+endif
+
 sxplayer-install: sxplayer $(PREFIX)
 ifeq ($(TARGET_OS),Windows)
 	(cmd.exe /C $(ACTIVATE) \&\& $(MESON_SETUP) --default-library shared sxplayer builddir\\sxplayer \&\& $(MESON_COMPILE) -C builddir\\sxplayer \&\& $(MESON_INSTALL) -C builddir\\sxplayer)
@@ -401,3 +406,4 @@ coverage-xml:
 .PHONY: clean clean_py
 .PHONY: coverage-html coverage-xml
 .PHONY: ngfx-install
+.PHONY: shell
