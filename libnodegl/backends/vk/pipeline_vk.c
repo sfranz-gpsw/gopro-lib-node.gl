@@ -590,7 +590,7 @@ static int set_uniforms(struct pipeline *s)
             continue;
         struct buffer *ubuffer = s->ubuffer[i];
         const struct block *ublock = s->ublock[i];
-        int ret = ngli_buffer_upload(ubuffer, udata, ublock->size);
+        int ret = ngli_buffer_upload(ubuffer, udata, ublock->size, 0);
         if (ret < 0)
             return ret;
     }
