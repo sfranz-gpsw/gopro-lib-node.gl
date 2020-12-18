@@ -214,6 +214,9 @@ static int ngfx_end_draw(struct gctx *s, double t)
         auto &output_texture = ((texture_ngfx *)s_priv->offscreen_resources.color_texture)->v;
         output_texture->download(s->config.capture_buffer, size);
     }
+    else {
+        ngli_swapchain_ngfx_swap_buffers(s);
+    }
     return 0;
 }
 
@@ -470,7 +473,6 @@ extern "C" const struct gctx_class ngli_gctx_ngfx = {
     .swapchain_create         = ngli_swapchain_ngfx_create,
     .swapchain_destroy        = ngli_swapchain_ngfx_destroy,
     .swapchain_acquire_image  = ngli_swapchain_ngfx_acquire_image,
-    .swapchain_swap_buffers   = ngli_swapchain_ngfx_swap_buffers,
 
     .texture_create           = ngli_texture_ngfx_create,
     .texture_init             = ngli_texture_ngfx_init,
