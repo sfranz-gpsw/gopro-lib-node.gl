@@ -116,7 +116,9 @@ ngfx::ImageUsageFlags to_ngfx_image_usage_flags(int usage_flags) {
         { NGLI_TEXTURE_USAGE_STORAGE_BIT                    , IMAGE_USAGE_STORAGE_BIT },
         { NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT           , IMAGE_USAGE_COLOR_ATTACHMENT_BIT },
         { NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT   , IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT },
+#if 0 //TODO
         { NGLI_TEXTURE_USAGE_TRANSIENT_ATTACHMENT_BIT       , IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT }
+#endif
     };
     int image_usage_flags = 0;
     for (auto& flag : usage_flags_map) {
