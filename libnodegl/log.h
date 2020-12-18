@@ -22,6 +22,10 @@
 #ifndef LOG_H
 #define LOG_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "nodegl.h"
 #include "utils.h"
 
@@ -37,11 +41,15 @@
 # define TRACE(...) do { if (0) LOG(VERBOSE, __VA_ARGS__); } while (0)
 #endif
 
-void ngli_log_print(int log_level, const char *filename,
-                    int ln, const char *fn, const char *fmt, ...) ngli_printf_format(5, 6);
+    void ngli_log_print(int log_level, const char* filename,
+        int ln, const char* fn, const char* fmt, ...) ngli_printf_format(5, 6);
 
 #define NGLI_RET_STR(ret) ngli_log_ret_str((char[128]){0}, 128, ret)
 
-char *ngli_log_ret_str(char *buf, size_t buf_size, int ret);
+    char* ngli_log_ret_str(char* buf, size_t buf_size, int ret);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* LOG_H */
