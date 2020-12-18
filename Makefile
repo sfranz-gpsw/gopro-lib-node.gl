@@ -260,6 +260,15 @@ else
 	install_name_tool -id @rpath/$(SHADERC_LIB_FILENAME) $(PREFIX)/lib/$(SHADERC_LIB_FILENAME)
 endif
 
+shader-tools-install: $(PREFIX)
+ifeq ($(TARGET_OS), Windows)
+	( \
+	  cd shader-tools && \
+	  cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=RelWithDebInfo -G "Visual Studio 16 2019" && \
+	  cmake.exe --build cmake-build-debug --config RelWithDebInfo -j8 \
+	)
+endif
+
 ngfx-install: $(PREFIX)
 ifeq ($(TARGET_OS), Windows)
 	( \
