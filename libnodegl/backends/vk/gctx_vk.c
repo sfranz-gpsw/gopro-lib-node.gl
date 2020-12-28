@@ -42,6 +42,10 @@
 #include "program_vk.h"
 #include "pipeline_vk.h"
 
+#ifdef ENABLE_CAPTURE
+#include "tools/capture/capture.h"
+static int DEBUG_CAPTURE;
+#endif
 
 static VkSurfaceFormatKHR select_swapchain_surface_format(const VkSurfaceFormatKHR *formats,
                                                           uint32_t nb_formats)
@@ -484,7 +488,10 @@ static int vk_init(struct gctx *s)
 {
     const struct ngl_config *config = &s->config;
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
-
+#ifdef ENABLE_CAPTURE
+    DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != NULL);
+    if (DEBUG_CAPTURE) init_capture();
+#endif
     /* FIXME */
     s->features = -1;
 
@@ -507,6 +514,9 @@ static int vk_init(struct gctx *s)
         ngli_vkcontext_freep(&s_priv->vkcontext);
         return ret;
     }
+#ifdef ENABLE_CAPTURE
+    if (DEBUG_CAPTURE) begin_capture();
+#endif
     struct vkcontext *vk = s_priv->vkcontext;
 
     VkPhysicalDeviceLimits *limits = &vk->phy_device_props.limits;
@@ -1015,7 +1025,9 @@ static void vk_destroy(struct gctx *s)
     ngli_darray_reset(&s_priv->wait_semaphores);
     ngli_darray_reset(&s_priv->wait_stages);
     ngli_darray_reset(&s_priv->signal_semaphores);
-
+#ifdef ENABLE_CAPTURE
+    if (DEBUG_CAPTURE) end_capture();
+#endif
     ngli_vkcontext_freep(&s_priv->vkcontext);
 }
 
