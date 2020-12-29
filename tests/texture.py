@@ -92,7 +92,7 @@ def texture_data_unaligned_row(cfg, h=32):
 _RENDER_TO_CUBEMAP_VERT = '''
 void main()
 {
-    ngl_out_pos = ngl_projection_matrix * ngl_modelview_matrix * ngl_position;
+    ngl_out_pos = ngl_projection_matrix * ngl_modelview_matrix * vec4(ngl_position, 1.0);
 }
 '''
 
@@ -113,8 +113,8 @@ void main()
 _RENDER_CUBEMAP_VERT = '''
 void main()
 {
-    ngl_out_pos = ngl_projection_matrix * ngl_modelview_matrix * ngl_position;
-    var_uvcoord = ngl_position.xyz;
+    ngl_out_pos = ngl_projection_matrix * ngl_modelview_matrix * vec4(ngl_position, 1.0);
+    var_uvcoord = ngl_position;
 }
 '''
 
