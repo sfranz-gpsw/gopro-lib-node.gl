@@ -112,7 +112,7 @@ int ShaderTools::compileShaderGLSL(const string &src, shaderc_shader_kind shader
 
     auto result = compiler.CompileGlslToSpv(src, shaderKind, "", compileOptions);
     if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
-        ERR("cannot compile file");
+        ERR("cannot compile file: %s", result.GetErrorMessage().c_str());
         return 1;
     }
     spv = string((const char*)result.cbegin(), sizeof(uint32_t) * (result.cend() - result.cbegin()));
