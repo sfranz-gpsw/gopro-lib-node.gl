@@ -231,7 +231,7 @@ for layout in {'std140', 'std430', 'uniform'}:
 _RENDER_STREAMEDBUFFER_VERT = '''
 void main()
 {
-    ngl_out_pos = ngl_projection_matrix * ngl_modelview_matrix * ngl_position;
+    ngl_out_pos = ngl_projection_matrix * ngl_modelview_matrix * vec4(ngl_position, 1.0);
     var_uvcoord = ngl_uvcoord;
 }
 '''
