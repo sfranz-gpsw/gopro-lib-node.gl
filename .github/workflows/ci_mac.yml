@@ -12,11 +12,28 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
+    
+    - name: Cache ShaderC
+      id: cache-shaderc
+      uses: actions/cache@v2
+      with:
+        path: /tmp/shaderc
+        key: ${{ runner.os }}-shaderc
+
+    - name: Build ShaderC
+      if: steps.cache-shaderc.outputs.cache-hit != 'true'
+      run: |
+        cd /tmp && git clone https://github.com/google/shaderc && \
+        cd shaderc && \
+        ./utils/git-sync-deps && \
+        cmake -H. -Bcmake-build-release -DCMAKE_BUILD_TYPE=Release && \
+        cmake --build cmake-build-release -j8 && \
+        sudo cmake --install cmake-build-release
 
     - name: Install dependencies
       run: |
-        brew install python3 curl pkg-config sdl2 ffmpeg
+        brew install python3 curl pkg-config sdl2 ffmpeg ninja glm spirv-cross
         # https://docs.brew.sh/Homebrew-and-Python
         python3 -m pip install --upgrade pip
 
