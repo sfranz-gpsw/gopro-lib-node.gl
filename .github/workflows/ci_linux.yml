@@ -10,11 +10,18 @@ jobs:
   linux:
 
     runs-on: ubuntu-20.04
-
+    strategy:
+      matrix:
+        include:
+          - backend: "all"
+            run_tests_command: "DEBUG=yes DEBUG_GL=yes make tests"
+          - backend: "opengles"
+            run_tests_command: "MESA_GLES_VERSION_OVERRIDE=2.0 DEBUG=yes DEBUG_GL=yes make tests TESTS_SUITE=opengles"
+    
     steps:
     - uses: actions/checkout@v1
 
-    - name: Install dependencies
+    - name: Install Dependencies
       run: |
         sudo apt -y update
         #
@@ -26,31 +33,25 @@ jobs:
         #         apt-get install python3-venv
         #
         sudo apt -y install libsdl2-dev python3-venv
-        sudo apt -y install ffmpeg libavcodec-dev libavutil-dev libavformat-dev libavdevice-dev libavfilter-dev libswscale-dev libswresample-dev libpostproc-dev
-
-    - name: Build
-      run: |
-        make -j$(($(nproc)+1))
-    - name: Run tests
-      run: |
-        DEBUG=yes DEBUG_GL=yes make -k -j$(($(nproc)+1)) tests
-
-  gles2:
-
-    runs-on: ubuntu-20.04
-
-    steps:
-    - uses: actions/checkout@v1
-
-    - name: Install dependencies
-      run: |
+        sudo apt -y install ffmpeg libavcodec-dev libavutil-dev libavformat-dev libavdevice-dev \
+          libavfilter-dev libswscale-dev libswresample-dev libpostproc-dev ninja-build libglm-dev \
+          libglfw3-dev libglew-dev renderdoc
+        # Install Vulkan SDK
+        wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
+        sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.162-focal.list https://packages.lunarg.com/vulkan/1.2.162/lunarg-vulkan-1.2.162-focal.list
         sudo apt -y update
-        sudo apt -y install libsdl2-dev python3-venv
-        sudo apt -y install ffmpeg libavcodec-dev libavutil-dev libavformat-dev libavdevice-dev libavfilter-dev libswscale-dev libswresample-dev libpostproc-dev
+        sudo apt install vulkan-sdk
+        # Install meson
+        pip3 install meson
 
     - name: Build
       run: |
-        make -j$(($(nproc)+1))
-    - name: Run tests with OpenGLES2
+        export PATH=/home/runner/.local/bin:$PATH
+        export PKG_CONFIG_PATH=$PWD/venv/lib/pkgconfig
+        make
+    - name: Run Tests ${{matrix.backend}}
       run: |
-        MESA_GLES_VERSION_OVERRIDE=2.0 DEBUG=yes DEBUG_GL=yes make -k -j$(($(nproc)+1)) tests TESTS_SUITE=opengles
+        export PATH=/home/runner/.local/bin:$PATH
+        export PKG_CONFIG_PATH=$PWD/venv/lib/pkgconfig
+        ${{ matrix.run_tests_command }}
+
