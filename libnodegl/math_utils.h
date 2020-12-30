@@ -24,6 +24,10 @@
 
 #include "config.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -87,4 +91,7 @@ void ngli_mat4_mul_vec4_aarch64(float *dst, const float *m, const float *v);
 
 void ngli_quat_slerp(float *dst, const float *q1, const float *q2, float t);
 
+#ifdef __cplusplus
+}
+#endif
 #endif
