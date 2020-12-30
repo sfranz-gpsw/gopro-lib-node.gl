@@ -26,7 +26,14 @@ jobs:
         #         apt-get install python3-venv
         #
         sudo apt -y install libsdl2-dev python3-venv
-        sudo apt -y install ffmpeg libavcodec-dev libavutil-dev libavformat-dev libavdevice-dev libavfilter-dev libswscale-dev libswresample-dev libpostproc-dev
+        sudo apt -y install ffmpeg libavcodec-dev libavutil-dev libavformat-dev libavdevice-dev \
+          libavfilter-dev libswscale-dev libswresample-dev libpostproc-dev ninja-build libglm-dev \
+          libglfw3-dev libglew-dev renderdoc
+        #Install Vulkan SDK
+        wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
+        sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.162-focal.list https://packages.lunarg.com/vulkan/1.2.162/lunarg-vulkan-1.2.162-focal.list
+        sudo apt update
+        sudo apt install vulkan-sdk
 
     - name: Build
       run: |
@@ -46,7 +53,14 @@ jobs:
       run: |
         sudo apt -y update
         sudo apt -y install libsdl2-dev python3-venv
-        sudo apt -y install ffmpeg libavcodec-dev libavutil-dev libavformat-dev libavdevice-dev libavfilter-dev libswscale-dev libswresample-dev libpostproc-dev
+        sudo apt -y install ffmpeg libavcodec-dev libavutil-dev libavformat-dev libavdevice-dev \
+          libavfilter-dev libswscale-dev libswresample-dev libpostproc-dev ninja-build libglm-dev \
+          libglfw3-dev libglew-dev renderdoc
+        #Install Vulkan SDK
+        wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
+        sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.162-focal.list https://packages.lunarg.com/vulkan/1.2.162/lunarg-vulkan-1.2.162-focal.list
+        sudo apt update
+        sudo apt install vulkan-sdk
 
     - name: Build
       run: |
