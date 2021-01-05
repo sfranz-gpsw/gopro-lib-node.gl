@@ -195,8 +195,11 @@ endif
 nodegl-install: nodegl-setup
 ifeq ($(TARGET_OS),Windows)
 	($(CMD) $(ACTIVATE) \&\& $(MESON_COMPILE) -C builddir\\libnodegl \&\& $(MESON_INSTALL) -C builddir\\libnodegl)
-	# patch libnodegl.pc TODO: remove
-	sed -i -e 's/Libs.private: .*/Libs.private: pthreadVC3.lib OpenGL32.lib gdi32.lib/' nodegl-env/Lib/pkgconfig/libnodegl.pc
+	# patch libnodegl.pc
+	# Use windows-style slashes
+	sed -i -e 's/\//\\\\/'g $(PREFIX)/Lib/pkgconfig/libnodegl.pc
+	# Workaround meson issue
+	sed -i -e 's/Libs.private: .*/Libs.private: pthreadVC3.lib OpenGL32.lib gdi32.lib/' $(PREFIX)/Lib/pkgconfig/libnodegl.pc
 else
 	(. $(ACTIVATE) && $(MESON_COMPILE) -C builddir/libnodegl && $(MESON_INSTALL) -C builddir/libnodegl)
 endif
@@ -211,6 +214,8 @@ endif
 sxplayer-install: external-download $(PREFIX)
 ifeq ($(TARGET_OS),Windows)
 	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) --default-library shared external\\sxplayer builddir\\sxplayer \&\& $(MESON_COMPILE) -C builddir\\sxplayer \&\& $(MESON_INSTALL) -C builddir\\sxplayer)
+	# patch libsxplayer.pc.  Use windows-style slashes
+	sed -i -e 's/\//\\\\/'g $(PREFIX)/Lib/pkgconfig/libsxplayer.pc
 else
 	(. $(ACTIVATE) && $(MESON_SETUP) --default-library shared external/sxplayer builddir/sxplayer && $(MESON_COMPILE) -C builddir/sxplayer && $(MESON_INSTALL) -C builddir/sxplayer)
 endif
@@ -230,14 +235,16 @@ ifeq ($(TARGET_OS),Windows)
 	($(CMD) copy $(VCPKG_DIR)\\packages\\pthreads_x64-windows\\lib\\*.lib $(PREFIX)\\Lib\\.)
 	($(CMD) mkdir $(PREFIX)\\Lib\\pkgconfig)
 	($(CMD) copy ${VCPKG_DIR}\\packages\\ffmpeg_x64-windows\\lib\\pkgconfig\\*.pc $(PREFIX)\\Lib\\pkgconfig\\.)
-	#patch ffmpeg pkg-config files
+	# patch ffmpeg pkg-config files
 	(sed -i -e 's/\/cygdrive\/c/C:/g' $(PREFIX)/Lib/pkgconfig/*.pc)
 	(sed -i -e 's/\/cygdrive\/d/D:/g' $(PREFIX)/Lib/pkgconfig/*.pc)
+	(sed -i -e 's/\//\\\\/'g $(PREFIX)/Lib/pkgconfig/*.pc)
 	($(CMD) copy ${VCPKG_DIR}\\packages\\sdl2_x64-windows\\lib\\pkgconfig\\*.pc $(PREFIX)\\Lib\\pkgconfig\\.)
-	#patch SDL2 pkg-config file
+	# patch SDL2 pkg-config file
 	(sed -i -e 's/prefix=.*/prefix=$(VCPKG_DIR)\/packages\/sdl2_x64-windows/' $(PREFIX)/Lib/pkgconfig/sdl2.pc)
 	(sed -i -e 's/Libs: .*/Libs: -L\${libdir} -lSDL2 -L\${libdir}/manual-link -lSDL2main/' $(PREFIX)/Lib/pkgconfig/sdl2.pc)
 	(sed -i -e 's/\\/\//g' $(PREFIX)/Lib/pkgconfig/sdl2.pc)
+	(sed -i -e 's/\//\\\\/'g $(PREFIX)/Lib/pkgconfig/sdl2.pc)
 	($(CMD) $(ACTIVATE) \&\& pip install meson ninja)
 else ifeq ($(TARGET_OS),MinGW-w64)
 	#

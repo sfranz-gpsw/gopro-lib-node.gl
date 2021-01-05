@@ -37,7 +37,8 @@ class LibNodeGLConfig:
         self.version       = subprocess.check_output([pkg_config_bin, '--modversion', self.PKG_LIB_NAME]).strip().decode()
         self.data_root_dir = subprocess.check_output([pkg_config_bin, '--variable=datarootdir', self.PKG_LIB_NAME]).strip().decode()
         pkgcfg_cflags      = subprocess.check_output([pkg_config_bin, '--cflags', self.PKG_LIB_NAME]).decode()
-        pkgcfg_libs        = subprocess.check_output([pkg_config_bin, '--libs', self.PKG_LIB_NAME]).decode()
+        pkgcfg_libs        = subprocess.check_output([pkg_config_bin, '--static', '--dont-define-prefix', '--libs', self.PKG_LIB_NAME]).decode()
+        print('pkgcfg_libs: ',pkgcfg_libs)
         cflags = pkgcfg_cflags.split()
         ldflags = pkgcfg_libs.split()
         self.extra_compile_args = [f for f in cflags if f.startswith('-D')]
