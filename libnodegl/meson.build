@@ -491,37 +491,23 @@ endif
 #
 # OpenGL specifications
 #
-
-gl_xml = custom_target(
-  'gl.xml',
-  command: [find_program('curl'), 'https://raw.githubusercontent.com/KhronosGroup/OpenGL-Registry/master/xml/gl.xml', '-o', '@OUTPUT@'],
-  capture: false,
-  output: 'gl.xml',
+message('** generate gl wrappers **')
+message('gl.xml path: ' + meson.current_build_dir() / 'gl.xml')
+run_command('curl',
+  'https://raw.githubusercontent.com/KhronosGroup/OpenGL-Registry/master/xml/gl.xml',
+  '-o', meson.current_build_dir() / 'gl.xml'
 )
-gl_generated_files = custom_target(
-  'gl_generated_files',
-  command: [find_program('gen-gl-wrappers.py'), '@INPUT@', '@OUTPUT@'],
-  capture: false,
-  input: gl_xml,
-  output: ['glfunctions.h', 'gldefinitions_data.h', 'glwrappers.h'],
+run_command('gen-gl-wrappers.py', meson.current_build_dir() / 'gl.xml',
+  meson.current_build_dir() / 'glfunctions.h',
+  meson.current_build_dir() / 'gldefinitions_data.h',
+  meson.current_build_dir() / 'glwrappers.h'
 )
-run_target(
-  'updateglwrappers',
-  command: [
-    cp,
-    # FIXME: In 0.56.0, we get "WARNING: custom_target 'gl_generated_files' has
-    # more than one output!  Using the first one.", so we need to do this
-    # instead of just using gl_generated_files. It also requires the "depends:"
-    # entry below.
-    # See https://github.com/mesonbuild/meson/issues/7891 for more information
-    gl_generated_files[0].full_path(),
-    gl_generated_files[1].full_path(),
-    gl_generated_files[2].full_path(),
-    meson.current_source_dir() / 'backends/gl'
-  ],
-  depends: gl_generated_files,
+run_command('cp',
+  meson.current_build_dir() / 'glfunctions.h',
+  meson.current_build_dir() / 'gldefinitions_data.h',
+  meson.current_build_dir() / 'glwrappers.h',
+  meson.current_source_dir() / 'backends' / 'gl'
 )
-
 
 #
 # Tests
