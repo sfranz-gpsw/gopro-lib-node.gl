@@ -52,7 +52,7 @@ ifeq ($(TARGET_OS), Windows)
 VCVARS64 ?= "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
 ACTIVATE = $(VCVARS64) \&\& $(PREFIX)\\Scripts\\activate.bat
 VCPKG_DIR ?= C:\\vcpkg
-PKG_CONFIG ?= C:\\msys64\\usr\\bin\\pkg-config.exe
+PKG_CONF_DIR ?= C:\\pkgconf
 SET_PKG_CONFIG_PATH = PKG_CONFIG_PATH="$(W_PREFIX)\Lib\pkgconfig" WSLENV=PKG_CONFIG_PATH/w
 CMD = $(SET_PKG_CONFIG_PATH) cmd.exe /C
 else
@@ -221,7 +221,8 @@ external-download:
 $(PREFIX):
 ifeq ($(TARGET_OS),Windows)
 	($(CMD) $(PYTHON) -m venv $(PREFIX))
-	($(CMD) copy $(PKG_CONFIG) nodegl-env\\Scripts)
+	($(CMD) copy $(PKG_CONF_DIR)\\build\\pkgconf.exe nodegl-env\\Scripts\\pkg-config.exe)
+	($(CMD) copy $(PKG_CONF_DIR)\\build\\pkgconf-3.dll nodegl-env\\Scripts\\.)
 	($(CMD) copy $(VCPKG_DIR)\\packages\\ffmpeg_x64-windows\\tools\\ffmpeg\\*.exe $(PREFIX)\\Scripts\\.)
 	($(CMD) copy $(VCPKG_DIR)\\packages\\ffmpeg_x64-windows\\bin\\*.dll pynodegl\\.)
 	($(CMD) copy $(VCPKG_DIR)\\packages\\pthreads_x64-windows\\bin\\*.dll pynodegl\\.)
