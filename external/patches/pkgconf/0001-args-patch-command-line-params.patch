@@ -1,0 +1,59 @@
+From 46505033343cfe7e093239bf494dc0df7a0cd61b Mon Sep 17 00:00:00 2001
+From: Jeff Moguillansky <jmoguillansky@gopro.com>
+Date: Thu, 7 Jan 2021 13:15:14 -0800
+Subject: [PATCH] args: patch command line params
+
+---
+ cli/main.c | 32 +++++++++++++++++++++++++++++++-
+ 1 file changed, 31 insertions(+), 1 deletion(-)
+
+diff --git a/cli/main.c b/cli/main.c
+index db27775..b1c1879 100644
+--- a/cli/main.c
++++ b/cli/main.c
+@@ -786,7 +786,7 @@ deduce_personality(char *argv[])
+ #endif
+ 
+ int
+-main(int argc, char *argv[])
++run_main(int argc, char *argv[])
+ {
+ 	int ret;
+ 	pkgconf_list_t pkgq = PKGCONF_LIST_INITIALIZER;
+@@ -1448,3 +1448,33 @@ out:
+ 
+ 	return ret;
+ }
++
++#define PATCH_PARAMS
++
++int main(int src_argc, char **src_argv) {
++#ifdef PATCH_PARAMS
++    int dst_argc = 0;
++    char **dst_argv = NULL;
++    for (int j = 0; j<src_argc; j++) {
++        dst_argv = realloc(dst_argv, (dst_argc + 1) * sizeof (char *));
++        dst_argv[dst_argc++] = src_argv[j];
++        if (0 == strcmp(src_argv[j], "--cflags")) {
++            dst_argv = realloc(dst_argv, (dst_argc + 1) * sizeof (char *));
++            dst_argv[dst_argc++] = strdup("--keep-system-cflags");
++        }
++        else if (0 == strcmp(src_argv[j], "--libs")) {
++            dst_argv = realloc(dst_argv, (dst_argc + 1) * sizeof (char *));
++            dst_argv[dst_argc++] = strdup("--static");
++            dst_argv = realloc(dst_argv, (dst_argc + 1) * sizeof (char *));
++            dst_argv[dst_argc++] = strdup("--keep-system-libs");
++        }
++    }
++	dst_argv = realloc(dst_argv, (dst_argc + 1) * sizeof(char*));
++	dst_argv[dst_argc++] = strdup("--dont-define-prefix");
++	dst_argv = realloc(dst_argv, (dst_argc + 1) * sizeof(char*));
++	dst_argv[dst_argc] = NULL;
++    return run_main(dst_argc, dst_argv);
++#else
++    return run_main(src_argc, src_argv);
++#endif
++}
+-- 
+2.17.1
+
