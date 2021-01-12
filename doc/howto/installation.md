@@ -38,9 +38,10 @@ number of parallel processes.
 
 **Note**: to leave the environment, you can use `deactivate`.
 
-## Quick user installation on Windows
+## Quick user installation on Windows (MINGW toolchain)
 
-On Windows, the bootstrap is slightly more complex:
+Windows supports two configurations: MINGW toolchain, and Visual Studio toolchain (MSVC).
+On Windows / MINGW, the steps to bootstrap the environment:
 
 - install [MSYS2](https://www.msys2.org/)
 - run MinGW64 shell (*NOT* MSYS2, "MINGW64" should be visible in the prompt)
@@ -57,6 +58,58 @@ make TARGET_OS=MinGW-w64
 ```
 
 Then you should be able to enter the environment and run the tools.
+
+## Quick user installation on Windows (MSVC toolchain)
+
+We use Windows Subsystem for Linux in order to establish a similar environment
+as Linux.
+
+The steps to build:
+
+1.  Install Tools:
+
+a) Install Windows Subsystem for Linux, and Ubuntu (recommend 20.04)
+b) Install Microsoft Visual Studio 2019
+c) Install CMake
+
+2.  In Windows Subsystem for Linux:
+
+sudo apt -y update
+sudo apt -y install build-essential zip
+
+3.  Install 3rd Party Dependencies:
+
+We use vcpkg package manager to install various 3rd party dependencies.
+
+First download vcpkg from https://github.com/microsoft/vcpkg.
+You can install vcpkg anywhere.
+Then, install the following packages:
+
+vcpkg.exe install pthreads:x64-windows opengl-registry:x64-windows ffmpeg[ffmpeg,ffprobe]:x64-windows sdl2:x64-windows
+vcpkg.exe integrate install
+
+4.  Set Build Environment Variables:
+
+Add C:\vcpkg\installed\x64-windows\tools\ffmpeg to your system %PATH%. The
+ffmpeg and ffprobe binaries must be available in order to run the tests.
+
+We use various environment variables as part of the build
+
+VCVARS64: full path to vcvars64.bat
+VCPKG_DIR: path to vcpkg directory
+TARGET_OS: set to Windows
+
+For example:
+export VCVARS64='"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"'
+export VCPKG_DIR='C:\vcpkg'
+export TARGET_OS=Windows
+
+Please follow Bash syntax rules:
+Reference: https://wiki-dev.bash-hackers.org/syntax/quoting
+
+5.  Build:
+
+make -j8 TARGET_OS=Windows
 
 ## Installation of `libnodegl` (the core library)
 
