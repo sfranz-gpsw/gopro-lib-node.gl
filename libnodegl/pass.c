@@ -150,6 +150,8 @@ static int register_texture(struct pass *s, const char *name, struct ngl_node *t
                 }
                 /* Disable direct rendering when using image load/store */
                 texture_priv->supported_image_layouts = 1 << NGLI_IMAGE_LAYOUT_DEFAULT;
+                
+                texture_priv->params.used_as_image = 1;
 
                 crafter_texture.type = NGLI_PGCRAFT_SHADER_TEX_TYPE_IMAGE2D;
             }
