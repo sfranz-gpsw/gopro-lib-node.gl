@@ -148,6 +148,7 @@ static int register_texture(struct pass *s, const char *name, struct ngl_node *t
                     LOG(ERROR, "\"%s\" can not be accessed as an image; only Texture2D is supported as image", name);
                     return NGL_ERROR_UNSUPPORTED;
                 }
+                texture_priv->params.used_as_image = 1;
                 crafter_texture.type = NGLI_PGCRAFT_SHADER_TEX_TYPE_IMAGE2D;
             }
             crafter_texture.writable  = resprops->writable;
