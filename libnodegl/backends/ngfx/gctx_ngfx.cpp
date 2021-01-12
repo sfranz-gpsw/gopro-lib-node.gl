@@ -83,6 +83,7 @@ static int create_offscreen_resources(struct gctx *s) {
     rt_params.height = config->height;
     rt_params.samples = config->samples;
     rt_params.nb_colors = 1;
+    memcpy(rt_params.colors[0].clear_value, config->clear_color, sizeof(config->clear_color));
     rt_params.colors[0].attachment = color_texture;
     rt_params.depth_stencil.attachment = depth_texture,
     rt_params.readable = 1;
@@ -291,7 +292,9 @@ static void begin_render_pass(struct gctx_ngfx *s_priv, rendertarget_ngfx *rt_pr
     RenderPass *render_pass = rt_priv->render_pass;
 
     Framebuffer *framebuffer = rt_priv->output_framebuffer;
-    graphics->beginRenderPass(cmd_buf, render_pass, framebuffer, glm::make_vec4(s_priv->clear_color));
+    auto &color_attachments = rt_priv->parent.params.colors;
+    graphics->beginRenderPass(cmd_buf, render_pass, framebuffer,
+        glm::make_vec4(color_attachments[0].clear_value));
 }
 
 static void end_render_pass(struct gctx_ngfx *s_priv, rendertarget_ngfx *rt_priv)
