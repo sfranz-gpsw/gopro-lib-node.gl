@@ -318,7 +318,7 @@ static int texture_prefetch(struct ngl_node *node)
     if (ngli_format_has_depth(params->format) || ngli_format_has_stencil(params->format)) {
         params->usage |= NGLI_TEXTURE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     } else {
-        params->usage |= NGLI_TEXTURE_USAGE_STORAGE_BIT;
+        if (params->used_as_image) params->usage |= NGLI_TEXTURE_USAGE_STORAGE_BIT;
         params->usage |= NGLI_TEXTURE_USAGE_COLOR_ATTACHMENT_BIT;
     }
 
