@@ -279,7 +279,7 @@ def gen(gl_xml, func_file, def_file, wrap_file):
 
 #include "config.h"
 
-#ifdef DEBUG_GL
+#if DEBUG_GL
 # define check_error_code ngli_glcontext_check_gl_error
 #else
 # define check_error_code(gl, glfuncname) do { } while (0)
@@ -350,7 +350,7 @@ static const struct gldefinition {
                 'flags': '0' if funcname in cmds_optional else 'M',
         }
 
-        glfunctions   += '    NGLI_GL_APIENTRY %(func_ret)s (*%(func_name_nogl)s)(%(func_args_specs)s);\n' % data
+        glfunctions   += '    %(func_ret)s (NGLI_GL_APIENTRY *%(func_name_nogl)s)(%(func_args_specs)s);\n' % data
         gldefinitions += '    {"%(func_name)s", offsetof(struct glfunctions, %(func_name_nogl)s), %(flags)s},\n' % data
         if funcname == 'glGetError':
             glwrappers += '''
@@ -378,11 +378,11 @@ static inline %(func_ret)s ngli_%(func_name)s(%(wrapper_args_specs)s)
     glfunctions   += '};\n\n#endif\n'
     gldefinitions += '};\n'
 
-    with open(func_file, 'w') as f:
+    with open(func_file, 'w', newline='\n') as f:
         f.write(glfunctions)
-    with open(def_file, 'w') as f:
+    with open(def_file, 'w', newline='\n') as f:
         f.write(gldefinitions)
-    with open(wrap_file, 'w') as f:
+    with open(wrap_file, 'w', newline='\n') as f:
         f.write(glwrappers)
 
 if __name__ == '__main__':
