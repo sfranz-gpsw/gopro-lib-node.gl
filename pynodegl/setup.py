@@ -23,6 +23,10 @@
 from setuptools import setup, Command, Extension
 from setuptools.command.build_ext import build_ext
 
+def filter_list(p):
+    res = []
+    [res.append(x) for x in p if x not in res]
+    return res
 
 class LibNodeGLConfig:
 
@@ -49,6 +53,10 @@ class LibNodeGLConfig:
                 self.libraries.append(f[2:])
             elif f.endswith('.lib'):
                 self.libraries.append(f[:-4])
+        self.extra_compile_args = filter_list(self.extra_compile_args)
+        self.include_dirs = filter_list(self.include_dirs)
+        self.library_dirs = filter_list(self.library_dirs)
+        self.libraries = filter_list(self.libraries)
 
 _LIB_CFG = LibNodeGLConfig()
 
