@@ -235,12 +235,17 @@ ifeq ($(TARGET_OS),Windows)
 	($(CMD) copy $(VCPKG_DIR)\\packages\\pthreads_x64-windows\\bin\\*.dll $(PREFIX)\\Scripts\\.)
 	($(CMD) copy $(VCPKG_DIR)\\packages\\pthreads_x64-windows\\lib\\*.lib $(PREFIX)\\Lib\\.)
 	($(CMD) mkdir $(PREFIX)\\Lib\\pkgconfig)
+	# copy and patch ffmpeg pkg-config files
 	($(CMD) copy ${VCPKG_DIR}\\packages\\ffmpeg_x64-windows\\lib\\pkgconfig\\*.pc $(PREFIX)\\Lib\\pkgconfig\\.)
-	# patch ffmpeg pkg-config files
-	(sed -i -e 's/\/cygdrive\/c/C:/g' $(PREFIX)/Lib/pkgconfig/*.pc)
-	(sed -i -e 's/\/cygdrive\/d/D:/g' $(PREFIX)/Lib/pkgconfig/*.pc)
+	ffmpeg_pc_files="libavcodec.pc libavdevice.pc libavfilter.pc libavformat.pc libavresample.pc libavutil.pc libswresample.pc libswscale.pc" ;\
+	for pc_file in $$ffmpeg_pc_files ;\
+		do \
+		sed -i -e 's/\/cygdrive\/c/C:/g' $(PREFIX)/Lib/pkgconfig/$$pc_file ;\
+		sed -i -e 's/\/cygdrive\/d/D:/g' $(PREFIX)/Lib/pkgconfig/$$pc_file ;\
+		sed -i -e "s/prefix=[^\n]*/prefix=$${VCPKG_DIR}\\\\packages\\\\ffmpeg_x64-windows/" nodegl-env/Lib/pkgconfig/$$pc_file ;\
+	done;
+	# copy and patch SDL2 pkg-config files
 	($(CMD) copy ${VCPKG_DIR}\\packages\\sdl2_x64-windows\\lib\\pkgconfig\\*.pc $(PREFIX)\\Lib\\pkgconfig\\.)
-	#patch SDL2 pkg-config file
 	(sed -i -e 's/prefix=.*/prefix=$(VCPKG_DIR)\/packages\/sdl2_x64-windows/' $(PREFIX)/Lib/pkgconfig/sdl2.pc)
 	(sed -i -e 's/Libs: .*/Libs: -L\${libdir} -lSDL2 -L\${libdir}/manual-link -lSDL2main/' $(PREFIX)/Lib/pkgconfig/sdl2.pc)
 	(sed -i -e 's/\\/\//g' $(PREFIX)/Lib/pkgconfig/sdl2.pc)
