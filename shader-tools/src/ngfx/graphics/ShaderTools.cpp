@@ -127,6 +127,9 @@ int ShaderTools::removeUnusedVariablesGLSL(const std::string &src, shaderc_shade
     auto activeVariables = compilerGLSL.get_active_interface_variables();
     compilerGLSL.get_shader_resources(activeVariables);
     compilerGLSL.set_enabled_interface_variables(move(activeVariables));
+    spirv_cross::CompilerGLSL::Options opts;
+    opts.vulkan_semantics = true;
+    compilerGLSL.set_common_options(opts);
     dst = compilerGLSL.compile();
     return 0;
 }
