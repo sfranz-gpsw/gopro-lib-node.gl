@@ -48,7 +48,7 @@ pkg-config: pkgconf
 # than the prerequisite directory of the sxplayer rule. If this isn't true, the
 # symlink will be re-recreated on the next `make` call
 sxplayer: sxplayer-$(SXPLAYER_VERSION)
-ifneq ($(TARGET_OS),MinGW-w64)
+ifneq ($(TARGET_OS),$(filter $(TARGET_OS),MinGW-w64, Windows))
 	ln -snf $< $@
 else
 	cp -r $< $@
