@@ -39,7 +39,8 @@ int main(int argc, char** argv) {
     setenv("BACKEND", argv[1], 1);
     wstring test_name = to_wstring(argv[2]);
     wstring test_file = test_name.substr(0, test_name.find(L'_')) + L".py";
-    vector<wstring> wargs = { to_wstring(argv[0]), NGL_TEST, test_file, test_name, L"refs/" + test_name + L".ref" };
+    vector<wstring> wargs = { to_wstring(argv[0]), NGL_TEST, test_file, test_name }; 
+    if (test_file != L"api.py") wargs.push_back(L"refs/" + test_name + L".ref");
     py_cmd(wargs);
     return 0;
 }
