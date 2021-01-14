@@ -64,6 +64,18 @@
 #define O_BINARY 0
 #endif
 
+#ifdef _WIN32
+static const char* get_temp_dir(void) {
+    static TCHAR path_buf[MAX_PATH];
+    DWORD ret_val = GetTempPath(MAX_PATH, path_buf);
+    return path_buf;
+}
+#else
+static const char* get_temp_dir(void) {
+    return "/tmp";
+}
+#endif
+
 struct ctx {
     /* options */
     const char *host;
@@ -575,7 +587,7 @@ static int makedirs(const char *path, int mode)
 
 static int setup_paths(struct ctx *s)
 {
-    int ret = snprintf(s->root_dir, sizeof(s->root_dir), "/tmp/ngl-desktop/%s-%s/", s->host, s->port);
+    int ret = snprintf(s->root_dir, sizeof(s->root_dir), "%s/ngl-desktop/%s-%s/", get_temp_dir(), s->host, s->port);
     if (ret < 0 || ret >= sizeof(s->root_dir))
         return ret;
     ret = snprintf(s->files_dir, sizeof(s->files_dir), "%sfiles/", s->root_dir);
