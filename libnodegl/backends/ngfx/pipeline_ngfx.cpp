@@ -461,6 +461,9 @@ void ngli_pipeline_ngfx_freep(pipeline **sp) {
     pipeline *s = *sp;
     pipeline_ngfx *s_priv = (pipeline_ngfx *)s;
 
+    if (s_priv->gp) delete s_priv->gp;
+    if (s_priv->cp) delete s_priv->cp;
+
     ngli_darray_reset(&s_priv->texture_bindings);
     ngli_darray_reset(&s_priv->buffer_bindings);
     ngli_darray_reset(&s_priv->attribute_bindings);

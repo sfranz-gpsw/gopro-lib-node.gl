@@ -42,8 +42,10 @@ using namespace ngfx;
 
 static struct gctx *ngfx_create(const struct ngl_config *config)
 {
-    gctx_ngfx* ctx = new gctx_ngfx;
-    return (struct gctx *)ctx;
+    gctx_ngfx *s = (gctx_ngfx *)ngli_calloc(1, sizeof(*s));
+    if (!s)
+        return NULL;
+    return (struct gctx*)s;
 }
 
 static int create_offscreen_resources(struct gctx *s) {
@@ -229,14 +231,15 @@ static void ngfx_wait_idle(struct gctx *s)
 
 static void ngfx_destroy(struct gctx *s)
 {
-    gctx_ngfx* ctx = new gctx_ngfx;
+    gctx_ngfx* ctx = (gctx_ngfx *)s;
+    ngfx_wait_idle(s);
     auto output_color_texture = ((texture *)ctx->offscreen_resources.color_texture);
     auto output_depth_texture = ((texture *)ctx->offscreen_resources.depth_texture);
     if (output_depth_texture) ngli_texture_freep(&output_depth_texture);
     if (output_color_texture) ngli_texture_freep(&output_color_texture);
+    if (ctx->default_rendertarget) ngli_rendertarget_freep(&ctx->default_rendertarget);
     delete ctx->graphics;
     delete ctx->graphics_context;
-    delete ctx;
 #ifdef ENABLE_CAPTURE
     if (DEBUG_CAPTURE)
         end_capture();
