@@ -86,7 +86,7 @@ First download vcpkg from https://github.com/microsoft/vcpkg.
 You can install vcpkg anywhere.
 Then, install the following packages:
 
-vcpkg.exe install pthreads:x64-windows opengl-registry:x64-windows ffmpeg[ffmpeg]:x64-windows sdl2:x64-windows
+vcpkg.exe install pthreads:x64-windows opengl-registry:x64-windows ffmpeg[ffmpeg,ffprobe]:x64-windows sdl2:x64-windows
 vcpkg.exe integrate install
 
 4.  Set Build Environment Variables:
