@@ -91,6 +91,9 @@ vcpkg.exe integrate install
 
 4.  Set Build Environment Variables:
 
+Add C:\vcpkg\installed\x64-windows\tools\ffmpeg to your system %PATH%. The
+ffmpeg and ffprobe binaries must be available in order to run the tests.
+
 We use various environment variables as part of the build
 
 VCVARS64: full path to vcvars64.bat
