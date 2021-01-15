@@ -33,14 +33,27 @@ TARGET_OS  ?= $(shell uname -s)
 ifeq ($(TARGET_OS),Windows)
 PYTHON     ?= python.exe
 PREFIX     ?= nodegl-env
-W_PWD = $(shell wslpath -w .)
+W_PWD = $(shell wslpath -aw .)
 W_PREFIX ?= $(W_PWD)\$(PREFIX)
 $(info PYTHON: $(PYTHON))
 $(info PREFIX: $(PREFIX))
 $(info W_PREFIX: $(W_PREFIX))
+CMAKE_GENERATOR = "Visual Studio 16 2019"
+# Third party libs are built in release mode, and MSVC doesn't support mixing 
+# debug and release runtime lib.  This is why we use "RelWithDebInfo" instead of 
+# "Debug" configuration on Windows / MSVC
+CMAKE_BUILD_TYPE = "RelWithDebInfo"
+NGFX_GRAPHICS_BACKEND ?= "NGFX_GRAPHICS_BACKEND_DIRECT3D12"
 else
 PYTHON     ?= python$(if $(shell which python$(PYTHON_MAJOR) 2> /dev/null),$(PYTHON_MAJOR),)
 PREFIX     ?= $(PWD)/nodegl-env
+CMAKE_GENERATOR = "CodeBlocks - Ninja"
+CMAKE_BUILD_TYPE = "Debug"
+  ifeq ($(TARGET_OS),Linux)
+    NGFX_GRAPHICS_BACKEND ?= "NGFX_GRAPHICS_BACKEND_VULKAN"
+  else ifeq ($(TARGET_OS),Darwin)
+    NGFX_GRAPHICS_BACKEND ?= "NGFX_GRAPHICS_BACKEND_METAL"
+  endif
 endif
 
 DEBUG_GL    ?= no
@@ -57,24 +70,30 @@ SXPLAYER_VERSION ?= 9.6.0
 MOLTENVK_VERSION ?= 1.1.0
 SHADERC_VERSION  ?= 2020.3
 
+NODEGL_SETUP_OPTS =
+
 ifeq ($(TARGET_OS), Windows)
 #TODO: identify correct path
-VCVARS64 = "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
+VCVARS64 ?= "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
 EXTERNAL_DIR = $(shell wslpath -w external)
-WINDOWS_SDK_DIR = C:\\Program Files (x86)\\Windows Kits\\10
-VULKAN_SDK_DIR = $(shell wslpath -w /mnt/c/VulkanSDK/*)
-NODEGL_SETUP_OPTS = -Dvulkan_sdk_dir='$(VULKAN_SDK_DIR)'
-
+WINDOWS_SDK_DIR ?= C:\\Program Files (x86)\\Windows Kits\\10
+VULKAN_SDK_DIR ?= $(shell wslpath -w /mnt/c/VulkanSDK/*)
+NODEGL_SETUP_OPTS += -Dvulkan_sdk_dir='$(VULKAN_SDK_DIR)'
 ACTIVATE = $(VCVARS64) \&\& $(PREFIX)\\Scripts\\activate.bat
 else
 ACTIVATE = $(PREFIX)/bin/activate
 endif
+
+NODEGL_SETUP_OPTS += -Dngfx_graphics_backend=$(NGFX_GRAPHICS_BACKEND)
+
 
 RPATH_LDFLAGS ?= -Wl,-rpath,$(PREFIX)/lib
 
 ifeq ($(TARGET_OS),Windows)
 MESON_SETUP   = meson setup --backend vs --prefix="$(W_PREFIX)" --pkg-config-path=$(PREFIX)\\Lib\\pkgconfig -Drpath=true
 MESON_SETUP_NINJA   = meson setup --backend ninja --prefix="$(W_PREFIX)" --pkg-config-path=$(PREFIX)\\Lib\\pkgconfig -Drpath=true
+# Set PKG_CONFIG and PKG_CONFIG_PATH environment variables when invoking command shell
+CMD = PKG_CONFIG="$(PREFIX)\\Scripts\\pkg-config.exe" PKG_CONFIG_PATH="$(W_PREFIX)\\Lib\\pkgconfig" WSLENV=PKG_CONFIG/w:PKG_CONFIG_PATH/w cmd.exe /C
 else
 MESON_SETUP   = meson setup --prefix=$(PREFIX) --pkg-config-path=$(PREFIX)/lib/pkgconfig -Drpath=true
 endif
@@ -91,7 +110,7 @@ MESON_SETUP += -Db_coverage=true
 DEBUG = yes
 endif
 ifeq ($(DEBUG),yes)
-MESON_SETUP += --buildtype=debugoptimized
+MESON_SETUP += --buildtype=debug
 else
 MESON_SETUP += --buildtype=release
 ifneq ($(TARGET_OS),MinGW-w64)
@@ -135,14 +154,14 @@ endif
 
 ngl-tools-install: nodegl-install
 ifeq ($(TARGET_OS),Windows)
-	(cmd.exe /C $(ACTIVATE) \&\& $(MESON_SETUP) ngl-tools builddir\\ngl-tools \&\& $(MESON_COMPILE) -C builddir\\ngl-tools \&\& $(MESON_INSTALL) -C builddir\\ngl-tools)
+	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) ngl-tools builddir\\ngl-tools \&\& $(MESON_COMPILE) -C builddir\\ngl-tools \&\& $(MESON_INSTALL) -C builddir\\ngl-tools)
 else
 	(. $(ACTIVATE) && $(MESON_SETUP) ngl-tools builddir/ngl-tools && $(MESON_COMPILE) -C builddir/ngl-tools && $(MESON_INSTALL) -C builddir/ngl-tools)
 endif
 
 pynodegl-utils-install: pynodegl-utils-deps-install
 ifeq ($(TARGET_OS),Windows)
-	(cmd.exe /C $(ACTIVATE) \&\& pip -v install -e pynodegl-utils)
+	($(CMD) $(ACTIVATE) \&\& pip -v install -e pynodegl-utils)
 else
 	(. $(ACTIVATE) && pip -v install -e ./pynodegl-utils)
 endif
@@ -169,24 +188,21 @@ endif
 #
 pynodegl-utils-deps-install: pynodegl-install
 ifeq ($(TARGET_OS),Windows)
-	(cmd.exe /C $(ACTIVATE) \&\& pip install -r pynodegl-utils\\requirements.txt)
+	($(CMD) $(ACTIVATE) \&\& pip install -r pynodegl-utils\\requirements.txt)
 else ifneq ($(TARGET_OS),MinGW-w64)
 	(. $(ACTIVATE) && pip install -r ./pynodegl-utils/requirements.txt)
 endif
 
 pynodegl-install: pynodegl-deps-install
 ifeq ($(TARGET_OS),Windows)
-	(PKG_CONFIG_PATH="$(W_PREFIX)\Lib\pkgconfig" WSLENV=PKG_CONFIG_PATH/w cmd.exe /C $(ACTIVATE) \&\& pip -v install -e .\\pynodegl)
+	($(CMD) $(ACTIVATE) \&\& pip -v install -e .\\pynodegl)
 	#Copy DLLs and EXEs to runtime search path.  TODO: optimize
-	(cp external/win64/ffmpeg_x64-windows/tools/ffmpeg/*.exe $(PREFIX)/Scripts/.)
 	(cp external/win64/ffmpeg_x64-windows/bin/*.dll pynodegl/.)
 	(cp external/win64/pthreads_x64-windows/bin/*.dll pynodegl/.)
 	(cp external/win64/shaderc_x64-windows/bin/*.dll pynodegl/.)
 	(cp builddir/sxplayer/*.dll pynodegl/.)
 	(cp builddir/libnodegl/*.dll pynodegl/.)
-	(cp external/win64/ffmpeg_x64-windows/bin/*.dll $(PREFIX)/Scripts/.)
-	(cp external/win64/pthreads_x64-windows/bin/*.dll $(PREFIX)/Scripts/.)
-	(cp external/win64/shaderc_x64-windows/bin/*.dll $(PREFIX)/Scripts/.)
+	(cp external/win64/RenderDoc_1.11_64/renderdoc.dll pynodegl/.)
 	(cp builddir/sxplayer/*.dll $(PREFIX)/Scripts/.)
 	(cp builddir/libnodegl/*.dll $(PREFIX)/Scripts/.)
 else
@@ -195,14 +211,14 @@ endif
 
 pynodegl-deps-install: $(PREFIX) nodegl-install
 ifeq ($(TARGET_OS),Windows)
-	(cmd.exe /C $(ACTIVATE) \&\& pip install -r pynodegl\\requirements.txt)
+	($(CMD) $(ACTIVATE) \&\& pip install -r pynodegl\\requirements.txt)
 else
 	(. $(ACTIVATE) && pip install -r ./pynodegl/requirements.txt)
 endif
 
 nodegl-install: nodegl-setup
 ifeq ($(TARGET_OS),Windows)
-	(cmd.exe /C $(ACTIVATE) \&\& $(MESON_COMPILE) -C builddir\\libnodegl \&\& $(MESON_INSTALL) -C builddir\\libnodegl)
+	($(CMD) $(ACTIVATE) \&\& $(MESON_COMPILE) -C builddir\\libnodegl \&\& $(MESON_INSTALL) -C builddir\\libnodegl)
 	# patch libnodegl.pc TODO: remove
 	sed -i -e 's/Libs.private: .*/Libs.private: OpenGL32.lib gdi32.lib/' nodegl-env/Lib/pkgconfig/libnodegl.pc
 else
@@ -211,9 +227,9 @@ endif
 
 nodegl-setup: sxplayer-install ngfx-install shader-tools-install
 ifeq ($(TARGET_OS),Windows)
-	(cmd.exe /C $(ACTIVATE) \&\& $(MESON_SETUP) $(NODEGL_SETUP_OPTS) $(NODEGL_DEBUG_OPTS) --default-library shared libnodegl builddir\\libnodegl)
+	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) $(NODEGL_SETUP_OPTS) $(NODEGL_DEBUG_OPTS) --default-library shared libnodegl builddir\\libnodegl)
 else
-	(. $(ACTIVATE) && $(MESON_SETUP) $(NODEGL_DEBUG_OPTS) libnodegl builddir/libnodegl)
+	(. $(ACTIVATE) && $(MESON_SETUP) $(NODEGL_SETUP_OPTS) $(NODEGL_DEBUG_OPTS) libnodegl builddir/libnodegl)
 endif
 
 shell:
@@ -223,7 +239,7 @@ endif
 
 sxplayer-install: sxplayer $(PREFIX)
 ifeq ($(TARGET_OS),Windows)
-	(cmd.exe /C $(ACTIVATE) \&\& $(MESON_SETUP) --default-library shared sxplayer builddir\\sxplayer \&\& $(MESON_COMPILE) -C builddir\\sxplayer \&\& $(MESON_INSTALL) -C builddir\\sxplayer)
+	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) --default-library shared sxplayer builddir\\sxplayer \&\& $(MESON_COMPILE) -C builddir\\sxplayer \&\& $(MESON_INSTALL) -C builddir\\sxplayer)
 else
 	(. $(ACTIVATE) && $(MESON_SETUP) sxplayer builddir/sxplayer && $(MESON_COMPILE) -C builddir/sxplayer && $(MESON_INSTALL) -C builddir/sxplayer)
 endif
@@ -265,33 +281,75 @@ else
 	install_name_tool -id @rpath/$(SHADERC_LIB_FILENAME) $(PREFIX)/lib/$(SHADERC_LIB_FILENAME)
 endif
 
-shader-tools-install: $(PREFIX)
+shader-tools-install: $(PREFIX) ngfx-install
 ifeq ($(TARGET_OS), Windows)
 	( \
 	  cd shader-tools && \
-	  cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=RelWithDebInfo -G "Visual Studio 16 2019" && \
-	  cmake.exe --build cmake-build-debug --config RelWithDebInfo -j8 && \
-	  cmake.exe --install cmake-build-debug --config RelWithDebInfo --prefix ../external/win64/shader_tools_x64-windows \
+	  cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR)  -D$(NGFX_GRAPHICS_BACKEND)=ON && \
+	  cmake.exe --build cmake-build-debug --config $(CMAKE_BUILD_TYPE) -j8 && \
+	  cmake.exe --install cmake-build-debug --config $(CMAKE_BUILD_TYPE) --prefix ../external/win64/shader_tools_x64-windows \
 	)
+ifeq ($(NGFX_GRAPHICS_BACKEND), NGFX_GRAPHICS_BACKEND_DIRECT3D12)
+	($(CMD) $(ACTIVATE) \&\& shader-tools\\cmake-build-debug\\$(CMAKE_BUILD_TYPE)\\compile_shaders_dx12.exe d3dBlitOp)
+endif
+else ifeq ($(TARGET_OS), Linux)
+	( \
+	  cd shader-tools && \
+	  cmake -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR)  -D$(NGFX_GRAPHICS_BACKEND)=ON && \
+	  cmake --build cmake-build-debug -j8 && \
+	  cmake --install cmake-build-debug --prefix ../external/linux/shader_tools_x64-linux \
+	)
+	cp external/linux/shader_tools_x64-linux/lib/libshader_tools.so $(PREFIX)/lib
+else ifeq ($(TARGET_OS), Darwin)
+	( \
+	  cd shader-tools && \
+	  cmake -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR)  -D$(NGFX_GRAPHICS_BACKEND)=ON && \
+	  cmake --build cmake-build-debug -j8 && \
+	  cmake --install cmake-build-debug --prefix ../external/darwin/shader_tools_x64-darwin \
+	)
+	cp external/darwin/shader_tools_x64-darwin/lib/libshader_tools.dylib $(PREFIX)/lib
 endif
 
 ngfx-install: $(PREFIX)
 ifeq ($(TARGET_OS), Windows)
 	( \
 	  cd ngfx && \
-	  cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=RelWithDebInfo -G "Visual Studio 16 2019" -DNGFX_GRAPHICS_BACKEND_DIRECT3D12=ON && \
-	  cmake.exe --build cmake-build-debug --config RelWithDebInfo -j8 && \
-	  cmake.exe --install cmake-build-debug --config RelWithDebInfo --prefix ../external/win64/ngfx_x64-windows \
+	  cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) -D$(NGFX_GRAPHICS_BACKEND)=ON && \
+	  cmake.exe --build cmake-build-debug --config $(CMAKE_BUILD_TYPE) -j8 && \
+	  cmake.exe --install cmake-build-debug --config $(CMAKE_BUILD_TYPE) --prefix ../external/win64/ngfx_x64-windows \
 	)
+	cp external/win64/ngfx_x64-windows/lib/ngfx.lib $(PREFIX)/Lib
+else ifeq ($(TARGET_OS), Linux)
+	( \
+	  cd ngfx && \
+	  cmake -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) -D$(NGFX_GRAPHICS_BACKEND)=ON && \
+	  cmake --build cmake-build-debug -j8 && \
+	  cmake --install cmake-build-debug --prefix ../external/linux/ngfx_x64-linux \
+	)
+	cp external/linux/ngfx_x64-linux/lib/libngfx.so $(PREFIX)/lib
+else ifeq ($(TARGET_OS), Darwin)
+	( \
+	  cd ngfx && \
+	  cmake -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) -D$(NGFX_GRAPHICS_BACKEND)=ON && \
+	  cmake --build cmake-build-debug -j8 && \
+	  cmake --install cmake-build-debug --prefix ../external/darwin/ngfx_x64-darwin \
+	)
+	cp external/darwin/ngfx_x64-darwin/lib/libngfx.dylib $(PREFIX)/lib
 endif
 
-ngl-debug-tools-install: $(PREFIX)
+ngl-debug-tools: $(PREFIX)
 ifeq ($(TARGET_OS), Windows)
 	( \
 	  cd ngl-debug-tools && \
-	  cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=RelWithDebInfo -G "Visual Studio 16 2019" && \
-	  cmake.exe --build cmake-build-debug --config RelWithDebInfo -j8 && \
-	  cmake.exe --install cmake-build-debug --config RelWithDebInfo --prefix ../external/win64/ngl_debug_tools_x64-windows \
+	  cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) && \
+	  cmake.exe --build cmake-build-debug --config $(CMAKE_BUILD_TYPE) -j8 \
+	)
+	(cp external/win64/RenderDoc_1.11_64/renderdoc.dll ngl-debug-tools/cmake-build-debug/$(CMAKE_BUILD_TYPE))
+else ifeq ($(TARGET_OS), Linux)
+	( \
+	  cd ngl-debug-tools && \
+	  cmake -H. -Bcmake-build-debug -G $(CMAKE_GENERATOR) && \
+	  cmake --build cmake-build-debug -j8 \
 	)
 endif
 
@@ -326,18 +384,23 @@ MoltenVK-$(MOLTENVK_VERSION).tar.gz:
 # Pillow and PySide2. We require the users to have it on their system.
 #
 $(PREFIX):
-ifeq ($(TARGET_OS),Windows)
 	(git clean -fxd external)
-	(cd external && bash scripts/sync.sh win64)
+	(cd external && bash scripts/sync.sh $(TARGET_OS))
+ifeq ($(TARGET_OS),Windows)
 	$(PYTHON) -m venv $(PREFIX)
-	(cmd.exe /C copy external\\win64\\pkg-config.exe nodegl-env\\Scripts)
-	(cmd.exe /C mkdir $(PREFIX)\\Lib\\pkgconfig)
-	(cmd.exe /C pushd external\\win64\\ffmpeg_x64-windows \&\& python.exe scripts/install.py "$(W_PREFIX)" \& popd)
-	(cmd.exe /C pushd external\\win64\\pthreads_x64-windows \&\& python.exe scripts/install.py "$(W_PREFIX)" \& popd)
-	(cmd.exe /C pushd external\\win64\\sdl2_x64-windows \&\& python.exe scripts/install.py "$(W_PREFIX)" \& popd)
-	(cmd.exe /C pushd external\\win64\\shaderc_x64-windows \&\& python.exe scripts/install.py "$(W_PREFIX)" \& popd)
-	(cmd.exe /C $(ACTIVATE) \&\& pip install meson ninja)
+	($(CMD) copy external\\win64\\pkg-config\\* nodegl-env\\Scripts\\.)
+	($(CMD) mkdir $(PREFIX)\\Lib\\pkgconfig)
+	($(CMD) pushd external\\win64\\ffmpeg_x64-windows \&\& python.exe scripts/install.py "$(W_PREFIX)" \& popd)
+	($(CMD) pushd external\\win64\\pthreads_x64-windows \&\& python.exe scripts/install.py "$(W_PREFIX)" \& popd)
+	($(CMD) pushd external\\win64\\sdl2_x64-windows \&\& python.exe scripts/install.py "$(W_PREFIX)" \& popd)
+	($(CMD) pushd external\\win64\\shaderc_x64-windows \&\& python.exe scripts/install.py "$(W_PREFIX)" \& popd)
+	($(CMD) $(ACTIVATE) \&\& pip install meson ninja)
 	(sed -i -e 's/Libs: .*/Libs: -L\${libdir} -lSDL2 -L\${libdir}/manual-link -lSDL2main/' $(PREFIX)/Lib/pkgconfig/sdl2.pc)
+	(cp external/win64/ffmpeg_x64-windows/tools/ffmpeg/*.exe $(PREFIX)/Scripts/.)
+	(cp external/win64/ffmpeg_x64-windows/bin/*.dll $(PREFIX)/Scripts/.)
+	(cp external/win64/pthreads_x64-windows/bin/*.dll $(PREFIX)/Scripts/.)
+	(cp external/win64/shaderc_x64-windows/bin/*.dll $(PREFIX)/Scripts/.)
+	(cp external/win64/RenderDoc_1.11_64/renderdoc.dll $(PREFIX)/Scripts/.)
 else ifeq ($(TARGET_OS),MinGW-w64)
 	$(PYTHON) -m venv --system-site-packages $(PREFIX)
 else
@@ -347,21 +410,21 @@ endif
 
 tests: nodegl-tests tests-setup
 ifeq ($(TARGET_OS),Windows)
-	(cmd.exe /C $(ACTIVATE) \&\& meson test $(MESON_TESTS_SUITE_OPTS) -C builddir\\tests)
+	($(CMD) $(ACTIVATE) \&\& meson test $(MESON_TESTS_SUITE_OPTS) -C builddir\\tests)
 else
 	(. $(ACTIVATE) && meson test $(MESON_TESTS_SUITE_OPTS) -C builddir/tests)
 endif
 
 tests-setup: ngl-tools-install pynodegl-utils-install
 ifeq ($(TARGET_OS),Windows)
-	(cmd.exe /C $(ACTIVATE) \&\& $(MESON_SETUP_NINJA) builddir\\tests tests)
+	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP_NINJA) builddir\\tests tests)
 else
 	(. $(ACTIVATE) && $(MESON_SETUP) builddir/tests tests)
 endif
 
 nodegl-tests: nodegl-install
 ifeq ($(TARGET_OS),Windows)
-	(cmd.exe /C $(ACTIVATE) \&\& meson test -C builddir\\libnodegl)
+	($(CMD) $(ACTIVATE) \&\& meson test -C builddir\\libnodegl)
 else
 	(. $(ACTIVATE) && meson test -C builddir/libnodegl)
 endif
@@ -407,3 +470,4 @@ coverage-xml:
 .PHONY: coverage-html coverage-xml
 .PHONY: ngfx-install
 .PHONY: shell
+.PHONY: ngl-debug-tools
