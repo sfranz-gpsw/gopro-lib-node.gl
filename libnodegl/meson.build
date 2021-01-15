@@ -434,7 +434,8 @@ pkg.generate(
 # Specifications
 #
 
-cp = find_program('cp')
+cp = find_program('cp', required: false)
+python = find_program('python')
 specs_filename = 'nodes.specs'
 dest_datadir = get_option('datadir') / 'nodegl'
 install_data(files(specs_filename), install_dir: dest_datadir)
@@ -459,7 +460,7 @@ specs_file = custom_target(
 )
 run_target(
   'updatespecs',
-  command: [cp, specs_file, meson.current_source_dir()],
+  command: [python, '-c', 'import os; os.copyfile(@0@, @1@);'.format(specs_file, meson.current_source_dir())],
 )
 
 
@@ -483,7 +484,7 @@ if not get_option('small')
   )
   run_target(
     'updatedoc',
-    command: [cp, doc_file, meson.current_source_dir() / 'doc'],
+    command: [python, '-c', 'import os; os.copyfile(@0@, @1@);'.format(doc_file, meson.current_source_dir() / 'doc')],
   )
 endif
 
@@ -502,11 +503,11 @@ run_command('gen-gl-wrappers.py', meson.current_build_dir() / 'gl.xml',
   meson.current_build_dir() / 'gldefinitions_data.h',
   meson.current_build_dir() / 'glwrappers.h'
 )
-run_command('cp',
+run_command(python, '-c', 'import os; os.copyfile(@0@, @1@, @2@, @3@);'.format(
   meson.current_build_dir() / 'glfunctions.h',
   meson.current_build_dir() / 'gldefinitions_data.h',
   meson.current_build_dir() / 'glwrappers.h',
-  meson.current_source_dir() / 'backends' / 'gl'
+  meson.current_source_dir() / 'backends' / 'gl')
 )
 
 #

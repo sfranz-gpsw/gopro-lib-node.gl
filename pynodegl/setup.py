@@ -35,6 +35,7 @@ class LibNodeGLConfig:
     def __init__(self, pkg_config_bin='pkg-config'):
         import subprocess
 
+        print(pkg_config_bin)
         if subprocess.call([pkg_config_bin, '--exists', self.PKG_LIB_NAME]) != 0:
             raise Exception(f'{self.PKG_LIB_NAME} is required to build pynodegl')
 
@@ -57,6 +58,8 @@ class LibNodeGLConfig:
         self.include_dirs = filter_list(self.include_dirs)
         self.library_dirs = filter_list(self.library_dirs)
         self.libraries = filter_list(self.libraries)
+        import pprint
+        pprint.pprint(self.libraries)
 
 _LIB_CFG = LibNodeGLConfig()
 

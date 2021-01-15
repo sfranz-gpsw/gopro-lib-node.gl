@@ -51,7 +51,7 @@ NODEGL_DEFAULT_LIBRARY ?= shared
 ifeq ($(TARGET_OS), Windows)
 # Initialize VCVARS64 to a default value
 # Note: the user should override this environment variable to point to the correct path containing vcvars64.bat
-VCVARS64 ?= "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+VCVARS64 ?= "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
 ACTIVATE = $(VCVARS64) \&\& $(PREFIX)\\Scripts\\activate.bat
 # Initialize VCPKG_DIR to a default value
 # Note: the user should override this environment variable to point to the correct path containing vcpkg
