@@ -22,7 +22,7 @@
 project(
   'libnodegl',
   [ 'c', 'cpp' ],
-   default_options: ['c_std=c99', 'cpp_std=c++latest'],
+   default_options: ['c_std=c99', 'b_lundef=false'],
    license: 'Apache',
    meson_version: '>= 0.54.0',
    version: '0.0.0',
@@ -37,6 +37,12 @@ conf_data.set('version_micro', version_array[2])
 host_system = host_machine.system()
 cpu_family = host_machine.cpu_family()
 cc = meson.get_compiler('c')
+
+if cc.get_id() == 'msvc'
+  add_global_arguments('/std:c++latest', language: 'cpp')
+else
+  add_global_arguments('-std=gnu++2a', language: 'cpp')
+endif
 
 # meson currently (0.56.0) doesn't distinguish between macOS and iOS (the
 # "darwin" identifier is shared), so we need to test explicitely.
@@ -326,6 +332,7 @@ gbackends_cfg = {
     'hosts_cfg': {
       'linux': {
         'deps': ['shaderc', 'vulkan'],
+        'libs': ['dl'],
       },
       'darwin': {
         'src': files('backends/vk/hwupload_videotoolbox_darwin_vk.m'),
@@ -370,8 +377,15 @@ gbackends_cfg = {
 }
 
 ngfx_cflags = []
-if host_system == 'windows'
+ngfx_graphics_backend = get_option('ngfx_graphics_backend')
+if ngfx_graphics_backend == 'NGFX_GRAPHICS_BACKEND_DIRECT3D12' and host_system == 'windows'
   ngfx_cflags += '-DNGFX_GRAPHICS_BACKEND_DIRECT3D12'
+elif ngfx_graphics_backend == 'NGFX_GRAPHICS_BACKEND_VULKAN'
+  ngfx_cflags += '-DNGFX_GRAPHICS_BACKEND_VULKAN'
+elif ngfx_graphics_backend == 'NGFX_GRAPHICS_BACKEND_METAL' and host_system == 'darwin'
+  ngfx_cflags += '-DNGFX_GRAPHICS_BACKEND_METAL'
+else
+  error('invalid value for ngfx_graphics_backend: @0@'.format(ngfx_graphics_backend))
 endif
 
 ngfx_deps = []
@@ -407,7 +421,44 @@ if host_system == 'windows'
     link_args: [ '-L' + meson.current_source_dir() + '\\..\\external\\win64\\shader_tools_x64-windows\\lib', '-lshader_tools' ],
   )
   ngfx_deps += shader_tools_dep
+elif host_system == 'linux'
+  spirv_cross_link_args = [
+    '-lspirv-cross-cpp', '-lspirv-cross-core', '-lspirv-cross-glsl', '-lspirv-cross-hlsl', '-lspirv-cross-msl', '-lspirv-cross-reflect', '-lspirv-cross-util', '-lspirv-cross-c'
+  ]
 
+  ngfx_dep = declare_dependency(
+    compile_args: ngfx_cflags,
+    include_directories: [ '../external/linux/ngfx_x64-linux/include' ],
+    link_args: [
+      '-L' + meson.current_source_dir() + '/../external/linux/ngfx_x64-linux/lib', '-lngfx',
+    ] + spirv_cross_link_args,
+  )
+  ngfx_deps += ngfx_dep
+
+  shader_tools_dep = declare_dependency(
+    include_directories: [ '../shader-tools/src' ],
+    link_args: [ '-L' + meson.current_source_dir() + '/../external/linux/shader_tools_x64-linux/lib', '-lshader_tools' ],
+  )
+  ngfx_deps += shader_tools_dep
+elif host_system == 'darwin'
+  spirv_cross_link_args = [
+    '-lspirv-cross-cpp', '-lspirv-cross-core', '-lspirv-cross-glsl', '-lspirv-cross-hlsl', '-lspirv-cross-msl', '-lspirv-cross-reflect', '-lspirv-cross-util', '-lspirv-cross-c'
+  ]
+
+  ngfx_dep = declare_dependency(
+    compile_args: ngfx_cflags,
+    include_directories: [ '../external/darwin/ngfx_x64-darwin/include' ],
+    link_args: [
+      '-L' + meson.current_source_dir() + '/../external/darwin/ngfx_x64-darwin/lib', '-lngfx',
+    ] + spirv_cross_link_args,
+  )
+  ngfx_deps += ngfx_dep
+
+  shader_tools_dep = declare_dependency(
+    include_directories: [ '../shader-tools/src' ],
+    link_args: [ '-L' + meson.current_source_dir() + '/../external/darwin/shader_tools_x64-darwin/lib', '-lshader_tools' ],
+  )
+  ngfx_deps += shader_tools_dep
 endif
 
 if host_system in ['darwin', 'iphone']
@@ -436,22 +487,32 @@ endif
 #GPU Capture Options
 if host_system == 'windows' or host_system == 'linux'
   enable_renderdoc_capture = true
+  enable_metal_capture = false
   message('enable renderdoc capture: '+enable_renderdoc_capture.to_string())
 
 elif host_system == 'darwin'
-  enable_metal_capture = true
+  enable_renderdoc_capture = false
+  # TODO: port mtl_capture.mm to objective-c (not objective-c++)
+  # Meson doesn't seem to support objective c++
+  # ERROR: No host machine compiler for "tools/capture/mtl_capture.mm"
+  enable_metal_capture = false
   message('enable metal capture: '+enable_metal_capture.to_string())
 endif
 
 if enable_renderdoc_capture
   lib_src += 'tools/capture/renderdoc_capture.c'
   conf_data.set10('ENABLE_CAPTURE', true)
-  renderdoc_dep = declare_dependency(
-    include_directories: [ '..\\external\\win64\\RenderDoc_1.11_64' ]
-  )
+  if host_system == 'windows'
+    renderdoc_dep = declare_dependency(
+      include_directories: [ '..\\external\\win64\\RenderDoc_1.11_64' ]
+    )
+  else
+    renderdoc_dep = declare_dependency(
+    )
+  endif
   lib_deps += renderdoc_dep
 elif enable_metal_capture
-  lib_src += 'tools/capture/metal_capture.c'
+  lib_src += 'tools/capture/mtl_capture.mm'
   conf_data.set10('ENABLE_CAPTURE', true)
 endif
 
