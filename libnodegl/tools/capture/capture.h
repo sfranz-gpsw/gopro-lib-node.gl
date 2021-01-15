@@ -24,9 +24,9 @@
 extern "C" {
 #endif
 
-void init_capture();
-void begin_capture();
-void end_capture();
+void init_capture(void);
+void begin_capture(void);
+void end_capture(void);
 
 #ifdef __cplusplus
 }
