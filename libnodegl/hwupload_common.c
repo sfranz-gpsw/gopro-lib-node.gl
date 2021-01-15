@@ -56,8 +56,7 @@ static int common_init(struct ngl_node *node, struct sxplayer_frame *frame)
     params.width  = frame->width;
     params.height = frame->height;
     params.usage  = NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT |
-                    NGLI_TEXTURE_USAGE_SAMPLED_BIT      |
-                    NGLI_TEXTURE_USAGE_STORAGE_BIT;
+                    NGLI_TEXTURE_USAGE_SAMPLED_BIT;
 
     params.format = common_get_data_format(frame->pix_fmt);
     if (params.format < 0)
