@@ -102,7 +102,7 @@ TARGET_OS: set to Windows
 
 For example:
 export VCVARS64='"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"'
-export VCPKG_DIR='"C:\vcpkg"'
+export VCPKG_DIR='C:\vcpkg'
 export TARGET_OS=Windows
 
 Please follow Bash syntax rules:
