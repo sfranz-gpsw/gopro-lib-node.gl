@@ -49,4 +49,5 @@ option('vulkan_sdk_dir', type: 'string', value: 'C:\\VulkanSDK',
 option('windows_sdk_dir', type: 'string', value: 'C:\\Program Files (x86)\\Windows Kits\\10',
        description: 'Windows SDK path')
 
-
+option('ngfx_graphics_backend', type: 'string', value: '',
+        description: 'ngfx graphics backend (VULKAN | METAL | DIRECT3D12)')
