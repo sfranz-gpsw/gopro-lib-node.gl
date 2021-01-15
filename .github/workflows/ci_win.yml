@@ -61,7 +61,7 @@ jobs:
         with:
           vcpkgGitCommitId: 595777db2332a3442b73f9af9f656355f207aec9
           vcpkgTriplet: x64-windows
-          vcpkgArguments: pthreads opengl-registry ffmpeg[ffmpeg] sdl2
+          vcpkgArguments: pthreads opengl-registry ffmpeg[ffmpeg,ffprobe] sdl2
           cleanAfterBuild: false
 
       - name: vcpkg integrate install
