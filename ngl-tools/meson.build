@@ -37,6 +37,11 @@ add_project_arguments(
   language: 'c',
 )
 
+if cc.get_id() == 'msvc'
+  add_global_arguments('/std:c++latest', language: 'cpp')
+else
+  add_global_arguments('-std=c++2a', language: 'cpp')
+endif
 
 #
 # Main dependencies
