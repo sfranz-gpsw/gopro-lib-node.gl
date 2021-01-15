@@ -39,21 +39,22 @@ $(info PYTHON: $(PYTHON))
 $(info PREFIX: $(PREFIX))
 $(info W_PREFIX: $(W_PREFIX))
 CMAKE_GENERATOR = "Visual Studio 16 2019"
-# Third party libs are built in release mode, and MSVC doesn't support mixing 
-# debug and release runtime lib.  This is why we use "RelWithDebInfo" instead of 
-# "Debug" configuration on Windows / MSVC
-CMAKE_BUILD_TYPE = "RelWithDebInfo"
 NGFX_GRAPHICS_BACKEND ?= "NGFX_GRAPHICS_BACKEND_DIRECT3D12"
 else
 PYTHON     ?= python$(if $(shell which python$(PYTHON_MAJOR) 2> /dev/null),$(PYTHON_MAJOR),)
 PREFIX     ?= $(PWD)/nodegl-env
 CMAKE_GENERATOR = "CodeBlocks - Ninja"
+ifeq ($(TARGET_OS),Linux)
+NGFX_GRAPHICS_BACKEND ?= "NGFX_GRAPHICS_BACKEND_VULKAN"
+else ifeq ($(TARGET_OS),Darwin)
+NGFX_GRAPHICS_BACKEND ?= "NGFX_GRAPHICS_BACKEND_METAL"
+endif
+endif
+
+ifeq ($(DEBUG),yes)
 CMAKE_BUILD_TYPE = "Debug"
-  ifeq ($(TARGET_OS),Linux)
-    NGFX_GRAPHICS_BACKEND ?= "NGFX_GRAPHICS_BACKEND_VULKAN"
-  else ifeq ($(TARGET_OS),Darwin)
-    NGFX_GRAPHICS_BACKEND ?= "NGFX_GRAPHICS_BACKEND_METAL"
-  endif
+else
+CMAKE_BUILD_TYPE = "Release"
 endif
 
 DEBUG_GL    ?= no
@@ -154,7 +155,13 @@ endif
 
 ngl-tools-install: nodegl-install
 ifeq ($(TARGET_OS),Windows)
-	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) ngl-tools builddir\\ngl-tools \&\& $(MESON_COMPILE) -C builddir\\ngl-tools \&\& $(MESON_INSTALL) -C builddir\\ngl-tools)
+	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) ngl-tools builddir\\ngl-tools)
+ifeq ($(DEBUG),yes)
+	# Set RuntimeLibrary to MultithreadedDLL using a script
+	# Note: MESON doesn't support
+	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL builddir/ngl-tools
+endif
+	($(CMD) $(ACTIVATE) \&\& $(MESON_COMPILE) -C builddir\\ngl-tools \&\& $(MESON_INSTALL) -C builddir\\ngl-tools)
 else
 	(. $(ACTIVATE) && $(MESON_SETUP) ngl-tools builddir/ngl-tools && $(MESON_COMPILE) -C builddir/ngl-tools && $(MESON_INSTALL) -C builddir/ngl-tools)
 endif
@@ -228,6 +235,10 @@ endif
 nodegl-setup: sxplayer-install ngfx-install shader-tools-install
 ifeq ($(TARGET_OS),Windows)
 	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) $(NODEGL_SETUP_OPTS) $(NODEGL_DEBUG_OPTS) --default-library shared libnodegl builddir\\libnodegl)
+ifeq ($(DEBUG),yes)
+	# Set RuntimeLibrary to MultithreadedDLL
+	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL builddir/libnodegl
+endif
 else
 	(. $(ACTIVATE) && $(MESON_SETUP) $(NODEGL_SETUP_OPTS) $(NODEGL_DEBUG_OPTS) libnodegl builddir/libnodegl)
 endif
@@ -283,10 +294,13 @@ endif
 
 shader-tools-install: $(PREFIX) ngfx-install
 ifeq ($(TARGET_OS), Windows)
+	( cd shader-tools && cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR)  -D$(NGFX_GRAPHICS_BACKEND)=ON )
+ifeq ($(DEBUG),yes)
+	# Set RuntimeLibrary to MultithreadedDLL
+	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL shader-tools/cmake-build-debug
+endif
 	( \
-	  cd shader-tools && \
-	  cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR)  -D$(NGFX_GRAPHICS_BACKEND)=ON && \
-	  cmake.exe --build cmake-build-debug --config $(CMAKE_BUILD_TYPE) -j8 && \
+	  cd shader-tools && cmake.exe --build cmake-build-debug --config $(CMAKE_BUILD_TYPE) -j8 && \
 	  cmake.exe --install cmake-build-debug --config $(CMAKE_BUILD_TYPE) --prefix ../external/win64/shader_tools_x64-windows \
 	)
 ifeq ($(NGFX_GRAPHICS_BACKEND), NGFX_GRAPHICS_BACKEND_DIRECT3D12)
@@ -312,10 +326,13 @@ endif
 
 ngfx-install: $(PREFIX)
 ifeq ($(TARGET_OS), Windows)
+	( cd ngfx && cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) -D$(NGFX_GRAPHICS_BACKEND)=ON )
+ifeq ($(DEBUG),yes)
+	# Set RuntimeLibrary to MultithreadedDLL
+	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL ngfx/cmake-build-debug
+endif
 	( \
-	  cd ngfx && \
-	  cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) -D$(NGFX_GRAPHICS_BACKEND)=ON && \
-	  cmake.exe --build cmake-build-debug --config $(CMAKE_BUILD_TYPE) -j8 && \
+	  cd ngfx && cmake.exe --build cmake-build-debug --config $(CMAKE_BUILD_TYPE) -j8 && \
 	  cmake.exe --install cmake-build-debug --config $(CMAKE_BUILD_TYPE) --prefix ../external/win64/ngfx_x64-windows \
 	)
 	cp external/win64/ngfx_x64-windows/lib/ngfx.lib $(PREFIX)/Lib
@@ -339,11 +356,12 @@ endif
 
 ngl-debug-tools: $(PREFIX)
 ifeq ($(TARGET_OS), Windows)
-	( \
-	  cd ngl-debug-tools && \
-	  cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) && \
-	  cmake.exe --build cmake-build-debug --config $(CMAKE_BUILD_TYPE) -j8 \
-	)
+	( cd ngl-debug-tools && cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) )
+ifeq ($(DEBUG),yes)
+	# Set RuntimeLibrary to MultithreadedDLL
+	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL ngl-debug-tools/cmake-build-debug
+endif
+	( cd ngl-debug-tools && cmake.exe --build cmake-build-debug --config $(CMAKE_BUILD_TYPE) -j8 )
 	(cp external/win64/RenderDoc_1.11_64/renderdoc.dll ngl-debug-tools/cmake-build-debug/$(CMAKE_BUILD_TYPE))
 else ifeq ($(TARGET_OS), Linux)
 	( \
