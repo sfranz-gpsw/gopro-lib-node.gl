@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 
+#define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <nodegl.h>
 

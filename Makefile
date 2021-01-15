@@ -58,7 +58,7 @@ ACTIVATE = $(VCVARS64) \&\& $(PREFIX)\\Scripts\\activate.bat
 VCPKG_DIR ?= C:\\vcpkg
 PKG_CONF_DIR = external\\pkgconf\\build
 # Set PKG_CONFIG and PKG_CONFIG_PATH environment variables when invoking command shell
-CMD = PKG_CONFIG="$(PREFIX)\\Scripts\\pkg-config.exe" PKG_CONFIG_PATH="$(W_PREFIX)\\Lib\\pkgconfig" WSLENV=PKG_CONFIG/w:PKG_CONFIG_PATH/w cmd.exe /C
+CMD = PKG_CONFIG="$(PREFIX)\\Scripts\\pkg-config.exe" PKG_CONFIG_PATH="$(VCPKG_DIR)\\installed\\x64-windows\\lib\\pkgconfig" WSLENV=PKG_CONFIG/w:PKG_CONFIG_PATH/w cmd.exe /C
 else
 ACTIVATE = . $(PREFIX)/bin/activate
 CMD =
@@ -73,10 +73,10 @@ RPATH_LDFLAGS ?= -Wl,-rpath,$(PREFIX)/lib
 ifeq ($(TARGET_OS),Windows)
 MESON_SETUP   = meson setup --backend vs \
   --prefix="$(W_PREFIX)" --bindir="$(W_PREFIX)\\Scripts" --includedir="$(W_PREFIX)\\Include" \
-  --libdir="$(W_PREFIX)\\Lib" --pkg-config-path=$(PREFIX)\\Lib\\pkgconfig -Drpath=true
+  --libdir="$(W_PREFIX)\\Lib" --pkg-config-path="$(VCPKG_DIR)\\installed\x64-windows\\lib\\pkgconfig;$(PREFIX)\\Lib\\pkgconfig" -Drpath=true
 MESON_SETUP_NINJA   = meson setup --backend ninja \
   --prefix="$(W_PREFIX)" --bindir="$(W_PREFIX)\\Scripts" --includedir="$(W_PREFIX)\\Include" \
-  --libdir="$(W_PREFIX)\\Lib" --pkg-config-path=$(PREFIX)\\Lib\\pkgconfig -Drpath=true
+  --libdir="$(W_PREFIX)\\Lib" --pkg-config-path="$(VCPKG_DIR)\\installed\x64-windows\\lib\\pkgconfig;$(PREFIX)\\Lib\\pkgconfig" -Drpath=true
 else
 MESON_SETUP   = meson setup --prefix=$(PREFIX) --pkg-config-path=$(PREFIX)/lib/pkgconfig -Drpath=true
 endif
@@ -228,27 +228,27 @@ external-download:
 $(PREFIX):
 ifeq ($(TARGET_OS),Windows)
 	($(CMD) $(PYTHON) -m venv $(PREFIX))
-	($(CMD) copy $(VCPKG_DIR)\\packages\\ffmpeg_x64-windows\\tools\\ffmpeg\\*.exe $(PREFIX)\\Scripts\\.)
-	($(CMD) copy $(VCPKG_DIR)\\packages\\ffmpeg_x64-windows\\bin\\*.dll pynodegl\\.)
-	($(CMD) copy $(VCPKG_DIR)\\packages\\pthreads_x64-windows\\bin\\*.dll pynodegl\\.)
-	($(CMD) copy $(VCPKG_DIR)\\packages\\ffmpeg_x64-windows\\bin\\*.dll $(PREFIX)\\Scripts\\.)
-	($(CMD) copy $(VCPKG_DIR)\\packages\\pthreads_x64-windows\\bin\\*.dll $(PREFIX)\\Scripts\\.)
-	($(CMD) copy $(VCPKG_DIR)\\packages\\pthreads_x64-windows\\lib\\*.lib $(PREFIX)\\Lib\\.)
-	($(CMD) mkdir $(PREFIX)\\Lib\\pkgconfig)
-	# copy and patch ffmpeg pkg-config files
-	($(CMD) copy ${VCPKG_DIR}\\packages\\ffmpeg_x64-windows\\lib\\pkgconfig\\*.pc $(PREFIX)\\Lib\\pkgconfig\\.)
-	ffmpeg_pc_files="libavcodec.pc libavdevice.pc libavfilter.pc libavformat.pc libavresample.pc libavutil.pc libswresample.pc libswscale.pc" ;\
-	for pc_file in $$ffmpeg_pc_files ;\
-		do \
-		sed -i -e 's/\/cygdrive\/c/C:/g' $(PREFIX)/Lib/pkgconfig/$$pc_file ;\
-		sed -i -e 's/\/cygdrive\/d/D:/g' $(PREFIX)/Lib/pkgconfig/$$pc_file ;\
-		sed -i -e "s/prefix=[^\n]*/prefix=$${VCPKG_DIR}\\\\packages\\\\ffmpeg_x64-windows/" nodegl-env/Lib/pkgconfig/$$pc_file ;\
-	done;
-	# copy and patch SDL2 pkg-config files
-	($(CMD) copy ${VCPKG_DIR}\\packages\\sdl2_x64-windows\\lib\\pkgconfig\\*.pc $(PREFIX)\\Lib\\pkgconfig\\.)
-	(sed -i -e 's/prefix=.*/prefix=$(VCPKG_DIR)\/packages\/sdl2_x64-windows/' $(PREFIX)/Lib/pkgconfig/sdl2.pc)
-	(sed -i -e 's/Libs: .*/Libs: -L\${libdir} -lSDL2 -L\${libdir}/manual-link -lSDL2main/' $(PREFIX)/Lib/pkgconfig/sdl2.pc)
-	(sed -i -e 's/\\/\//g' $(PREFIX)/Lib/pkgconfig/sdl2.pc)
+	#($(CMD) copy $(VCPKG_DIR)\\packages\\ffmpeg_x64-windows\\tools\\ffmpeg\\*.exe $(PREFIX)\\Scripts\\.)
+	#($(CMD) copy $(VCPKG_DIR)\\packages\\ffmpeg_x64-windows\\bin\\*.dll pynodegl\\.)
+	#($(CMD) copy $(VCPKG_DIR)\\packages\\pthreads_x64-windows\\bin\\*.dll pynodegl\\.)
+	#($(CMD) copy $(VCPKG_DIR)\\packages\\ffmpeg_x64-windows\\bin\\*.dll $(PREFIX)\\Scripts\\.)
+	#($(CMD) copy $(VCPKG_DIR)\\packages\\pthreads_x64-windows\\bin\\*.dll $(PREFIX)\\Scripts\\.)
+	#($(CMD) copy $(VCPKG_DIR)\\packages\\pthreads_x64-windows\\lib\\*.lib $(PREFIX)\\Lib\\.)
+	#($(CMD) mkdir $(PREFIX)\\Lib\\pkgconfig)
+	## copy and patch ffmpeg pkg-config files
+	#($(CMD) copy ${VCPKG_DIR}\\packages\\ffmpeg_x64-windows\\lib\\pkgconfig\\*.pc $(PREFIX)\\Lib\\pkgconfig\\.)
+	#ffmpeg_pc_files="libavcodec.pc libavdevice.pc libavfilter.pc libavformat.pc libavresample.pc libavutil.pc libswresample.pc libswscale.pc" ;\
+	#for pc_file in $$ffmpeg_pc_files ;\
+	#	do \
+	#	sed -i -e 's/\/cygdrive\/c/C:/g' $(PREFIX)/Lib/pkgconfig/$$pc_file ;\
+	#	sed -i -e 's/\/cygdrive\/d/D:/g' $(PREFIX)/Lib/pkgconfig/$$pc_file ;\
+	#	sed -i -e "s/prefix=[^\n]*/prefix=$${VCPKG_DIR}\\\\packages\\\\ffmpeg_x64-windows/" nodegl-env/Lib/pkgconfig/$$pc_file ;\
+	#done;
+	## copy and patch SDL2 pkg-config files
+	#($(CMD) copy ${VCPKG_DIR}\\packages\\sdl2_x64-windows\\lib\\pkgconfig\\*.pc $(PREFIX)\\Lib\\pkgconfig\\.)
+	#(sed -i -e 's/prefix=.*/prefix=$(VCPKG_DIR)\/packages\/sdl2_x64-windows/' $(PREFIX)/Lib/pkgconfig/sdl2.pc)
+	#(sed -i -e 's/Libs: .*/Libs: -L\${libdir} -lSDL2 -L\${libdir}/manual-link -lSDL2main/' $(PREFIX)/Lib/pkgconfig/sdl2.pc)
+	#(sed -i -e 's/\\/\//g' $(PREFIX)/Lib/pkgconfig/sdl2.pc)
 	($(CMD) $(ACTIVATE) \&\& pip install meson ninja)
 else ifeq ($(TARGET_OS),MinGW-w64)
 	#
