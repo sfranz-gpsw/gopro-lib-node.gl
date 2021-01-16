@@ -1,2 +1,16 @@
-builddir
+/builddir*
 nodegl-env/
+MoltenVK*
+shaderc*
+/sxplayer*
+/external/win64
+/external/linux
+/external/darwin
+/external/stb
+/external/json
+ngfx/cmake-build-debug
+/shader-tools/cmake-build-debug
+ngl-debug-tools/cmake-build-debug
+CMakeLists.txt.user
+**/.DS_Store
+*.xcworkspace
