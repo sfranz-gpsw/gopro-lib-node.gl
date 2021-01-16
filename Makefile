@@ -178,14 +178,14 @@ pynodegl-install: pynodegl-deps-install
 ifeq ($(TARGET_OS),Windows)
 	(PKG_CONFIG_PATH="$(W_PREFIX)\Lib\pkgconfig" WSLENV=PKG_CONFIG_PATH/w cmd.exe /C $(ACTIVATE) \&\& pip -v install -e .\\pynodegl)
 	#Copy DLLs and EXEs to runtime search path.  TODO: optimize
-	(cp external/win64/ffmpeg_x64-windows/bin/*.exe $(PREFIX)/Scripts/.)
+	(cp external/win64/ffmpeg_x64-windows/tools/ffmpeg/*.exe $(PREFIX)/Scripts/.)
 	(cp external/win64/ffmpeg_x64-windows/bin/*.dll pynodegl/.)
-	(cp external/win64/pthreads_x64-windows/dll/x64/*.dll pynodegl/.)
+	(cp external/win64/pthreads_x64-windows/bin/*.dll pynodegl/.)
 	(cp external/win64/shaderc_x64-windows/bin/*.dll pynodegl/.)
 	(cp builddir/sxplayer/*.dll pynodegl/.)
 	(cp builddir/libnodegl/*.dll pynodegl/.)
 	(cp external/win64/ffmpeg_x64-windows/bin/*.dll $(PREFIX)/Scripts/.)
-	(cp external/win64/pthreads_x64-windows/dll/x64/*.dll $(PREFIX)/Scripts/.)
+	(cp external/win64/pthreads_x64-windows/bin/*.dll $(PREFIX)/Scripts/.)
 	(cp external/win64/shaderc_x64-windows/bin/*.dll $(PREFIX)/Scripts/.)
 	(cp builddir/sxplayer/*.dll $(PREFIX)/Scripts/.)
 	(cp builddir/libnodegl/*.dll $(PREFIX)/Scripts/.)
@@ -209,7 +209,7 @@ else
 	(. $(ACTIVATE) && $(MESON_COMPILE) -C builddir/libnodegl && $(MESON_INSTALL) -C builddir/libnodegl)
 endif
 
-nodegl-setup: sxplayer-install
+nodegl-setup: sxplayer-install ngfx-install shader-tools-install
 ifeq ($(TARGET_OS),Windows)
 	(cmd.exe /C $(ACTIVATE) \&\& $(MESON_SETUP) $(NODEGL_SETUP_OPTS) $(NODEGL_DEBUG_OPTS) --default-library shared libnodegl builddir\\libnodegl)
 else
@@ -265,7 +265,8 @@ ifeq ($(TARGET_OS), Windows)
 	( \
 	  cd shader-tools && \
 	  cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=RelWithDebInfo -G "Visual Studio 16 2019" && \
-	  cmake.exe --build cmake-build-debug --config RelWithDebInfo -j8 \
+	  cmake.exe --build cmake-build-debug --config RelWithDebInfo -j8 && \
+	  cmake.exe --install cmake-build-debug --config RelWithDebInfo --prefix ../external/win64/shader_tools_x64-windows \
 	)
 endif
 
@@ -276,6 +277,16 @@ ifeq ($(TARGET_OS), Windows)
 	  cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=RelWithDebInfo -G "Visual Studio 16 2019" -DNGFX_GRAPHICS_BACKEND_DIRECT3D12=ON && \
 	  cmake.exe --build cmake-build-debug --config RelWithDebInfo -j8 && \
 	  cmake.exe --install cmake-build-debug --config RelWithDebInfo --prefix ../external/win64/ngfx_x64-windows \
+	)
+endif
+
+ngl-debug-tools-install: $(PREFIX)
+ifeq ($(TARGET_OS), Windows)
+	( \
+	  cd ngl-debug-tools && \
+	  cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=RelWithDebInfo -G "Visual Studio 16 2019" && \
+	  cmake.exe --build cmake-build-debug --config RelWithDebInfo -j8 && \
+	  cmake.exe --install cmake-build-debug --config RelWithDebInfo --prefix ../external/win64/ngl_debug_tools_x64-windows \
 	)
 endif
 
@@ -321,6 +332,7 @@ ifeq ($(TARGET_OS),Windows)
 	(cmd.exe /C pushd external\\win64\\sdl2_x64-windows \&\& python.exe scripts/install.py "$(W_PREFIX)" \& popd)
 	(cmd.exe /C pushd external\\win64\\shaderc_x64-windows \&\& python.exe scripts/install.py "$(W_PREFIX)" \& popd)
 	(cmd.exe /C $(ACTIVATE) \&\& pip install meson ninja)
+	(sed -i -e 's/Libs: .*/Libs: -L\${libdir} -lSDL2 -L\${libdir}/manual-link -lSDL2main/' $(PREFIX)/Lib/pkgconfig/sdl2.pc)
 else ifeq ($(TARGET_OS),MinGW-w64)
 	$(PYTHON) -m venv --system-site-packages $(PREFIX)
 else
