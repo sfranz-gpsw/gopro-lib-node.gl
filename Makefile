@@ -291,6 +291,7 @@ MoltenVK-$(MOLTENVK_VERSION).tar.gz:
 #
 $(PREFIX):
 ifeq ($(TARGET_OS),Windows)
+	(git clean -fxd external)
 	(cd external && bash scripts/sync.sh win64)
 	$(PYTHON) -m venv $(PREFIX)
 	(cmd.exe /C copy external\\win64\\pkg-config.exe nodegl-env\\Scripts)
