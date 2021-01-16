@@ -433,6 +433,28 @@ if host_system == 'windows' and cc.get_id() == 'msvc'
 
 endif
 
+#GPU Capture Options
+if host_system == 'windows' or host_system == 'linux'
+  enable_renderdoc_capture = true
+  message('enable renderdoc capture: '+enable_renderdoc_capture.to_string())
+
+elif host_system == 'darwin'
+  enable_metal_capture = true
+  message('enable metal capture: '+enable_metal_capture.to_string())
+endif
+
+if enable_renderdoc_capture
+  lib_src += 'tools/capture/renderdoc_capture.c'
+  conf_data.set10('ENABLE_CAPTURE', true)
+  renderdoc_dep = declare_dependency(
+    include_directories: [ '..\\external\\win64\\RenderDoc_1.11_64' ]
+  )
+  lib_deps += renderdoc_dep
+elif enable_metal_capture
+  lib_src += 'tools/capture/metal_capture.c'
+  conf_data.set10('ENABLE_CAPTURE', true)
+endif
+
 foreach gbackend_name, gbackend_cfg : gbackends_cfg
   opt_gbackend = get_option('gbackend-' + gbackend_name)
 
@@ -496,10 +518,6 @@ libnodegl = library(
   install_rpath: install_rpath,
   version: meson.project_version(),
   c_args: lib_c_args,
-
-
-
-
   gnu_symbol_visibility: 'hidden',
   link_args: lib_link_args,
   include_directories: lib_include_dirs,
