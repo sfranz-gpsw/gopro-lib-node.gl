@@ -1,0 +1,52 @@
+void main()
+{
+    uint array_id = gl_GlobalInvocationID.x;
+
+    if (array_id >= idata.r.length())
+        return;
+
+    uint off = array_id * 256;
+
+    for (uint i = 0; i < 256; i++) {
+        odata.r[off + i] = idata.r[off + i];
+        odata.g[off + i] = idata.g[off + i];
+        odata.b[off + i] = idata.b[off + i];
+    }
+
+    uint n = 256;
+    while (n > 1) { // XXX: technically we could skip the sorting for the last 10% with IDR
+        uvec3 newn = uvec3(0);
+        for (uint i = 1; i < n; i++) {
+            uvec3 prv = uvec3(
+                odata.r[off + i - 1],
+                odata.g[off + i - 1],
+                odata.b[off + i - 1]
+            );
+
+            uvec3 cur = uvec3(
+                odata.r[off + i],
+                odata.g[off + i],
+                odata.b[off + i]
+            );
+
+            if (prv.r > cur.r) {
+                odata.r[off + i - 1] = cur.r;
+                odata.r[off + i] = prv.r;
+                newn.r = i;
+            }
+
+            if (prv.g > cur.g) {
+                odata.g[off + i - 1] = cur.g;
+                odata.g[off + i] = prv.g;
+                newn.g = i;
+            }
+
+            if (prv.b > cur.b) {
+                odata.b[off + i - 1] = cur.b;
+                odata.b[off + i] = prv.b;
+                newn.b = i;
+            }
+        }
+        n = max(max(newn.r, newn.g), newn.b);
+    }
+}

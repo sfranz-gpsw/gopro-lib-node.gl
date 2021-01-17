@@ -11,8 +11,5 @@ void main()
         uint r = atomicAdd(hist.r[ucolor.r], 1U);
         uint g = atomicAdd(hist.g[ucolor.g], 1U);
         uint b = atomicAdd(hist.b[ucolor.b], 1U);
-
-        uint m = max(max(r, g), b);
-        atomicMax(hist.maximum, m);
     }
 }

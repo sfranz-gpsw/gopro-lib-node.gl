@@ -1,0 +1,21 @@
+void main()
+{
+    uint x = gl_GlobalInvocationID.x;
+    uint y = gl_GlobalInvocationID.y;
+    ivec2 size = imageSize(source);
+    if (x >= uint(size.x) || y >= uint(size.y))
+        return;
+
+    vec4 color = imageLoad(source, ivec2(x, y));
+    uvec4 ucolor = uvec4(color * 255.0);
+    uint uluma = uint(dot(color.rgb, luma_weights) * 255.f);
+
+    uint r = atomicAdd(hist.r[x*256 + ucolor.r], 1U);
+    uint g = atomicAdd(hist.g[x*256 + ucolor.g], 1U);
+    uint b = atomicAdd(hist.b[x*256 + ucolor.b], 1U);
+    uint luma = atomicAdd(hist.y[x*256 + uluma], 1U);
+
+    //uint m = max(max(r, g), b);
+    //atomicMax(hist.max_rgb, m);
+    //atomicMax(hist.max_luma, luma);
+}

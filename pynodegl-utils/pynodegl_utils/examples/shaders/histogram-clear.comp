@@ -4,5 +4,4 @@ void main()
     hist.r[i] = 0U;
     hist.g[i] = 0U;
     hist.b[i] = 0U;
-    hist.maximum = 1U;
 }

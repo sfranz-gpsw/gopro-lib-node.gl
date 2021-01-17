@@ -1,0 +1,10 @@
+void main()
+{
+    uint xdata = gl_GlobalInvocationID.x;
+    uint ydata = gl_GlobalInvocationID.y;
+    uint idx = xdata * 256 + ydata;
+    hist.r[idx] = 0U;
+    hist.g[idx] = 0U;
+    hist.b[idx] = 0U;
+    hist.y[idx] = 0U;
+}
