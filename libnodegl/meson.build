@@ -483,7 +483,7 @@ if not get_option('small')
   )
   run_target(
     'updatedoc',
-    command: [copyfile, doc_file, meson.current_source_dir() / 'doc'],
+    command: [copyfile, doc_file.full_path(), meson.current_source_dir() / 'doc'],
   )
 endif
 
