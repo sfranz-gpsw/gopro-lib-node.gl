@@ -22,6 +22,7 @@
 #ifndef WSI_H
 #define WSI_H
 
+#define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <nodegl.h>
 
