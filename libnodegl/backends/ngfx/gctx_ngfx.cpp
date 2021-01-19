@@ -33,6 +33,15 @@
 #include "debugutil_ngfx.h"
 #include <glm/gtc/type_ptr.hpp>
 
+#ifdef NGFX_GRAPHICS_BACKEND_VULKAN
+#include "ngfx/porting/vulkan/VKGraphicsContext.h"
+#if defined(TARGET_LINUX)
+#define VK_USE_PLATFORM_XLIB_KHR
+#include <X11/Xlib.h>
+#include <vulkan/vulkan_xlib.h>
+#endif
+#endif
+
 #ifdef ENABLE_CAPTURE
 #include "tools/capture/capture.h"
 static bool DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != NULL);
@@ -122,12 +131,29 @@ static int ngfx_init(struct gctx *s)
         begin_capture();
 #endif
     if (config->offscreen) {
-        Surface surface(config->width, config->height, true);
-        ctx->graphics_context->setSurface(&surface);
+        ctx->surface = new Surface(config->width, config->height, true);
     }
     else {
+#if defined(NGFX_GRAPHICS_BACKEND_VULKAN) and defined(VK_USE_PLATFORM_XLIB_KHR)
+        if (config->platform == NGL_PLATFORM_XLIB) {
+            VKGraphicsContext *vk_ctx = (VKGraphicsContext *)ctx->graphics_context;
+            VKSurface *vk_surface = new VKSurface();
+            vk_surface->instance = vk_ctx->vkInstance.v;
+            VkXlibSurfaceCreateInfoKHR surface_create_info = {
+                VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR, NULL, 0,
+                (Display *)config->display, config->window,
+            };
+            vkCreateXlibSurfaceKHR(vk_ctx->vkInstance.v, &surface_create_info, NULL, &vk_surface->v);
+            vk_surface->w = config->width;
+            vk_surface->h = config->height;
+            vk_surface->offscreen = false;
+            ctx->surface = vk_surface;
+        }
+#else
         TODO("create window surface or use existing handle");
+#endif
     }
+    ctx->graphics_context->setSurface(ctx->surface);
     ctx->graphics = Graphics::create(ctx->graphics_context);
 
     //TODO: use rendertarget (ngli_rendertarget_init)

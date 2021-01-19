@@ -33,6 +33,7 @@ struct gctx_ngfx {
 
     ngfx::GraphicsContext* graphics_context = nullptr;
     ngfx::Graphics* graphics = nullptr;
+    ngfx::Surface* surface = nullptr;
     ngfx::CommandBuffer* cur_command_buffer = nullptr;
 
     struct rendertarget *default_rendertarget;
