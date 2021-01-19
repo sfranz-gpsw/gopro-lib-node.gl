@@ -377,6 +377,7 @@ gbackends_cfg = {
 }
 
 ngfx_cflags = []
+
 ngfx_graphics_backend = get_option('ngfx_graphics_backend')
 if ngfx_graphics_backend == 'NGFX_GRAPHICS_BACKEND_DIRECT3D12' and host_system == 'windows'
   ngfx_cflags += '-DNGFX_GRAPHICS_BACKEND_DIRECT3D12'
@@ -386,6 +387,17 @@ elif ngfx_graphics_backend == 'NGFX_GRAPHICS_BACKEND_METAL' and host_system == '
   ngfx_cflags += '-DNGFX_GRAPHICS_BACKEND_METAL'
 else
   error('invalid value for ngfx_graphics_backend: @0@'.format(ngfx_graphics_backend))
+endif
+
+ngfx_window_backend = get_option('ngfx_window_backend')
+if ngfx_window_backend == 'NGFX_WINDOW_BACKEND_WINDOWS' and host_system == 'windows'
+  ngfx_cflags += '-DNGFX_WINDOW_BACKEND_WINDOWS'
+elif ngfx_window_backend == 'NGFX_WINDOW_BACKEND_GLFW'
+  ngfx_cflags += '-DNGFX_WINDOW_BACKEND_GLFW'
+elif ngfx_window_backend == 'NGFX_WINDOW_BACKEND_APPKIT' and host_system == 'darwin'
+  ngfx_cflags += '-DNGFX_WINDOW_BACKEND_APPKIT'
+else
+  error('invalid value for ngfx_window_backend: @0@'.format(ngfx_window_backend))
 endif
 
 ngfx_deps = []
