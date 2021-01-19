@@ -52,3 +52,6 @@ option('windows_sdk_dir', type: 'string', value: 'C:\\Program Files (x86)\\Windo
 
 option('ngfx_graphics_backend', type: 'string', value: '',
         description: 'ngfx graphics backend (VULKAN | METAL | DIRECT3D12)')
+
+option('ngfx_window_backend', type: 'string', value: '',
+        description: 'ngfx window backend (GLFW | APPKIT | WINDOWS)')
