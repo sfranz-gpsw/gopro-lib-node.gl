@@ -12,3 +12,11 @@ ngfx/cmake-build-debug
 /shader-tools/cmake-build-debug
 ngl-debug-tools/cmake-build-debug
 CMakeLists.txt.user
+*.cflags
+*.config
+*.creator
+*.creator.user
+*.cxxflags
+*.files
+*.includes
+
