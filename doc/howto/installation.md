@@ -71,6 +71,7 @@ The steps to build:
 a) Install Windows Subsystem for Linux, and Ubuntu (recommend 20.04)
 b) Install Microsoft Visual Studio 2019
 c) Install CMake
+d) Install Python using the Windows Installer (https://www.python.org/downloads/windows/
 
 2.  In Windows Subsystem for Linux:
 
