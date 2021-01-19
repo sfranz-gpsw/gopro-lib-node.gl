@@ -19,12 +19,12 @@
  * under the License.
  */
 #pragma once
-#ifdef WINDOW_BACKEND_GLFW
+#ifdef NGFX_WINDOW_BACKEND_GLFW
 #include "ngfx/porting/glfw/GLFWInputMap.h"
 #endif
-#ifdef WINDOW_BACKEND_WINDOWS
+#ifdef NGFX_WINDOW_BACKEND_WINDOWS
 #include "ngfx/porting/windows/WInputMap.h"
 #endif
-#ifdef WINDOW_BACKEND_APPKIT
+#ifdef NGFX_WINDOW_BACKEND_APPKIT
 #include "ngfx/porting/appkit/AppKitInputMap.h"
 #endif
