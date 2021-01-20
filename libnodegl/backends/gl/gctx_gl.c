@@ -393,7 +393,7 @@ static int gl_init(struct gctx *s)
     const struct ngl_config *config = &s->config;
     struct gctx_gl *s_priv = (struct gctx_gl *)s;
 #ifdef ENABLE_CAPTURE
-    DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != NULL);
+    DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != NULL) && !config->probe;
     if (DEBUG_CAPTURE) init_capture();
 #endif
     s_priv->glcontext = ngli_glcontext_new(config);
