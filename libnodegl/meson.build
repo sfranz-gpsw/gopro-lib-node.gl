@@ -360,6 +360,7 @@ gbackends_cfg = {
       'backends/ngfx/buffer_ngfx.cpp',
       'backends/ngfx/format_ngfx.cpp',
       'backends/ngfx/gctx_ngfx.cpp',
+      'backends/ngfx/surface_util_ngfx.cpp',
       'backends/ngfx/pipeline_ngfx.cpp',
       'backends/ngfx/program_ngfx.cpp',
       'backends/ngfx/rendertarget_ngfx.cpp',
