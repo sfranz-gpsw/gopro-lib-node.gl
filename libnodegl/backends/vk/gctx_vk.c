@@ -175,10 +175,6 @@ static VkResult create_swapchain_resources(struct gctx *s)
         if (!*depth_texture)
             return VK_ERROR_OUT_OF_HOST_MEMORY;
 
-        *depth_texture = ngli_texture_create(s);
-        if (!*depth_texture)
-            return VK_ERROR_OUT_OF_HOST_MEMORY;
-
         struct texture_params depth_params = {
             .type = NGLI_TEXTURE_TYPE_2D,
             .format = NGLI_FORMAT_D32_SFLOAT_S8_UINT,
