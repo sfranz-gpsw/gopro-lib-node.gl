@@ -57,6 +57,25 @@ static struct gctx *ngfx_create(const struct ngl_config *config)
     return (struct gctx*)s;
 }
 
+static int create_onscreen_resources(struct gctx *s) {
+    struct gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
+    struct ngl_config *config = &s->config;
+    struct rendertarget_params rt_params = {};
+    rt_params.width = config->width;
+    rt_params.height = config->height;
+    rt_params.nb_colors = 1;
+    rt_params.colors[0].attachment = nullptr, //TODO: *wrapped_color_texture,
+    rt_params.colors[0].load_op = NGLI_LOAD_OP_LOAD,
+    rt_params.colors[0].clear_value[0] = config->clear_color[0];
+    rt_params.colors[0].clear_value[1] = config->clear_color[1];
+    rt_params.colors[0].clear_value[2] = config->clear_color[2];
+    rt_params.colors[0].clear_value[3] = config->clear_color[3];
+    rt_params.colors[0].store_op = NGLI_STORE_OP_STORE;
+    rt_params.depth_stencil.attachment = nullptr, //TODO: *depth_texture,
+    rt_params.depth_stencil.load_op = NGLI_LOAD_OP_LOAD;
+    rt_params.depth_stencil.store_op = NGLI_STORE_OP_STORE;
+}
+
 static int create_offscreen_resources(struct gctx *s) {
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     const ngl_config *config = &s->config;
@@ -150,16 +169,14 @@ static int ngfx_init(struct gctx *s)
             ctx->surface = vk_surface;
         }
 #else
-        TODO("create window surface or use existing handle");
+        TODO("create logical window surface from window handle");
 #endif
     }
     ctx->graphics_context->setSurface(ctx->surface);
     ctx->graphics = Graphics::create(ctx->graphics_context);
 
-    //TODO: use rendertarget (ngli_rendertarget_init)
-
     if (!config->offscreen) {
-        TODO("create window surface");
+        create_onscreen_resources(s);
     }
     else {
         create_offscreen_resources(s);
