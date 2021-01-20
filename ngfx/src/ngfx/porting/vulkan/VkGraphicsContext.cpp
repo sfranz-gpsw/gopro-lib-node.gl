@@ -82,7 +82,7 @@ void VKGraphicsContext::initRenderPass(const RenderPassConfig &config, VKRenderP
              depthFormat = vkPhysicalDevice.depthFormat;
     std::vector<VkAttachmentDescription> attachments;
     uint32_t depthAttachmentBaseIndex = 0;
-    for (uint32_t j = 0; j<config.numColorAttachments; j++) {
+    for (uint32_t j = 0; j<config.numColorAttachments(); j++) {
         attachments.push_back({
             0, colorFormat, VK_SAMPLE_COUNT_1_BIT,
             VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
@@ -90,7 +90,7 @@ void VKGraphicsContext::initRenderPass(const RenderPassConfig &config, VKRenderP
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
         });
     }
-    if (config.enableDepthStencil) {
+    if (config.depthStencilAttachmentDescription) {
         depthAttachmentBaseIndex = attachments.size();
         attachments.push_back({
             0, depthFormat, VK_SAMPLE_COUNT_1_BIT,
@@ -100,7 +100,7 @@ void VKGraphicsContext::initRenderPass(const RenderPassConfig &config, VKRenderP
         });
     }
 
-    std::vector<VkAttachmentReference> colorReferences(config.numColorAttachments);
+    std::vector<VkAttachmentReference> colorReferences(config.numColorAttachments());
     for (uint32_t j = 0; j<colorReferences.size(); j++) {
         colorReferences[j] = { j, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
     }
@@ -112,7 +112,9 @@ void VKGraphicsContext::initRenderPass(const RenderPassConfig &config, VKRenderP
         {
             0, VK_PIPELINE_BIND_POINT_GRAPHICS,
             0, nullptr,
-            uint32_t(colorReferences.size()), colorReferences.data(), nullptr, config.enableDepthStencil ? &depthReference : nullptr,
+            uint32_t(colorReferences.size()), colorReferences.data(),
+            nullptr,
+            config.depthStencilAttachmentDescription ? &depthReference : nullptr,
             0, nullptr
         }
     };
@@ -136,11 +138,11 @@ void VKGraphicsContext::initRenderPass(const RenderPassConfig &config, VKRenderP
 }
 
 void VKGraphicsContext::initRenderPassMSAA(const RenderPassConfig &config, VKRenderPass& renderPass) {
-    VkFormat colorFormat = vkSwapchain->surfaceFormat.format,
-             depthFormat = vkPhysicalDevice.depthFormat;
     std::vector<VkAttachmentDescription> attachments;
     uint32_t depthAttachmentBaseIndex = 0;
-    for (uint32_t j = 0; j<config.numColorAttachments; j++) {
+    for (uint32_t j = 0; j<config.numColorAttachments(); j++) {
+        auto &colorAttachmentDesc = config.colorAttachmentDescriptions[j];
+        VkFormat colorFormat = VkFormat(colorAttachmentDesc.format);
         attachments.push_back({
             0, colorFormat, VkSampleCountFlagBits(config.numSamples),
             VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -155,8 +157,9 @@ void VKGraphicsContext::initRenderPassMSAA(const RenderPassConfig &config, VKRen
         });
     }
 
-    if (config.enableDepthStencil) {
+    if (config.depthStencilAttachmentDescription) {
         depthAttachmentBaseIndex = attachments.size();
+        VkFormat depthFormat = VkFormat(config.depthStencilAttachmentDescription->format);
         attachments.push_back({
             0, depthFormat, VkSampleCountFlagBits(config.numSamples),
             VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -173,11 +176,11 @@ void VKGraphicsContext::initRenderPassMSAA(const RenderPassConfig &config, VKRen
         }
     }
 
-    std::vector<VkAttachmentReference> colorReferences(config.numColorAttachments);
+    std::vector<VkAttachmentReference> colorReferences(config.numColorAttachments());
     for (uint32_t j = 0; j<colorReferences.size(); j++) {
         colorReferences[j] = { 2 * j, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
     }
-    std::vector<VkAttachmentReference> resolveReferences(config.numColorAttachments);
+    std::vector<VkAttachmentReference> resolveReferences(config.numColorAttachments());
     for (uint32_t j = 0; j<resolveReferences.size(); j++) {
         resolveReferences[j] = { 2 * j + 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
     }
@@ -188,7 +191,8 @@ void VKGraphicsContext::initRenderPassMSAA(const RenderPassConfig &config, VKRen
             0, VK_PIPELINE_BIND_POINT_GRAPHICS,
             0, nullptr,
             uint32_t(colorReferences.size()), colorReferences.data(),
-            resolveReferences.data(), config.enableDepthStencil ? &depthReference : nullptr,
+            resolveReferences.data(),
+            config.depthStencilAttachmentDescription ? &depthReference : nullptr,
             0, nullptr
         }
     };
@@ -216,7 +220,7 @@ void VKGraphicsContext::initOffscreenRenderPass(const RenderPassConfig &config, 
              depthFormat = vkPhysicalDevice.depthFormat;
     std::vector<VkAttachmentDescription> attachments;
     uint32_t depthAttachmentBaseIndex = 0;
-    for (uint32_t j = 0; j<config.numColorAttachments; j++) {
+    for (uint32_t j = 0; j<config.numColorAttachments(); j++) {
         attachments.push_back({
             0, colorFormat, VK_SAMPLE_COUNT_1_BIT,
             VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
@@ -224,7 +228,7 @@ void VKGraphicsContext::initOffscreenRenderPass(const RenderPassConfig &config, 
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
         });
     }
-    if (config.enableDepthStencil) {
+    if (config.depthStencilAttachmentDescription) {
         depthAttachmentBaseIndex = attachments.size();
         attachments.push_back({
             0, depthFormat, VK_SAMPLE_COUNT_1_BIT,
@@ -234,7 +238,7 @@ void VKGraphicsContext::initOffscreenRenderPass(const RenderPassConfig &config, 
         });
     }
 
-    std::vector<VkAttachmentReference> colorReferences(config.numColorAttachments);
+    std::vector<VkAttachmentReference> colorReferences(config.numColorAttachments());
     for (uint32_t j = 0; j<colorReferences.size(); j++) {
         colorReferences[j] = { j, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
     }
@@ -246,7 +250,9 @@ void VKGraphicsContext::initOffscreenRenderPass(const RenderPassConfig &config, 
         {
             0, VK_PIPELINE_BIND_POINT_GRAPHICS,
             0, nullptr,
-            uint32_t(colorReferences.size()), colorReferences.data(), nullptr, config.enableDepthStencil ? &depthReference : nullptr,
+            uint32_t(colorReferences.size()), colorReferences.data(),
+            nullptr,
+            config.depthStencilAttachmentDescription ? &depthReference : nullptr,
             0, nullptr
         }
     };
@@ -274,7 +280,7 @@ void VKGraphicsContext::initOffscreenRenderPassMSAA(const RenderPassConfig &conf
              depthFormat = vkPhysicalDevice.depthFormat;
     std::vector<VkAttachmentDescription> attachments;
     uint32_t depthAttachmentBaseIndex = 0;
-    for (uint32_t j = 0; j<config.numColorAttachments; j++) {
+    for (uint32_t j = 0; j<config.numColorAttachments(); j++) {
         attachments.push_back({
             0, colorFormat, VkSampleCountFlagBits(config.numSamples),
             VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
@@ -289,7 +295,7 @@ void VKGraphicsContext::initOffscreenRenderPassMSAA(const RenderPassConfig &conf
         });
     }
 
-    if (config.enableDepthStencil) {
+    if (config.depthStencilAttachmentDescription) {
         depthAttachmentBaseIndex = attachments.size();
         attachments.push_back({
             0, depthFormat, VkSampleCountFlagBits(config.numSamples),
@@ -307,11 +313,11 @@ void VKGraphicsContext::initOffscreenRenderPassMSAA(const RenderPassConfig &conf
         }
     }
 
-    std::vector<VkAttachmentReference> colorReferences(config.numColorAttachments);
+    std::vector<VkAttachmentReference> colorReferences(config.numColorAttachments());
     for (uint32_t j = 0; j<colorReferences.size(); j++) {
         colorReferences[j] = { 2 * j, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
     }
-    std::vector<VkAttachmentReference> resolveReferences(config.numColorAttachments);
+    std::vector<VkAttachmentReference> resolveReferences(config.numColorAttachments());
     for (uint32_t j = 0; j<resolveReferences.size(); j++) {
         resolveReferences[j] = { 2 * j + 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
     }
@@ -322,7 +328,8 @@ void VKGraphicsContext::initOffscreenRenderPassMSAA(const RenderPassConfig &conf
             0, VK_PIPELINE_BIND_POINT_GRAPHICS,
             0, nullptr,
             uint32_t(colorReferences.size()), colorReferences.data(),
-            resolveReferences.data(), config.enableDepthStencil ? &depthReference : nullptr,
+            resolveReferences.data(),
+            config.depthStencilAttachmentDescription ? &depthReference : nullptr,
             0, nullptr
         }
     };
@@ -422,11 +429,20 @@ void VKGraphicsContext::setSurface(Surface* surface) {
                 VK_IMAGE_VIEW_TYPE_2D, vkPhysicalDevice.depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
         }
     }
+    std::optional<AttachmentDescription> depthAttachmentDescription;
+    if (enableDepthStencil) depthAttachmentDescription = { depthFormat };
+    else depthAttachmentDescription = nullopt;
     if (surface && !surface->offscreen) {
-		vkDefaultRenderPass = (VKRenderPass*)getRenderPass({ false, enableDepthStencil, false, numSamples, 1 });
+        RenderPassConfig onscreenRenderPassConfig = {
+            { { surfaceFormat } }, depthAttachmentDescription, false, numSamples
+        };
+        vkDefaultRenderPass = (VKRenderPass*)getRenderPass(onscreenRenderPassConfig);
 	}
     defaultOffscreenSurfaceFormat = PixelFormat(VK_FORMAT_R8G8B8A8_UNORM);
-    vkDefaultOffscreenRenderPass = (VKRenderPass*)getRenderPass({ true, enableDepthStencil, false, numSamples, 1 });
+    RenderPassConfig offscreenRenderPassConfig = {
+        { { defaultOffscreenSurfaceFormat } }, depthAttachmentDescription, false, numSamples
+    };
+    vkDefaultOffscreenRenderPass = (VKRenderPass*)getRenderPass(offscreenRenderPassConfig);
     vkPipelineCache.create(vkDevice.v);
     if (surface && !surface->offscreen) createSwapchainFramebuffers(surface->w, surface->h);
     initSemaphores(vkDevice.v);

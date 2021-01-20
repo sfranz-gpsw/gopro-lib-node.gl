@@ -63,18 +63,31 @@ namespace ngfx {
         virtual CommandBuffer* drawCommandBuffer(int32_t index = -1) = 0;
         virtual CommandBuffer* copyCommandBuffer() = 0;
         virtual CommandBuffer* computeCommandBuffer() = 0;
-        struct RenderPassConfig {
-            inline bool operator==(const RenderPassConfig& rhs) const {
-                return offscreen == rhs.offscreen && enableDepthStencil == rhs.enableDepthStencil
-                    && numSamples == rhs.numSamples
-                    && numColorAttachments == rhs.numColorAttachments;
+
+        struct AttachmentDescription {
+            bool operator ==(const AttachmentDescription &rhs) const {
+                return rhs.format == format;
             }
-            bool offscreen = false;
-            bool enableDepthStencil = false, enableDepthStencilResolve = false;
+            PixelFormat format;
+        };
+
+        struct RenderPassConfig {
+            bool operator ==(const RenderPassConfig &rhs) const {
+                return rhs.colorAttachmentDescriptions == colorAttachmentDescriptions &&
+                       rhs.depthStencilAttachmentDescription == depthStencilAttachmentDescription &&
+                       rhs.enableDepthStencilResolve == enableDepthStencilResolve &&
+                       rhs.numSamples == numSamples;
+            };
+            uint32_t numColorAttachments() const {
+                return colorAttachmentDescriptions.size();
+            }
+            std::vector<AttachmentDescription> colorAttachmentDescriptions;
+            std::optional<AttachmentDescription> depthStencilAttachmentDescription;
+            bool enableDepthStencilResolve = false;
             uint32_t numSamples = 1;
-            uint32_t numColorAttachments = 1;
         };
         virtual RenderPass* getRenderPass(RenderPassConfig config) = 0;
+
         std::vector<Framebuffer*> swapchainFramebuffers;
         Queue* queue = nullptr;
         RenderPass *defaultRenderPass, *defaultOffscreenRenderPass;
