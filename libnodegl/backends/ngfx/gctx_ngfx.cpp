@@ -36,7 +36,7 @@
 
 #ifdef ENABLE_CAPTURE
 #include "tools/capture/capture.h"
-static bool DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != NULL);
+static bool DEBUG_CAPTURE = false;
 #endif
 using namespace std;
 using namespace ngfx;
@@ -131,6 +131,7 @@ static int ngfx_init(struct gctx *s)
     const ngl_config *config = &s->config;
     gctx_ngfx *ctx = (gctx_ngfx *)s;
 #ifdef ENABLE_CAPTURE
+    DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != NULL) && !config->probe;
     if (DEBUG_CAPTURE)
         init_capture();
 #endif
