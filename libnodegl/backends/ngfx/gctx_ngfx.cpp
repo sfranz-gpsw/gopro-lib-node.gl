@@ -126,6 +126,7 @@ static int ngfx_init(struct gctx *s)
     /* FIXME */
     s->features = -1;
     ctx->graphics_context = GraphicsContext::create("NGLApplication", true);
+    auto &graphics_context = ctx->graphics_context;
 #ifdef ENABLE_CAPTURE
     if (DEBUG_CAPTURE)
         begin_capture();
@@ -136,8 +137,8 @@ static int ngfx_init(struct gctx *s)
     else {
         ctx->surface = surface_util_ngfx::create_surface_from_window_handle(ctx, config);
     }
-    ctx->graphics_context->setSurface(ctx->surface);
-    ctx->graphics = Graphics::create(ctx->graphics_context);
+    graphics_context->setSurface(ctx->surface);
+    ctx->graphics = Graphics::create(graphics_context);
 
     if (!config->offscreen) {
         create_onscreen_resources(s);
@@ -164,14 +165,14 @@ static int ngfx_init(struct gctx *s)
         ctx->default_rendertarget_desc.colors[0].format = NGLI_FORMAT_R8G8B8A8_UNORM;
         ctx->default_rendertarget_desc.samples = config->samples;
         ctx->default_rendertarget_desc.colors[0].resolve = config->samples > 0 ? 1 : 0;
-        ctx->default_rendertarget_desc.depth_stencil.format = to_ngli_format(ctx->graphics_context->depthFormat);
+        ctx->default_rendertarget_desc.depth_stencil.format = to_ngli_format(graphics_context->depthFormat);
         ctx->default_rendertarget_desc.depth_stencil.resolve = 0;
     } else {
         ctx->default_rendertarget_desc.nb_colors = 1;
-        ctx->default_rendertarget_desc.colors[0].format = NGLI_FORMAT_B8G8R8A8_UNORM;
+        ctx->default_rendertarget_desc.colors[0].format = to_ngli_format(graphics_context->surfaceFormat);
         ctx->default_rendertarget_desc.samples = config->samples;
         ctx->default_rendertarget_desc.colors[0].resolve = config->samples > 0 ? 1 : 0;
-        ctx->default_rendertarget_desc.depth_stencil.format = to_ngli_format(ctx->graphics_context->depthFormat);
+        ctx->default_rendertarget_desc.depth_stencil.format = to_ngli_format(graphics_context->depthFormat);
     }
 
     s->limits.max_compute_work_group_counts[0] = INT_MAX;
