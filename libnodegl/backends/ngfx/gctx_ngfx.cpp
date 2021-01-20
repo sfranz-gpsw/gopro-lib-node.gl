@@ -50,22 +50,10 @@ static struct gctx *ngfx_create(const struct ngl_config *config)
 }
 
 static int create_onscreen_resources(struct gctx *s) {
-    struct gctx_ngfx *s_priv = (struct gctx_ngfx *)s;
-    struct ngl_config *config = &s->config;
-    struct rendertarget_params rt_params = {};
-    rt_params.width = config->width;
-    rt_params.height = config->height;
-    rt_params.nb_colors = 1;
-    rt_params.colors[0].attachment = nullptr; //TODO: *wrapped_color_texture,
-    rt_params.colors[0].load_op = NGLI_LOAD_OP_LOAD;
-    rt_params.colors[0].clear_value[0] = config->clear_color[0];
-    rt_params.colors[0].clear_value[1] = config->clear_color[1];
-    rt_params.colors[0].clear_value[2] = config->clear_color[2];
-    rt_params.colors[0].clear_value[3] = config->clear_color[3];
-    rt_params.colors[0].store_op = NGLI_STORE_OP_STORE;
-    rt_params.depth_stencil.attachment = nullptr; //TODO: *depth_texture,
-    rt_params.depth_stencil.load_op = NGLI_LOAD_OP_LOAD;
-    rt_params.depth_stencil.store_op = NGLI_STORE_OP_STORE;
+    gctx_ngfx *s_priv = (gctx_ngfx *)s;
+    // use ngfx default renderpass
+    s_priv->default_rendertarget = nullptr;
+    return 0;
 }
 
 static int create_offscreen_resources(struct gctx *s) {
@@ -311,7 +299,13 @@ static const struct rendertarget_desc *ngfx_get_default_rendertarget_desc(struct
 static void begin_render_pass(struct gctx_ngfx *s_priv, rendertarget_ngfx *rt_priv)
 {
     Graphics *graphics = s_priv->graphics;
+    GraphicsContext *ctx = s_priv->graphics_context;
     CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
+    if (!rt_priv) {
+        // use ngfx default renderpass
+        ctx->beginRenderPass(cmd_buf, graphics);
+        return;
+    }
     RenderPass *render_pass = rt_priv->render_pass;
 
     Framebuffer *framebuffer = rt_priv->output_framebuffer;
@@ -320,7 +314,7 @@ static void begin_render_pass(struct gctx_ngfx *s_priv, rendertarget_ngfx *rt_pr
         glm::make_vec4(color_attachments[0].clear_value));
 }
 
-static void end_render_pass(struct gctx_ngfx *s_priv, rendertarget_ngfx *rt_priv)
+static void end_render_pass(struct gctx_ngfx *s_priv, rendertarget_ngfx *)
 {
     Graphics *graphics = s_priv->graphics;
     CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
@@ -332,16 +326,17 @@ static void ngfx_begin_render_pass(struct gctx *s, struct rendertarget *rt)
 {
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     rendertarget_ngfx *rt_priv = (rendertarget_ngfx *)rt;
-    CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
-    const auto &attachments = rt_priv->output_framebuffer->attachments;
+    if (rt_priv) {
+        const auto &attachments = rt_priv->output_framebuffer->attachments;
 
-    for (uint32_t j = 0; j<attachments.size(); j++) {
-        auto output_texture = attachments[j].texture;
-        if (output_texture->imageUsageFlags & IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
-            output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        }
-        else if (output_texture->imageUsageFlags & IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-            output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+        for (uint32_t j = 0; j<attachments.size(); j++) {
+            auto output_texture = attachments[j].texture;
+            if (output_texture->imageUsageFlags & IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+                output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            }
+            else if (output_texture->imageUsageFlags & IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+                output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+            }
         }
     }
 
@@ -357,12 +352,14 @@ static void ngfx_end_render_pass(struct gctx *s)
 
     end_render_pass(s_priv, rt_priv);
 
-    const auto &attachments = rt_priv->output_framebuffer->attachments;
-    for (uint32_t j = 0; j<attachments.size(); j++) {
-        auto output_texture = attachments[j].texture;
-        if (output_texture->imageUsageFlags & IMAGE_USAGE_SAMPLED_BIT) {
-            ngli_assert(output_texture->numSamples == 1);
-            output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    if (rt_priv) {
+        const auto &attachments = rt_priv->output_framebuffer->attachments;
+        for (uint32_t j = 0; j<attachments.size(); j++) {
+            auto output_texture = attachments[j].texture;
+            if (output_texture->imageUsageFlags & IMAGE_USAGE_SAMPLED_BIT) {
+                ngli_assert(output_texture->numSamples == 1);
+                output_texture->changeLayout(s_priv->cur_command_buffer, IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            }
         }
     }
     s_priv->cur_rendertarget = NULL;
