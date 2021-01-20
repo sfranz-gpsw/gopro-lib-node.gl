@@ -64,7 +64,7 @@ namespace ngfx {
         virtual CommandBuffer* copyCommandBuffer() = 0;
         virtual CommandBuffer* computeCommandBuffer() = 0;
         struct RenderPassConfig {
-            inline bool operator==(const RenderPassConfig& rhs) {
+            inline bool operator==(const RenderPassConfig& rhs) const {
                 return offscreen == rhs.offscreen && enableDepthStencil == rhs.enableDepthStencil
                     && numSamples == rhs.numSamples
                     && numColorAttachments == rhs.numColorAttachments;
