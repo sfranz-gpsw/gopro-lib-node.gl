@@ -241,6 +241,10 @@ static void ngfx_destroy(struct gctx *s)
 {
     gctx_ngfx* ctx = (gctx_ngfx *)s;
     ngfx_wait_idle(s);
+#ifdef ENABLE_CAPTURE
+    if (DEBUG_CAPTURE)
+        end_capture();
+#endif
     auto output_color_texture = ((texture *)ctx->offscreen_resources.color_texture);
     auto output_depth_texture = ((texture *)ctx->offscreen_resources.depth_texture);
     if (output_depth_texture) ngli_texture_freep(&output_depth_texture);
@@ -249,10 +253,6 @@ static void ngfx_destroy(struct gctx *s)
     delete ctx->graphics;
     delete ctx->surface;
     delete ctx->graphics_context;
-#ifdef ENABLE_CAPTURE
-    if (DEBUG_CAPTURE)
-        end_capture();
-#endif
 }
 
 static int ngfx_transform_cull_mode(struct gctx *s, int cull_mode)

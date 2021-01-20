@@ -124,16 +124,21 @@ ngfx::ImageUsageFlags to_ngfx_image_usage_flags(int usage_flags) {
     for (auto& flag : usage_flags_map) {
         if (usage_flags & flag.first) image_usage_flags |= flag.second;
     }
-    return image_usage_flags;
-}
+    return image_usage_flags; }
 
 RenderPass* get_render_pass(GraphicsContext* ctx, const rendertarget_desc &rt_desc) {
-    GraphicsContext::RenderPassConfig renderPassConfig;
-    renderPassConfig.enableDepthStencil = rt_desc.depth_stencil.format != NGLI_FORMAT_UNDEFINED;
-    renderPassConfig.enableDepthStencilResolve = rt_desc.depth_stencil.resolve != 0;
-    renderPassConfig.numColorAttachments = rt_desc.nb_colors;
-    renderPassConfig.numSamples = glm::max(rt_desc.samples, 1);
-    //TODO: remove renderPassConfig.offscreen param
-    renderPassConfig.offscreen = true;
-    return ctx->getRenderPass(renderPassConfig);
+    bool hasDepthStencilAttachment = rt_desc.depth_stencil.format != NGLI_FORMAT_UNDEFINED;
+    GraphicsContext::RenderPassConfig rp_config;
+    auto& colorAttachmentDescs = rp_config.colorAttachmentDescriptions;
+    colorAttachmentDescs.resize(rt_desc.nb_colors);
+    for (int j = 0; j<rt_desc.nb_colors; j++) {
+       colorAttachmentDescs[j].format = to_ngfx_format(rt_desc.colors[j].format);
+    }
+    if (hasDepthStencilAttachment) rp_config.depthStencilAttachmentDescription = {
+        to_ngfx_format(rt_desc.depth_stencil.format)
+    };
+    else rp_config.depthStencilAttachmentDescription = nullopt;
+    rp_config.enableDepthStencilResolve = rt_desc.depth_stencil.resolve != 0;
+    rp_config.numSamples = glm::max(rt_desc.samples, 1);
+    return ctx->getRenderPass(rp_config);
 }
