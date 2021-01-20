@@ -31,16 +31,8 @@
 #include "format.h"
 #include "util_ngfx.h"
 #include "debugutil_ngfx.h"
+#include "surface_util_ngfx.h"
 #include <glm/gtc/type_ptr.hpp>
-
-#ifdef NGFX_GRAPHICS_BACKEND_VULKAN
-#include "ngfx/porting/vulkan/VKGraphicsContext.h"
-#if defined(TARGET_LINUX)
-#define VK_USE_PLATFORM_XLIB_KHR
-#include <X11/Xlib.h>
-#include <vulkan/vulkan_xlib.h>
-#endif
-#endif
 
 #ifdef ENABLE_CAPTURE
 #include "tools/capture/capture.h"
@@ -64,14 +56,14 @@ static int create_onscreen_resources(struct gctx *s) {
     rt_params.width = config->width;
     rt_params.height = config->height;
     rt_params.nb_colors = 1;
-    rt_params.colors[0].attachment = nullptr, //TODO: *wrapped_color_texture,
-    rt_params.colors[0].load_op = NGLI_LOAD_OP_LOAD,
+    rt_params.colors[0].attachment = nullptr; //TODO: *wrapped_color_texture,
+    rt_params.colors[0].load_op = NGLI_LOAD_OP_LOAD;
     rt_params.colors[0].clear_value[0] = config->clear_color[0];
     rt_params.colors[0].clear_value[1] = config->clear_color[1];
     rt_params.colors[0].clear_value[2] = config->clear_color[2];
     rt_params.colors[0].clear_value[3] = config->clear_color[3];
     rt_params.colors[0].store_op = NGLI_STORE_OP_STORE;
-    rt_params.depth_stencil.attachment = nullptr, //TODO: *depth_texture,
+    rt_params.depth_stencil.attachment = nullptr; //TODO: *depth_texture,
     rt_params.depth_stencil.load_op = NGLI_LOAD_OP_LOAD;
     rt_params.depth_stencil.store_op = NGLI_STORE_OP_STORE;
 }
@@ -150,27 +142,10 @@ static int ngfx_init(struct gctx *s)
         begin_capture();
 #endif
     if (config->offscreen) {
-        ctx->surface = new Surface(config->width, config->height, true);
+        ctx->surface = surface_util_ngfx::create_offscreen_surface(config->width, config->height);
     }
     else {
-#if defined(NGFX_GRAPHICS_BACKEND_VULKAN) and defined(VK_USE_PLATFORM_XLIB_KHR)
-        if (config->platform == NGL_PLATFORM_XLIB) {
-            VKGraphicsContext *vk_ctx = (VKGraphicsContext *)ctx->graphics_context;
-            VKSurface *vk_surface = new VKSurface();
-            vk_surface->instance = vk_ctx->vkInstance.v;
-            VkXlibSurfaceCreateInfoKHR surface_create_info = {
-                VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR, NULL, 0,
-                (Display *)config->display, config->window,
-            };
-            vkCreateXlibSurfaceKHR(vk_ctx->vkInstance.v, &surface_create_info, NULL, &vk_surface->v);
-            vk_surface->w = config->width;
-            vk_surface->h = config->height;
-            vk_surface->offscreen = false;
-            ctx->surface = vk_surface;
-        }
-#else
-        TODO("create logical window surface from window handle");
-#endif
+        ctx->surface = surface_util_ngfx::create_surface_from_window_handle(ctx, config);
     }
     ctx->graphics_context->setSurface(ctx->surface);
     ctx->graphics = Graphics::create(ctx->graphics_context);
@@ -282,6 +257,7 @@ static void ngfx_destroy(struct gctx *s)
     if (output_color_texture) ngli_texture_freep(&output_color_texture);
     if (ctx->default_rendertarget) ngli_rendertarget_freep(&ctx->default_rendertarget);
     delete ctx->graphics;
+    delete ctx->surface;
     delete ctx->graphics_context;
 #ifdef ENABLE_CAPTURE
     if (DEBUG_CAPTURE)
