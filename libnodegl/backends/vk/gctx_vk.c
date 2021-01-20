@@ -550,7 +550,7 @@ static int vk_init(struct gctx *s)
     const struct ngl_config *config = &s->config;
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
 #ifdef ENABLE_CAPTURE
-    DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != NULL);
+    DEBUG_CAPTURE = (getenv("DEBUG_CAPTURE") != NULL) && !config->probe;
     if (DEBUG_CAPTURE) init_capture();
 #endif
     /* FIXME */
