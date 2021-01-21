@@ -76,6 +76,7 @@ void ngli_buffer_ngfx_unmap(struct buffer *s) {
 
 void ngli_buffer_ngfx_freep(struct buffer **sp) {
     if (!sp) return;
+    (*sp)->gctx->clazz->wait_idle((*sp)->gctx);
     buffer *s = *sp;
     buffer_ngfx *s_priv = (buffer_ngfx *)s;
     delete s_priv->v;
