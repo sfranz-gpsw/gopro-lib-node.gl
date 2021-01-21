@@ -71,9 +71,9 @@ void VKQueue::submit(CommandBuffer * commandBuffer, VkPipelineStageFlags waitSta
         Fence* waitFence) {
     VkResult vkResult;
     std::vector<VkSemaphore> vkWaitSemaphores(waitSemaphores.size());
-    for (int j = 0; j<waitSemaphores.size(); j++) vkWaitSemaphores[j] = vk(waitSemaphores[j])->v;
+    for (size_t j = 0; j<waitSemaphores.size(); j++) vkWaitSemaphores[j] = vk(waitSemaphores[j])->v;
     std::vector<VkSemaphore> vkSignalSemaphores(signalSemaphores.size());
-    for (int j = 0; j<signalSemaphores.size(); j++) vkSignalSemaphores[j] = vk(signalSemaphores[j])->v;
+    for (size_t j = 0; j<signalSemaphores.size(); j++) vkSignalSemaphores[j] = vk(signalSemaphores[j])->v;
     VkSubmitInfo submitInfo = {
         VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr,
         uint32_t(vkWaitSemaphores.size()), vkWaitSemaphores.data(),

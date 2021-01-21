@@ -66,9 +66,12 @@ namespace ngfx {
 
         struct AttachmentDescription {
             bool operator ==(const AttachmentDescription &rhs) const {
-                return rhs.format == format;
+                return rhs.format == format &&
+                       rhs.initialLayout == initialLayout &&
+                       rhs.finalLayout == finalLayout;
             }
             PixelFormat format;
+            std::optional<ImageLayout> initialLayout, finalLayout;
         };
 
         struct RenderPassConfig {

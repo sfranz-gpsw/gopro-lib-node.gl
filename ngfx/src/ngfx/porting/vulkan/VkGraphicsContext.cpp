@@ -64,39 +64,46 @@ RenderPass* VKGraphicsContext::getRenderPass(RenderPassConfig config) {
         if (r->config == config) return &r->vkRenderPass;
     }
     auto renderPassData = make_unique<VKRenderPassData>();
-    if (config.numSamples != 1) {
-        if (config.offscreen) initOffscreenRenderPassMSAA(config, renderPassData->vkRenderPass);
-        else initRenderPassMSAA(config, renderPassData->vkRenderPass);
-    }
-    else {
-        if (config.offscreen) initOffscreenRenderPass(config, renderPassData->vkRenderPass);
-        else initRenderPass(config, renderPassData->vkRenderPass);
-    }
+    initRenderPass(config, renderPassData->vkRenderPass);
     auto result = &renderPassData->vkRenderPass;
     vkRenderPassCache.emplace_back(std::move(renderPassData));
     return result;
 }
 
 void VKGraphicsContext::initRenderPass(const RenderPassConfig &config, VKRenderPass& renderPass) {
-    VkFormat colorFormat = vkSwapchain->surfaceFormat.format,
-             depthFormat = vkPhysicalDevice.depthFormat;
     std::vector<VkAttachmentDescription> attachments;
     uint32_t depthAttachmentBaseIndex = 0;
     for (uint32_t j = 0; j<config.numColorAttachments(); j++) {
+        auto &colorAttachmentDesc = config.colorAttachmentDescriptions[j];
+        VkFormat colorFormat = VkFormat(colorAttachmentDesc.format);
+        VkImageLayout initialLayout = (colorAttachmentDesc.initialLayout) ?
+            VkImageLayout(*colorAttachmentDesc.initialLayout) :
+            VK_IMAGE_LAYOUT_UNDEFINED;
+        VkImageLayout finalLayout = (colorAttachmentDesc.finalLayout) ?
+            VkImageLayout(*colorAttachmentDesc.finalLayout) :
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         attachments.push_back({
             0, colorFormat, VK_SAMPLE_COUNT_1_BIT,
             VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
-            VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+            VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            initialLayout, finalLayout
         });
     }
-    if (config.depthStencilAttachmentDescription) {
+    auto &depthStencilAttachmentDesc = config.depthStencilAttachmentDescription;
+    if (depthStencilAttachmentDesc) {
         depthAttachmentBaseIndex = attachments.size();
+        VkFormat depthFormat = VkFormat(depthStencilAttachmentDesc->format);
+        VkImageLayout initialLayout = (depthStencilAttachmentDesc->initialLayout) ?
+            VkImageLayout(*depthStencilAttachmentDesc->initialLayout) :
+            VK_IMAGE_LAYOUT_UNDEFINED;
+        VkImageLayout finalLayout = (depthStencilAttachmentDesc->finalLayout) ?
+            VkImageLayout(*depthStencilAttachmentDesc->finalLayout) :
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         attachments.push_back({
             0, depthFormat, VK_SAMPLE_COUNT_1_BIT,
             VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
             VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+            initialLayout, finalLayout
         });
     }
 
@@ -130,12 +137,14 @@ void VKGraphicsContext::initRenderPass(const RenderPassConfig &config, VKRenderP
         {
             0, VK_SUBPASS_EXTERNAL,
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
+            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT , VK_ACCESS_MEMORY_READ_BIT,
             VK_DEPENDENCY_BY_REGION_BIT
         }
     };
     renderPass.create(vkDevice.v, attachments, subpasses, dependencies);
 }
+
+#if 0
 
 void VKGraphicsContext::initRenderPassMSAA(const RenderPassConfig &config, VKRenderPass& renderPass) {
     std::vector<VkAttachmentDescription> attachments;
@@ -352,6 +361,8 @@ void VKGraphicsContext::initOffscreenRenderPassMSAA(const RenderPassConfig &conf
     renderPass.create(vkDevice.v, attachments, subpasses, dependencies);
 }
 
+#endif
+
 void VKGraphicsContext::createSwapchainFramebuffers(int w, int h) {
     // Create frame buffers for every swap chain image
     vkSwapchainFramebuffers.resize(vkSwapchain->numImages);
@@ -434,7 +445,8 @@ void VKGraphicsContext::setSurface(Surface* surface) {
     else depthAttachmentDescription = nullopt;
     if (surface && !surface->offscreen) {
         RenderPassConfig onscreenRenderPassConfig = {
-            { { surfaceFormat } }, depthAttachmentDescription, false, numSamples
+            { { surfaceFormat, IMAGE_LAYOUT_UNDEFINED, IMAGE_LAYOUT_PRESENT_SRC } },
+            depthAttachmentDescription, false, numSamples
         };
         vkDefaultRenderPass = (VKRenderPass*)getRenderPass(onscreenRenderPassConfig);
 	}
@@ -469,11 +481,11 @@ void VKGraphicsContext::createBindings() {
     defaultOffscreenRenderPass = vkDefaultOffscreenRenderPass;
     swapchain = vkSwapchain.get();
     frameFences.resize(vkWaitFences.size());
-    for (int j = 0; j<vkWaitFences.size(); j++)
+    for (size_t j = 0; j<vkWaitFences.size(); j++)
         frameFences[j] = &vkWaitFences[j];
     computeFence = &vkComputeFence;
     swapchainFramebuffers.resize(vkSwapchainFramebuffers.size());
-    for (int j = 0; j<vkSwapchainFramebuffers.size(); j++)
+    for (size_t j = 0; j<vkSwapchainFramebuffers.size(); j++)
         swapchainFramebuffers[j] = &vkSwapchainFramebuffers[j];
     presentCompleteSemaphore = &vkPresentCompleteSemaphore;
     renderCompleteSemaphore = &vkRenderCompleteSemaphore;
