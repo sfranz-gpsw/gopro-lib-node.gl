@@ -21,6 +21,7 @@
 
 #include "surface_util_ngfx.h"
 #include "gctx_ngfx.h"
+#include "debugutil_ngfx.h"
 #ifdef NGFX_GRAPHICS_BACKEND_VULKAN
 #include "ngfx/porting/vulkan/VKGraphicsContext.h"
 #if defined(TARGET_LINUX)
