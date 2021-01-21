@@ -231,8 +231,6 @@ ifeq ($(TARGET_OS),Windows)
 	($(CMD) $(ACTIVATE) \&\& $(MESON_COMPILE) -C builddir\\libnodegl \&\& $(MESON_INSTALL) -C builddir\\libnodegl)
 	# patch libnodegl.pc TODO: remove
 	sed -i -e 's/Libs.private: .*/Libs.private: OpenGL32.lib gdi32.lib/' nodegl-env/Lib/pkgconfig/libnodegl.pc
-	# Enable MultiProcessorCompilation
-	bash build_scripts/win64/patch_vcxproj_files.sh --set-multiprocessor-compilation true builddir/libnodegl
 else
 	(. $(ACTIVATE) && $(MESON_COMPILE) -C builddir/libnodegl && $(MESON_INSTALL) -C builddir/libnodegl)
 endif
@@ -244,6 +242,8 @@ ifeq ($(DEBUG),yes)
 	# Set RuntimeLibrary to MultithreadedDLL
 	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL builddir/libnodegl
 endif
+	# Enable MultiProcessorCompilation
+	bash build_scripts/win64/patch_vcxproj_files.sh --set-multiprocessor-compilation true builddir/libnodegl
 else
 	(. $(ACTIVATE) && $(MESON_SETUP) $(NODEGL_SETUP_OPTS) $(NODEGL_DEBUG_OPTS) libnodegl builddir/libnodegl)
 endif
