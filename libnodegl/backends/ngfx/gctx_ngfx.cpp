@@ -204,6 +204,10 @@ static int ngfx_begin_draw(struct gctx *s, double t)
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     s_priv->cur_command_buffer = s_priv->graphics_context->drawCommandBuffer();
     CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
+    GraphicsContext *ctx = s_priv->graphics_context;
+    if (!s->config.offscreen) {
+        ctx->swapchain->acquireNextImage();
+    }
     cmd_buf->begin();
     ngfx_begin_render_pass(s, s_priv->default_rendertarget);
     int *vp = s_priv->viewport;
@@ -217,16 +221,17 @@ static int ngfx_begin_draw(struct gctx *s, double t)
 static int ngfx_end_draw(struct gctx *s, double t)
 {
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
+    GraphicsContext *ctx = s_priv->graphics_context;
     ngfx_end_render_pass(s);
     s_priv->cur_command_buffer->end();
-    s_priv->graphics_context->submit(s_priv->cur_command_buffer);
+    ctx->submit(s_priv->cur_command_buffer);
     if (s->config.offscreen && s->config.capture_buffer) {
         uint32_t size = s->config.width * s->config.height * 4;
         auto &output_texture = ((texture_ngfx *)s_priv->offscreen_resources.color_texture)->v;
         output_texture->download(s->config.capture_buffer, size);
     }
     else {
-        ngli_swapchain_ngfx_swap_buffers(s);
+        ctx->queue->present();
     }
     return 0;
 }
