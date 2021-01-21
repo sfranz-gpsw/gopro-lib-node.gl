@@ -23,12 +23,13 @@
 #define SURFACE_UTIL_NGFX_H
 
 #include "ngfx/graphics/Surface.h"
-struct gctx_ngfx;
-struct ngl_config;
+
+namespace ngfx { class GraphicsContext; }
 
 struct surface_util_ngfx {
     static ngfx::Surface* create_offscreen_surface(int w, int h);
-    static ngfx::Surface* create_surface_from_window_handle(gctx_ngfx *ctx, const ngl_config *config);
+    static ngfx::Surface* create_surface_from_window_handle(ngfx::GraphicsContext *ctx,
+        int platform, uintptr_t display, uintptr_t window, uintptr_t width, uintptr_t height);
 };
 
 #endif

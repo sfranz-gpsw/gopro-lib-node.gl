@@ -101,7 +101,7 @@ static int create_offscreen_resources(struct gctx *s) {
     auto &rt = s_priv->offscreen_resources.rt;
     rt = ngli_rendertarget_create(s);
     if (!rt)
-        return NGL_ERROR_MEMORY;
+        return int(NGL_ERROR_MEMORY);
 
     int ret = ngli_rendertarget_init(rt, &rt_params);
     if (ret < 0)
@@ -135,7 +135,8 @@ static int ngfx_init(struct gctx *s)
         ctx->surface = surface_util_ngfx::create_offscreen_surface(config->width, config->height);
     }
     else {
-        ctx->surface = surface_util_ngfx::create_surface_from_window_handle(ctx, config);
+        ctx->surface = surface_util_ngfx::create_surface_from_window_handle(graphics_context, 
+            config->platform, config->display, config->window, config->width, config->height);
     }
     //context will destroy the surface
     graphics_context->setSurface(ctx->surface);

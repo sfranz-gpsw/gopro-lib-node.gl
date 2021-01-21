@@ -22,38 +22,48 @@
 #include "surface_util_ngfx.h"
 #include "gctx_ngfx.h"
 #include "debugutil_ngfx.h"
-#ifdef NGFX_GRAPHICS_BACKEND_VULKAN
+#if defined(NGFX_GRAPHICS_BACKEND_VULKAN)
 #include "ngfx/porting/vulkan/VKGraphicsContext.h"
 #if defined(TARGET_LINUX)
 #define VK_USE_PLATFORM_XLIB_KHR
 #include <X11/Xlib.h>
 #include <vulkan/vulkan_xlib.h>
 #endif
+#elif defined(NGFX_GRAPHICS_BACKEND_DIRECT3D12)
+#include "ngfx/porting/d3d/D3DGraphicsContext.h"
 #endif
+using namespace ngfx;
 
 ngfx::Surface* surface_util_ngfx::create_offscreen_surface(int w, int h) {
     return new ngfx::Surface(w, h, true);
 }
 
-ngfx::Surface* surface_util_ngfx::create_surface_from_window_handle(gctx_ngfx *ctx, const ngl_config *config) {
+ngfx::Surface* surface_util_ngfx::create_surface_from_window_handle(ngfx::GraphicsContext *ctx, 
+        int platform, uintptr_t display, uintptr_t window, uintptr_t width, uintptr_t height) {
     ngfx::Surface *surface = nullptr;
 #if defined(NGFX_GRAPHICS_BACKEND_VULKAN) and defined(VK_USE_PLATFORM_XLIB_KHR)
-    if (config->platform == NGL_PLATFORM_XLIB) {
-        ngfx::VKGraphicsContext *vk_ctx = (ngfx::VKGraphicsContext *)ctx->graphics_context;
+    if (platform == NGL_PLATFORM_XLIB) {
+        ngfx::VKGraphicsContext *vk_ctx = (ngfx::VKGraphicsContext *)ctx;
         ngfx::VKSurface *vk_surface = new ngfx::VKSurface();
         vk_surface->instance = vk_ctx->vkInstance.v;
         VkXlibSurfaceCreateInfoKHR surface_create_info = {
             VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR, NULL, 0,
-            (Display *)config->display, config->window,
+            (Display *)display, window,
         };
         vkCreateXlibSurfaceKHR(vk_ctx->vkInstance.v, &surface_create_info, NULL, &vk_surface->v);
-        vk_surface->w = config->width;
-        vk_surface->h = config->height;
+        vk_surface->w = width;
+        vk_surface->h = height;
         vk_surface->offscreen = false;
         surface = vk_surface;
     }
-#else
-    TODO("create logical window surface from window handle");
+#elif defined(NGFX_GRAPHICS_BACKEND_DIRECT3D12)
+    ngfx::D3DGraphicsContext* d3d_ctx = (ngfx::D3DGraphicsContext*)ctx;
+    ngfx::D3DSurface* d3d_surface = new ngfx::D3DSurface();
+    d3d_surface->v = HWND(window);
+    d3d_surface->w = width;
+    d3d_surface->h = height;
+    d3d_surface->offscreen = false;
+    surface = d3d_surface;
 #endif
     return surface;
 }
