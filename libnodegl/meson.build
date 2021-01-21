@@ -419,9 +419,13 @@ if host_system == 'windows'
   )
   ngfx_deps += glm_dep
 
+  ngfx_includes = [ '../external/win64/ngfx_x64-windows/include' ]
+  if ngfx_graphics_backend == 'NGFX_GRAPHICS_BACKEND_DIRECT3D12'
+    ngfx_includes += '../external/win64/d3dx12'
+  endif
   ngfx_dep = declare_dependency(
     compile_args: ngfx_cflags,
-    include_directories: [ '../external/win64/ngfx_x64-windows/include' ],
+    include_directories: ngfx_includes,
     link_args: [
       '-L' + meson.current_source_dir() + '\\..\\external\\win64\\ngfx_x64-windows\\lib', '-lngfx',
       '-ld3d12', '-ldxgi', '-ld3dcompiler'
