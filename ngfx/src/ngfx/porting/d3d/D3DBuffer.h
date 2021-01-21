@@ -40,7 +40,7 @@ namespace ngfx {
         void unmap() override;
         void upload(const void* data, uint32_t size, uint32_t offset = 0) override;
         void download(void* data, uint32_t size, uint32_t offset = 0) override {
-            TODO();
+            TODO("");
         }
         uint32_t size;
         ComPtr<ID3D12Resource> v;

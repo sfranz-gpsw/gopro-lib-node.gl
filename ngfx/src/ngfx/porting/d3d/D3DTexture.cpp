@@ -35,7 +35,7 @@ void D3DTexture::create(D3DGraphicsContext* ctx, D3DGraphics* graphics, void* da
     this->size = size;
     this->format = PixelFormat(format);
     this->textureType = textureType;
-    this->mipLevels = genMipmaps ? floor(log2(float(glm::min(w, h)))) + 1 : 1;
+    this->mipLevels = genMipmaps ? uint32_t(floor(log2(float(glm::min(w, h))))) + 1 : 1;
     if (genMipmaps) usageFlags |= IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     this->imageUsageFlags = usageFlags;
     this->numSamples = numSamples;
@@ -292,7 +292,7 @@ void D3DTexture::uploadFn(D3DCommandList* cmdList, void* data, uint32_t size, D3
         uint32_t slicePitch = size / (d * arrayLayers);
         vector<D3D12_SUBRESOURCE_DATA> textureData(arrayLayers);
         uint8_t* srcData = (uint8_t*)data;
-        for (uint32_t j = 0; j < arrayLayers; j++) {
+        for (uint32_t j = 0; j < uint32_t(arrayLayers); j++) {
             textureData[j] = { srcData, long(rowPitch), slicePitch };
             srcData += slicePitch;
         }
@@ -315,9 +315,9 @@ void D3DTexture::download(void* data, uint32_t size, uint32_t x, uint32_t y, uin
     D3D_TRACE(ctx->d3dDevice.v->GetCopyableFootprints(&v->GetDesc(), 0, 1, 0, &footprint, &numRows, &rowSizeBytes, &srcSize));
 
     D3DReadbackBuffer readbackBuffer;
-    readbackBuffer.create(ctx, srcSize);
+    readbackBuffer.create(ctx, uint32_t(srcSize));
 
-    D3D12_BOX srcRegion = { 0, 0, 0, w, h, 1 };
+    D3D12_BOX srcRegion = { 0, 0, 0, UINT(w), UINT(h), 1 };
 
     copyCommandList.begin();
     downloadFn(&copyCommandList, readbackBuffer, srcRegion, footprint);
@@ -327,7 +327,7 @@ void D3DTexture::download(void* data, uint32_t size, uint32_t x, uint32_t y, uin
 
     void* readbackBufferPtr = readbackBuffer.map();
     uint8_t* srcPtr = (uint8_t*)readbackBufferPtr, * dstPtr = (uint8_t*)data;
-    for (uint32_t j = 0; j < h; j++) {
+    for (uint32_t j = 0; j < uint32_t(h); j++) {
         memcpy(dstPtr, srcPtr, rowSizeBytes);
         srcPtr += footprint.Footprint.RowPitch;
         dstPtr += rowSizeBytes;

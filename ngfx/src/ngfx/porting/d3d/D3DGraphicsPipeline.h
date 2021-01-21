@@ -37,7 +37,7 @@ namespace ngfx {
             D3D12_BLEND blendSrcAlphaFactor = D3D12_BLEND_SRC_ALPHA;
             D3D12_BLEND blendDstAlphaFactor = D3D12_BLEND_INV_SRC_ALPHA;
             D3D12_BLEND_OP blendAlphaOp = D3D12_BLEND_OP_ADD;
-            D3D12_COLOR_WRITE_ENABLE colorWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+            UINT8 colorWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
             D3D12_CULL_MODE cullMode = D3D12_CULL_MODE_BACK;
             bool frontFaceCounterClockwise = false;
             float lineWidth = 1.0f;

@@ -80,7 +80,7 @@ void D3DGraphicsContext::setSurface(Surface* surface) {
     d3dCopyCommandList.create(d3dDevice.v.Get(), d3dCopyCommandAllocator.Get());
     d3dComputeCommandList.create(d3dDevice.v.Get(), d3dComputeCommandAllocator.Get());
     if (surface && numSamples != 1) {
-        TODO();
+        TODO("");
     }
     if (surface && enableDepthStencil) {
         d3dDepthStencilView.reset(
@@ -91,14 +91,24 @@ void D3DGraphicsContext::setSurface(Surface* surface) {
             )
         );
         if (numSamples != 1) {
-            TODO();
+            TODO("");
         }
     }
-    if (surface && !surface->offscreen) d3dDefaultRenderPass = (D3DRenderPass*)getRenderPass({ 
-        false, enableDepthStencil, false, numSamples, 1
-    });
+    std::optional<AttachmentDescription> depthAttachmentDescription;
+    if (enableDepthStencil) depthAttachmentDescription = { depthFormat };
+    else depthAttachmentDescription = nullopt;
+    if (surface && !surface->offscreen) {
+        RenderPassConfig onscreenRenderPassConfig = {
+            { { surfaceFormat, IMAGE_LAYOUT_UNDEFINED, IMAGE_LAYOUT_PRESENT_SRC } },
+            depthAttachmentDescription, false, numSamples
+        };
+        d3dDefaultRenderPass = (D3DRenderPass*)getRenderPass(onscreenRenderPassConfig);
+    }
     defaultOffscreenSurfaceFormat = PIXELFORMAT_RGBA8_UNORM;
-    d3dDefaultOffscreenRenderPass = (D3DRenderPass*)getRenderPass({ true, enableDepthStencil, false, numSamples, 1 });
+    RenderPassConfig offscreenRenderPassConfig = {
+        { { defaultOffscreenSurfaceFormat } }, depthAttachmentDescription, false, numSamples
+    };
+    d3dDefaultOffscreenRenderPass = (D3DRenderPass*)getRenderPass(offscreenRenderPassConfig);
     if (surface && !surface->offscreen) {
         createSwapchainFramebuffers(surface->w, surface->h);
     }
@@ -112,33 +122,20 @@ RenderPass* D3DGraphicsContext::getRenderPass(RenderPassConfig config) {
         if (r->config == config) return &r->d3dRenderPass;
     }
     auto renderPassData = make_unique<D3DRenderPassData>();
-    if (config.numSamples != 1) {
-        if (config.offscreen) createOffscreenRenderPassMSAA(config, renderPassData->d3dRenderPass);
-        else createRenderPassMSAA(config, renderPassData->d3dRenderPass);
-    }
-    else {
-        if (config.offscreen) createOffscreenRenderPass(config, renderPassData->d3dRenderPass);
-        else createRenderPass(config, renderPassData->d3dRenderPass);
-    }
+    createRenderPass(config, renderPassData->d3dRenderPass);
     auto result = &renderPassData->d3dRenderPass;
     d3dRenderPassCache.emplace_back(std::move(renderPassData));
     return result;
 }
 
 void D3DGraphicsContext::createRenderPass(const RenderPassConfig& config, D3DRenderPass& renderPass) {
-    renderPass.create(this, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+    D3D12_RESOURCE_STATES initialResourceState = D3D12_RESOURCE_STATE_RENDER_TARGET, 
+        finalResourceState = (config.colorAttachmentDescriptions[0].finalLayout == IMAGE_LAYOUT_PRESENT_SRC) ? 
+            D3D12_RESOURCE_STATE_PRESENT : 
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+    renderPass.create(this, initialResourceState, finalResourceState);
 }
-void D3DGraphicsContext::createOffscreenRenderPass(const RenderPassConfig& config, D3DRenderPass& renderPass) {
-    renderPass.create(this, D3D12_RESOURCE_STATE_RENDER_TARGET, 
-        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-}
-void D3DGraphicsContext::createRenderPassMSAA(const RenderPassConfig& config, D3DRenderPass& renderPass) {
-    renderPass.create(this, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-}
-void D3DGraphicsContext::createOffscreenRenderPassMSAA(const RenderPassConfig& config, D3DRenderPass& renderPass) {
-    renderPass.create(this, D3D12_RESOURCE_STATE_RENDER_TARGET,
-        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-}
+
 void D3DGraphicsContext::createFences(ID3D12Device* device) {
     d3dWaitFences.resize(numDrawCommandBuffers);
     for (auto& fence: d3dWaitFences) {

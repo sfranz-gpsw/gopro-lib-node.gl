@@ -37,8 +37,8 @@ void Camera::onCursorPos(double x, double y) {
     }
     else if (s.state == 2) {
         double dx = x - s.x, dy = y - s.y;
-        yaw += radians(dx * 10.0f);
-        pitch += radians(dy * 10.0f);
+        yaw += float(radians(dx * 10.0f));
+        pitch += float(radians(dy * 10.0f));
         s.x = x; s.y = y;
     }
 }

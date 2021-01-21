@@ -140,7 +140,7 @@ GraphicsPipeline* GraphicsPipeline::create(GraphicsContext* graphicsContext, con
         state.blendEnable, 
         D3D12_BLEND(state.srcColorBlendFactor), D3D12_BLEND(state.dstColorBlendFactor), D3D12_BLEND_OP(state.colorBlendOp),
         D3D12_BLEND(getAlphaBlendFactor(state.srcAlphaBlendFactor)), D3D12_BLEND(getAlphaBlendFactor(state.dstAlphaBlendFactor)), D3D12_BLEND_OP(state.alphaBlendOp),
-        D3D12_COLOR_WRITE_ENABLE(state.colorWriteMask), 
+        state.colorWriteMask, 
         D3D12_CULL_MODE(state.cullModeFlags), (state.frontFace == FRONT_FACE_COUNTER_CLOCKWISE), state.lineWidth,
         state.depthTestEnable, state.depthWriteEnable, d3d(state.renderPass), 
         state.numSamples, state.numColorAttachments
@@ -153,7 +153,7 @@ GraphicsPipeline* GraphicsPipeline::create(GraphicsContext* graphicsContext, con
     std::map<uint32_t, ShaderModule::DescriptorInfo> descriptors;
     for (auto& descriptor : vs->descriptors) descriptors[descriptor.set] = descriptor;
     for (auto& descriptor : fs->descriptors) descriptors[descriptor.set] = descriptor;
-    uint32_t numDescriptors = descriptors.size();
+    uint32_t numDescriptors = uint32_t(descriptors.size());
     descriptorBindings.resize(numDescriptors);
 
     D3DPipelineUtil::parseDescriptors(descriptors, descriptorBindings, d3dRootParams, d3dDescriptorRanges, D3DPipelineUtil::PIPELINE_TYPE_GRAPHICS);
@@ -168,7 +168,7 @@ GraphicsPipeline* GraphicsPipeline::create(GraphicsContext* graphicsContext, con
         uint32_t binding = va.location, offset = 0; //TODO: va.count
         D3D12_INPUT_CLASSIFICATION inputRate = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
         if (instanceAttributes.find(va.name) != instanceAttributes.end()) inputRate = D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
-        uint32_t semanticIndexOffset = va.semantic.find_first_of("0123456789");
+        uint32_t semanticIndexOffset = uint32_t(va.semantic.find_first_of("0123456789"));
         string &semanticName = semanticData[j].name;
         uint32_t& semanticIndex = semanticData[j].index;
         if (semanticIndexOffset != string::npos) {

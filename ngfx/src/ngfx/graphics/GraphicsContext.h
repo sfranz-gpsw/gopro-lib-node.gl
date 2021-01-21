@@ -30,6 +30,7 @@
 #include "ngfx/graphics/Device.h"
 #include "ngfx/graphics/Surface.h"
 #include <vector>
+#include <optional>
 
 namespace ngfx {
     class GraphicsContext {
@@ -82,7 +83,7 @@ namespace ngfx {
                        rhs.numSamples == numSamples;
             };
             uint32_t numColorAttachments() const {
-                return colorAttachmentDescriptions.size();
+                return uint32_t(colorAttachmentDescriptions.size());
             }
             std::vector<AttachmentDescription> colorAttachmentDescriptions;
             std::optional<AttachmentDescription> depthStencilAttachmentDescription;

@@ -26,7 +26,7 @@ void MTLGraphicsContext::setSurface(Surface *surface) {
         surfaceFormat = defaultOffscreenSurfaceFormat;
     }
     if (surface && numSamples != 1) {
-        TODO();
+        TODO("");
     }
     if (surface && enableDepthStencil) {
         mtlDepthStencilTexture.reset(new MTLDepthStencilTexture);
@@ -34,7 +34,7 @@ void MTLGraphicsContext::setSurface(Surface *surface) {
         mtkView.depthStencilPixelFormat = mtlDepthStencilTexture->format;
         depthFormat = PixelFormat(mtlDepthStencilTexture->format);
         if (numSamples != 1) {
-            TODO();
+            TODO("");
         }
     }
     mtlDefaultRenderPass = (MTLRenderPass*)getRenderPass({ false, enableDepthStencil, false, numSamples, 1 });

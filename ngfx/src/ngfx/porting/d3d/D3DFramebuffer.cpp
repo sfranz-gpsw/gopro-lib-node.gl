@@ -24,7 +24,7 @@ using namespace ngfx;
 
 void D3DFramebuffer::create(std::vector<D3DAttachment>& d3dAttachments, int32_t w, uint32_t h, uint32_t layers) {
 	this->d3dAttachments = d3dAttachments;
-    this->numAttachments = d3dAttachments.size();
+    this->numAttachments = uint32_t(d3dAttachments.size());
     this->w = w; this->h = h;
     auto it = this->d3dAttachments.begin();
     while (it != this->d3dAttachments.end()) {

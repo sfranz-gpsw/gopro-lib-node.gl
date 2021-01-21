@@ -72,9 +72,6 @@ namespace ngfx {
         void createBindings();
         void createDescriptorHeaps();
         void createRenderPass(const RenderPassConfig& config, D3DRenderPass& renderPass);
-        void createOffscreenRenderPass(const RenderPassConfig& config, D3DRenderPass& renderPass);
-        void createRenderPassMSAA(const RenderPassConfig& config, D3DRenderPass& renderPass);
-        void createOffscreenRenderPassMSAA(const RenderPassConfig& config, D3DRenderPass& renderPass);
         void createFences(ID3D12Device* device);
         void createSwapchainFramebuffers(int w, int h);
     };

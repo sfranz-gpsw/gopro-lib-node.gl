@@ -143,7 +143,7 @@ void D3DGraphics::beginRenderPass(CommandBuffer* commandBuffer, RenderPass* rend
     D3D_TRACE(d3dCommandList->v->SetDescriptorHeaps(UINT(descriptorHeaps.size()), descriptorHeaps.data()));
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> colorAttachmentHandles(colorAttachments.size());
     for (uint32_t j = 0; j < colorAttachments.size(); j++) colorAttachmentHandles[j] = colorAttachments[j]->cpuDescriptor;
-    D3D_TRACE(d3dCommandList->v->OMSetRenderTargets(colorAttachments.size(), colorAttachmentHandles.data(), FALSE,
+    D3D_TRACE(d3dCommandList->v->OMSetRenderTargets(UINT(colorAttachments.size()), colorAttachmentHandles.data(), FALSE,
         depthStencilAttachment ? &depthStencilAttachment->cpuDescriptor : nullptr));
     for (auto& colorAttachment : colorAttachments) {
         D3D_TRACE(d3dCommandList->v->ClearRenderTargetView(colorAttachment->cpuDescriptor, glm::value_ptr(clearColor), 0, nullptr));

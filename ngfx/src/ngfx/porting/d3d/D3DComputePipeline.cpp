@@ -45,7 +45,7 @@ ComputePipeline* ComputePipeline::create(GraphicsContext* graphicsContext,
     std::vector<D3D12_STATIC_SAMPLER_DESC> d3dSamplers;
     std::vector<std::unique_ptr<CD3DX12_DESCRIPTOR_RANGE1>> d3dDescriptorRanges;
     auto& descriptorBindings = d3dComputePipeline->descriptorBindings;
-    uint32_t numDescriptors = cs->descriptors.size();
+    uint32_t numDescriptors = uint32_t(cs->descriptors.size());
     std::map<uint32_t, ShaderModule::DescriptorInfo> descriptors;
     for (auto& csDescriptor : cs->descriptors) descriptors[csDescriptor.set] = csDescriptor;
     descriptorBindings.resize(numDescriptors);
