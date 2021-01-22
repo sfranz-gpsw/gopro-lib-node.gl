@@ -41,7 +41,7 @@ namespace ngfx {
             BlendFactor srcAlphaBlendFactor = BLEND_FACTOR_SRC_ALPHA;
             BlendFactor dstAlphaBlendFactor = BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
             BlendOp colorBlendOp = BLEND_OP_ADD, alphaBlendOp = BLEND_OP_ADD;
-            UINT8 colorWriteMask =
+            uint8_t colorWriteMask =
                 COLOR_COMPONENT_R_BIT |
                 COLOR_COMPONENT_G_BIT |
                 COLOR_COMPONENT_B_BIT |
