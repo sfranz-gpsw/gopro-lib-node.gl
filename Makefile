@@ -57,8 +57,10 @@ endif
 
 ifeq ($(DEBUG),yes)
 CMAKE_BUILD_TYPE = "Debug"
+CMAKE_BUILD_DIR = cmake-build-debug
 else
 CMAKE_BUILD_TYPE = "Release"
+CMAKE_BUILD_DIR = cmake-build-release
 endif
 
 DEBUG_GL    ?= no
@@ -300,82 +302,82 @@ endif
 
 shader-tools-install: $(PREFIX) ngfx-install
 ifeq ($(TARGET_OS), Windows)
-	( cd shader-tools && cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR)  -D$(NGFX_GRAPHICS_BACKEND)=ON )
+	( cd shader-tools && cmake.exe -H. -B$(CMAKE_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR)  -D$(NGFX_GRAPHICS_BACKEND)=ON )
 ifeq ($(DEBUG),yes)
 	# Set RuntimeLibrary to MultithreadedDLL
-	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL shader-tools/cmake-build-debug
+	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL shader-tools/$(CMAKE_BUILD_DIR)
 endif
 	( \
-	  cd shader-tools && cmake.exe --build cmake-build-debug --config $(CMAKE_BUILD_TYPE) -j8 && \
-	  cmake.exe --install cmake-build-debug --config $(CMAKE_BUILD_TYPE) --prefix ../external/win64/shader_tools_x64-windows \
+	  cd shader-tools && cmake.exe --build $(CMAKE_BUILD_DIR) --config $(CMAKE_BUILD_TYPE) -j8 && \
+	  cmake.exe --install $(CMAKE_BUILD_DIR) --config $(CMAKE_BUILD_TYPE) --prefix ../external/win64/shader_tools_x64-windows \
 	)
 ifeq ($(NGFX_GRAPHICS_BACKEND), NGFX_GRAPHICS_BACKEND_DIRECT3D12)
-	($(CMD) $(ACTIVATE) \&\& shader-tools\\cmake-build-debug\\$(CMAKE_BUILD_TYPE)\\compile_shaders_dx12.exe d3dBlitOp)
+	($(CMD) $(ACTIVATE) \&\& shader-tools\\$(CMAKE_BUILD_DIR)\\$(CMAKE_BUILD_TYPE)\\compile_shaders_dx12.exe d3dBlitOp)
 endif
 else ifeq ($(TARGET_OS), Linux)
 	( \
 	  cd shader-tools && \
-	  cmake -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR)  -D$(NGFX_GRAPHICS_BACKEND)=ON && \
-	  cmake --build cmake-build-debug -j8 && \
-	  cmake --install cmake-build-debug --prefix ../external/linux/shader_tools_x64-linux \
+	  cmake -H. -B$(CMAKE_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR)  -D$(NGFX_GRAPHICS_BACKEND)=ON && \
+	  cmake --build $(CMAKE_BUILD_DIR) -j8 && \
+	  cmake --install $(CMAKE_BUILD_DIR) --config $(CMAKE_BUILD_TYPE) --prefix ../external/linux/shader_tools_x64-linux \
 	)
 	cp external/linux/shader_tools_x64-linux/lib/libshader_tools.so $(PREFIX)/lib
 else ifeq ($(TARGET_OS), Darwin)
 	( \
 	  cd shader-tools && \
-	  cmake -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR)  -D$(NGFX_GRAPHICS_BACKEND)=ON && \
-	  cmake --build cmake-build-debug -j8 && \
-	  cmake --install cmake-build-debug --prefix ../external/darwin/shader_tools_x64-darwin \
+	  cmake -H. -B$(CMAKE_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR)  -D$(NGFX_GRAPHICS_BACKEND)=ON && \
+	  cmake --build $(CMAKE_BUILD_DIR) -j8 && \
+	  cmake --install $(CMAKE_BUILD_DIR) --config $(CMAKE_BUILD_TYPE) --prefix ../external/darwin/shader_tools_x64-darwin \
 	)
 	cp external/darwin/shader_tools_x64-darwin/lib/libshader_tools.dylib $(PREFIX)/lib
 endif
 
 ngfx-install: $(PREFIX)
 ifeq ($(TARGET_OS), Windows)
-	( cd ngfx && cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) -D$(NGFX_GRAPHICS_BACKEND)=ON )
+	( cd ngfx && cmake.exe -H. -B$(CMAKE_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) -D$(NGFX_GRAPHICS_BACKEND)=ON )
 ifeq ($(DEBUG),yes)
 	# Set RuntimeLibrary to MultithreadedDLL
-	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL ngfx/cmake-build-debug
+	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL ngfx/$(CMAKE_BUILD_DIR)
 	# Enable MultiProcessorCompilation
-	bash build_scripts/win64/patch_vcxproj_files.sh --set-multiprocessor-compilation true ngfx/cmake-build-debug
+	bash build_scripts/win64/patch_vcxproj_files.sh --set-multiprocessor-compilation true ngfx/$(CMAKE_BUILD_DIR)
 endif
 	( \
-	  cd ngfx && cmake.exe --build cmake-build-debug --config $(CMAKE_BUILD_TYPE) -j8 && \
-	  cmake.exe --install cmake-build-debug --config $(CMAKE_BUILD_TYPE) --prefix ../external/win64/ngfx_x64-windows \
+	  cd ngfx && cmake.exe --build $(CMAKE_BUILD_DIR) --config $(CMAKE_BUILD_TYPE) -j8 && \
+	  cmake.exe --install $(CMAKE_BUILD_DIR) --config $(CMAKE_BUILD_TYPE) --prefix ../external/win64/ngfx_x64-windows \
 	)
 	cp external/win64/ngfx_x64-windows/lib/ngfx.lib $(PREFIX)/Lib
 else ifeq ($(TARGET_OS), Linux)
 	( \
 	  cd ngfx && \
-	  cmake -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) -D$(NGFX_GRAPHICS_BACKEND)=ON && \
-	  cmake --build cmake-build-debug -j8 && \
-	  cmake --install cmake-build-debug --prefix ../external/linux/ngfx_x64-linux \
+	  cmake -H. -B$(CMAKE_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) -D$(NGFX_GRAPHICS_BACKEND)=ON && \
+	  cmake --build $(CMAKE_BUILD_DIR) -j8 && \
+	  cmake --install $(CMAKE_BUILD_DIR) --prefix ../external/linux/ngfx_x64-linux \
 	)
 	cp external/linux/ngfx_x64-linux/lib/libngfx.so $(PREFIX)/lib
 else ifeq ($(TARGET_OS), Darwin)
 	( \
 	  cd ngfx && \
-	  cmake -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) -D$(NGFX_GRAPHICS_BACKEND)=ON && \
-	  cmake --build cmake-build-debug -j8 && \
-	  cmake --install cmake-build-debug --config $(CMAKE_BUILD_TYPE) --prefix ../external/darwin/ngfx_x64-darwin \
+	  cmake -H. -B$(CMAKE_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) -D$(NGFX_GRAPHICS_BACKEND)=ON && \
+	  cmake --build $(CMAKE_BUILD_DIR) -j8 && \
+	  cmake --install $(CMAKE_BUILD_DIR) --config $(CMAKE_BUILD_TYPE) --prefix ../external/darwin/ngfx_x64-darwin \
 	)
 	cp external/darwin/ngfx_x64-darwin/lib/libngfx.dylib $(PREFIX)/lib
 endif
 
 ngl-debug-tools: $(PREFIX)
 ifeq ($(TARGET_OS), Windows)
-	( cd ngl-debug-tools && cmake.exe -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) )
+	( cd ngl-debug-tools && cmake.exe -H. -B$(CMAKE_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) )
 ifeq ($(DEBUG),yes)
 	# Set RuntimeLibrary to MultithreadedDLL
-	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL ngl-debug-tools/cmake-build-debug
+	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL ngl-debug-tools/$(CMAKE_BUILD_DIR)
 endif
-	( cd ngl-debug-tools && cmake.exe --build cmake-build-debug --config $(CMAKE_BUILD_TYPE) -j8 )
-	(cp external/win64/RenderDoc_1.11_64/renderdoc.dll ngl-debug-tools/cmake-build-debug/$(CMAKE_BUILD_TYPE))
+	( cd ngl-debug-tools && cmake.exe --build $(CMAKE_BUILD_DIR) --config $(CMAKE_BUILD_TYPE) -j8 )
+	(cp external/win64/RenderDoc_1.11_64/renderdoc.dll ngl-debug-tools/$(CMAKE_BUILD_DIR)/$(CMAKE_BUILD_TYPE))
 else ifeq ($(TARGET_OS), Linux)
 	( \
 	  cd ngl-debug-tools && \
-	  cmake -H. -Bcmake-build-debug -G $(CMAKE_GENERATOR) && \
-	  cmake --build cmake-build-debug -j8 \
+	  cmake -H. -B$(CMAKE_BUILD_DIR) -G $(CMAKE_GENERATOR) && \
+	  cmake --build $(CMAKE_BUILD_DIR) -j8 \
 	)
 endif
 
