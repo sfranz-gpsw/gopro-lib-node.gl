@@ -38,7 +38,7 @@ W_PREFIX ?= $(W_PWD)\$(PREFIX)
 $(info PYTHON: $(PYTHON))
 $(info PREFIX: $(PREFIX))
 $(info W_PREFIX: $(W_PREFIX))
-CMAKE_GENERATOR = "Visual Studio 16 2019"
+CMAKE_GENERATOR ?= "Visual Studio 16 2019"
 NGFX_GRAPHICS_BACKEND ?= "NGFX_GRAPHICS_BACKEND_DIRECT3D12"
 NGFX_WINDOW_BACKEND ?= "NGFX_WINDOW_BACKEND_WINDOWS"
 else
@@ -47,11 +47,11 @@ PREFIX     ?= $(PWD)/nodegl-env
 ifeq ($(TARGET_OS),Linux)
 NGFX_GRAPHICS_BACKEND ?= "NGFX_GRAPHICS_BACKEND_VULKAN"
 NGFX_WINDOW_BACKEND ?= "NGFX_WINDOW_BACKEND_GLFW"
-CMAKE_GENERATOR = "CodeBlocks - Ninja"
+CMAKE_GENERATOR ?= "CodeBlocks - Ninja"
 else ifeq ($(TARGET_OS),Darwin)
 NGFX_GRAPHICS_BACKEND ?= "NGFX_GRAPHICS_BACKEND_METAL"
 NGFX_WINDOW_BACKEND ?= "NGFX_WINDOW_BACKEND_APPKIT"
-CMAKE_GENERATOR = "Xcode"
+CMAKE_GENERATOR ?= "Xcode"
 endif
 endif
 
@@ -97,15 +97,21 @@ NODEGL_SETUP_OPTS += -Dngfx_graphics_backend=$(NGFX_GRAPHICS_BACKEND) -Dngfx_win
 RPATH_LDFLAGS ?= -Wl,-rpath,$(PREFIX)/lib
 
 ifeq ($(TARGET_OS),Windows)
-MESON_SETUP   = meson setup --backend vs --prefix="$(W_PREFIX)" --pkg-config-path=$(PREFIX)\\Lib\\pkgconfig -Drpath=true
-MESON_SETUP_NINJA   = meson setup --backend ninja --prefix="$(W_PREFIX)" --pkg-config-path=$(PREFIX)\\Lib\\pkgconfig -Drpath=true
+MESON_BACKEND ?= vs
+else ifeq ($(TARGET_OS),Darwin)
+MESON_BACKEND ?= xcode
+else
+MESON_BACKEND ?= ninja
+endif
+
+ifeq ($(TARGET_OS),Windows)
+MESON_SETUP   = meson setup --prefix="$(W_PREFIX)" --pkg-config-path=$(PREFIX)\\Lib\\pkgconfig -Drpath=true
 # Set PKG_CONFIG and PKG_CONFIG_PATH environment variables when invoking command shell
 CMD = PKG_CONFIG="$(PREFIX)\\Scripts\\pkg-config.exe" PKG_CONFIG_PATH="$(W_PREFIX)\\Lib\\pkgconfig" WSLENV=PKG_CONFIG/w:PKG_CONFIG_PATH/w cmd.exe /C
 else
 MESON_SETUP   = meson setup --prefix=$(PREFIX) --pkg-config-path=$(PREFIX)/lib/pkgconfig -Drpath=true
 endif
-# MAKEFLAGS= is a workaround for the issue described here:
-# https://github.com/ninja-build/ninja/issues/1139#issuecomment-724061270
+
 ifeq ($(TARGET_OS),Windows)
 MESON_COMPILE = meson compile
 else
@@ -167,9 +173,9 @@ ifeq ($(DEBUG),yes)
 	# Note: MESON doesn't support
 	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL builddir/ngl-tools
 endif
-	($(CMD) $(ACTIVATE) \&\& $(MESON_COMPILE) -C builddir\\ngl-tools \&\& $(MESON_INSTALL) -C builddir\\ngl-tools)
+	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) --backend $(MESON_BACKEND) ngl-tools builddir\\ngl-tools \&\& $(MESON_COMPILE) -C builddir\\ngl-tools \&\& $(MESON_INSTALL) -C builddir\\ngl-tools)
 else
-	(. $(ACTIVATE) && $(MESON_SETUP) ngl-tools builddir/ngl-tools && $(MESON_COMPILE) -C builddir/ngl-tools && $(MESON_INSTALL) -C builddir/ngl-tools)
+	(. $(ACTIVATE) && $(MESON_SETUP) --backend $(MESON_BACKEND) ngl-tools builddir/ngl-tools && $(MESON_COMPILE) -C builddir/ngl-tools && $(MESON_INSTALL) -C builddir/ngl-tools)
 endif
 
 pynodegl-utils-install: pynodegl-utils-deps-install
@@ -240,7 +246,7 @@ endif
 
 nodegl-setup: sxplayer-install ngfx-install shader-tools-install
 ifeq ($(TARGET_OS),Windows)
-	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) $(NODEGL_SETUP_OPTS) $(NODEGL_DEBUG_OPTS) --default-library shared libnodegl builddir\\libnodegl)
+	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) --backend $(MESON_BACKEND) $(NODEGL_SETUP_OPTS) $(NODEGL_DEBUG_OPTS) --default-library shared libnodegl builddir\\libnodegl)
 ifeq ($(DEBUG),yes)
 	# Set RuntimeLibrary to MultithreadedDLL
 	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL builddir/libnodegl
@@ -248,7 +254,7 @@ endif
 	# Enable MultiProcessorCompilation
 	bash build_scripts/win64/patch_vcxproj_files.sh --set-multiprocessor-compilation true builddir/libnodegl
 else
-	(. $(ACTIVATE) && $(MESON_SETUP) $(NODEGL_SETUP_OPTS) $(NODEGL_DEBUG_OPTS) libnodegl builddir/libnodegl)
+	(. $(ACTIVATE) && $(MESON_SETUP) --backend $(MESON_BACKEND) $(NODEGL_SETUP_OPTS) $(NODEGL_DEBUG_OPTS) libnodegl builddir/libnodegl)
 endif
 
 shell:
@@ -258,9 +264,9 @@ endif
 
 sxplayer-install: sxplayer $(PREFIX)
 ifeq ($(TARGET_OS),Windows)
-	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) --default-library shared sxplayer builddir\\sxplayer \&\& $(MESON_COMPILE) -C builddir\\sxplayer \&\& $(MESON_INSTALL) -C builddir\\sxplayer)
+	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) --backend $(MESON_BACKEND) --default-library shared sxplayer builddir\\sxplayer \&\& $(MESON_COMPILE) -C builddir\\sxplayer \&\& $(MESON_INSTALL) -C builddir\\sxplayer)
 else
-	(. $(ACTIVATE) && $(MESON_SETUP) sxplayer builddir/sxplayer && $(MESON_COMPILE) -C builddir/sxplayer && $(MESON_INSTALL) -C builddir/sxplayer)
+	(. $(ACTIVATE) && $(MESON_SETUP) --backend $(MESON_BACKEND) sxplayer builddir/sxplayer && $(MESON_COMPILE) -C builddir/sxplayer && $(MESON_INSTALL) -C builddir/sxplayer)
 endif
 
 # Note for developers: in order to customize the sxplayer you're building
@@ -445,9 +451,10 @@ endif
 
 tests-setup: ngl-tools-install pynodegl-utils-install
 ifeq ($(TARGET_OS),Windows)
-	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP_NINJA) builddir\\tests tests)
+	# meson test only unsupports ninja backend
+	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) --backend ninja builddir\\tests tests)
 else
-	(. $(ACTIVATE) && $(MESON_SETUP) builddir/tests tests)
+	(. $(ACTIVATE) && $(MESON_SETUP) --backend ninja builddir/tests tests)
 endif
 
 nodegl-tests: nodegl-install
