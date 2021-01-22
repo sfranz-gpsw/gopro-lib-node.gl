@@ -449,7 +449,7 @@ void VKGraphicsContext::setSurface(Surface* surface) {
             depthAttachmentDescription, false, numSamples
         };
         vkDefaultRenderPass = (VKRenderPass*)getRenderPass(onscreenRenderPassConfig);
-	}
+    }
     defaultOffscreenSurfaceFormat = PixelFormat(VK_FORMAT_R8G8B8A8_UNORM);
     RenderPassConfig offscreenRenderPassConfig = {
         { { defaultOffscreenSurfaceFormat } }, depthAttachmentDescription, false, numSamples

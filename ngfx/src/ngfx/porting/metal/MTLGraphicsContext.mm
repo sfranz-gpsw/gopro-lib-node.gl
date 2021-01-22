@@ -37,8 +37,21 @@ void MTLGraphicsContext::setSurface(Surface *surface) {
             TODO("");
         }
     }
-    mtlDefaultRenderPass = (MTLRenderPass*)getRenderPass({ false, enableDepthStencil, false, numSamples, 1 });
-    mtlDefaultOffscreenRenderPass = (MTLRenderPass*)getRenderPass({true, enableDepthStencil, false, numSamples, 1 });
+    std::optional<AttachmentDescription> depthAttachmentDescription;
+    if (enableDepthStencil) depthAttachmentDescription = { depthFormat };
+    else depthAttachmentDescription = nullopt;
+    if (surface && !surface->offscreen) {
+        RenderPassConfig onscreenRenderPassConfig = {
+            { { surfaceFormat, IMAGE_LAYOUT_UNDEFINED, IMAGE_LAYOUT_PRESENT_SRC } },
+            depthAttachmentDescription, false, numSamples
+        };
+        mtlDefaultRenderPass = (MTLRenderPass*)getRenderPass(onscreenRenderPassConfig);
+    }
+    defaultOffscreenSurfaceFormat = PixelFormat(MTLPixelFormatRGBA8Unorm);
+    RenderPassConfig offscreenRenderPassConfig = {
+        { { defaultOffscreenSurfaceFormat } }, depthAttachmentDescription, false, numSamples
+    };
+    mtlDefaultOffscreenRenderPass = (MTLRenderPass*)getRenderPass(offscreenRenderPassConfig);
     if (surface && !surface->offscreen) createSwapchainFramebuffers(mtkView.drawableSize.width, mtkView.drawableSize.height);
     createBindings();
 }
