@@ -55,6 +55,12 @@ CMAKE_GENERATOR = "Xcode"
 endif
 endif
 
+ifeq ($(DEBUG),yes)
+CMAKE_BUILD_TYPE = "Debug"
+else
+CMAKE_BUILD_TYPE = "Release"
+endif
+
 DEBUG_GL    ?= no
 DEBUG_MEM   ?= no
 DEBUG_SCENE ?= no
@@ -351,7 +357,7 @@ else ifeq ($(TARGET_OS), Darwin)
 	  cd ngfx && \
 	  cmake -H. -Bcmake-build-debug -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) -D$(NGFX_GRAPHICS_BACKEND)=ON && \
 	  cmake --build cmake-build-debug -j8 && \
-	  cmake --install cmake-build-debug --prefix ../external/darwin/ngfx_x64-darwin \
+	  cmake --install cmake-build-debug --config $(CMAKE_BUILD_TYPE) --prefix ../external/darwin/ngfx_x64-darwin \
 	)
 	cp external/darwin/ngfx_x64-darwin/lib/libngfx.dylib $(PREFIX)/lib
 endif
