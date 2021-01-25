@@ -52,7 +52,11 @@ void MTLGraphicsContext::setSurface(Surface *surface) {
         { { defaultOffscreenSurfaceFormat } }, depthAttachmentDescription, false, numSamples
     };
     mtlDefaultOffscreenRenderPass = (MTLRenderPass*)getRenderPass(offscreenRenderPassConfig);
-    if (surface && !surface->offscreen) createSwapchainFramebuffers(mtkView.drawableSize.width, mtkView.drawableSize.height);
+    if (surface && !surface->offscreen) {
+        CAMetalLayer* metalLayer = (CAMetalLayer*)mtkView.layer;
+        numSwapchainImages = metalLayer.maximumDrawableCount;
+        createSwapchainFramebuffers(mtkView.drawableSize.width, mtkView.drawableSize.height);
+    }
     createBindings();
 }
 
@@ -67,12 +71,10 @@ RenderPass* MTLGraphicsContext::getRenderPass(RenderPassConfig config) {
 }
 
 void MTLGraphicsContext::createSwapchainFramebuffers(uint32_t w, uint32_t h) {
-    CAMetalLayer* metalLayer = (CAMetalLayer*)mtkView.layer;
-    numSwapchainImages = metalLayer.maximumDrawableCount;
     mtlSwapchainFramebuffers.resize(numSwapchainImages);
     for (auto& fb : mtlSwapchainFramebuffers) {
-        fb.w = mtkView.drawableSize.width;
-        fb.h = mtkView.drawableSize.height;
+        fb.w = w;
+        fb.h = h;
     }
 }
 
