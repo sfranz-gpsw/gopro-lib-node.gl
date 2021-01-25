@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 GoPro Inc.
+ * Copyright 2021 GoPro Inc.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -19,26 +19,13 @@
  * under the License.
  */
 
-#include "swapchain.h"
-#include "gctx.h"
+#include "swapchain_util_ngfx.h"
+using namespace ngfx;
 
-int ngli_swapchain_create(struct gctx *gctx)
-{
-    if (!gctx->clazz->swapchain_create)
-        return NGL_ERROR_UNSUPPORTED;
-    return gctx->clazz->swapchain_create(gctx);
+void swapchain_util_ngfx::acquire_image(GraphicsContext *ctx) {
+    ctx->swapchain->acquireNextImage();
 }
 
-void ngli_swapchain_destroy(struct gctx *gctx)
-{
-    if (!gctx->clazz->swapchain_destroy)
-        return;
-    gctx->clazz->swapchain_destroy(gctx);
-}
-
-int ngli_swapchain_acquire_image(struct gctx *gctx, uint32_t *image_index)
-{
-    if (!gctx->clazz->swapchain_acquire_image)
-        return NGL_ERROR_UNSUPPORTED;
-    return gctx->clazz->swapchain_acquire_image(gctx, image_index);
+void swapchain_util_ngfx::present(GraphicsContext *ctx) {
+    ctx->queue->present();
 }

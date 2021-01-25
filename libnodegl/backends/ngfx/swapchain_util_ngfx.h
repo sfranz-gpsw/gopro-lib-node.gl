@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 GoPro Inc.
+ * Copyright 2021 GoPro Inc.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,16 +18,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+ 
+#ifndef SWAPCHAIN_UTIL_NGFX_H
+#define SWAPCHAIN_UTIL_NGFX_H
 
-#ifndef SWAPCHAIN_H
-#define SWAPCHAIN_H
+namespace ngfx { class GraphicsContext; }
 
-#include <stdint.h>
-
-struct gctx;
-
-int ngli_swapchain_create(struct gctx *s);
-void ngli_swapchain_destroy(struct gctx *s);
-int ngli_swapchain_acquire_image(struct gctx *s, uint32_t *image_index);
+struct swapchain_util_ngfx {
+    static void acquire_image(ngfx::GraphicsContext *ctx);
+    static void present(ngfx::GraphicsContext *ctx);
+};
 
 #endif
+

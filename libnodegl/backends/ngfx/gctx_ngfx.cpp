@@ -24,7 +24,7 @@
 #include "pipeline_ngfx.h"
 #include "program_ngfx.h"
 #include "rendertarget_ngfx.h"
-#include "swapchain_ngfx.h"
+#include "swapchain_util_ngfx.h"
 #include "texture_ngfx.h"
 #include "memory.h"
 #include "math_utils.h"
@@ -206,7 +206,7 @@ static int ngfx_begin_draw(struct gctx *s, double t)
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     GraphicsContext *ctx = s_priv->graphics_context;
     if (!s->config.offscreen) {
-        ctx->swapchain->acquireNextImage();
+        swapchain_util_ngfx::acquire_image(ctx);
     }
     s_priv->cur_command_buffer = s_priv->graphics_context->drawCommandBuffer();
     CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
@@ -233,7 +233,7 @@ static int ngfx_end_draw(struct gctx *s, double t)
         output_texture->download(s->config.capture_buffer, size);
     }
     else {
-        ctx->queue->present();
+        swapchain_util_ngfx::present(ctx);
     }
     return 0;
 }
@@ -499,10 +499,6 @@ extern "C" const struct gctx_class ngli_gctx_ngfx = {
     .rendertarget_init          = ngli_rendertarget_ngfx_init,
     .rendertarget_read_pixels   = ngli_rendertarget_ngfx_read_pixels,
     .rendertarget_freep         = ngli_rendertarget_ngfx_freep,
-
-    .swapchain_create         = ngli_swapchain_ngfx_create,
-    .swapchain_destroy        = ngli_swapchain_ngfx_destroy,
-    .swapchain_acquire_image  = ngli_swapchain_ngfx_acquire_image,
 
     .texture_create           = ngli_texture_ngfx_create,
     .texture_init             = ngli_texture_ngfx_init,

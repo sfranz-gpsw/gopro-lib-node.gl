@@ -364,7 +364,6 @@ gbackends_cfg = {
       'backends/ngfx/pipeline_ngfx.cpp',
       'backends/ngfx/program_ngfx.cpp',
       'backends/ngfx/rendertarget_ngfx.cpp',
-      'backends/ngfx/swapchain_ngfx.cpp',
       'backends/ngfx/texture_ngfx.cpp',
       'backends/ngfx/topology_ngfx.cpp',
       'backends/ngfx/util_ngfx.cpp',
@@ -372,6 +371,13 @@ gbackends_cfg = {
     'cfg': 'BACKEND_NGFX',
     'hosts_cfg': {
       'windows': {
+        'src': files('backends/ngfx/swapchain_util_ngfx.cpp'),
+      },
+      'linux': {
+        'src': files('backends/ngfx/swapchain_util_ngfx.cpp'),
+      },
+      'darwin': {
+        'src': files('backends/ngfx/swapchain_util_ngfx_mtl.mm'),
       },
     },
   },
@@ -480,6 +486,7 @@ endif
 
 if host_system in ['darwin', 'iphone']
   add_languages('objc')
+  add_languages('objcpp')
 endif
 
 cc_lib_dirs = [ get_option('prefix') / get_option('libdir') ]

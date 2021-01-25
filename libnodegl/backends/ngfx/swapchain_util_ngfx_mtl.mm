@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 GoPro Inc.
+ * Copyright 2021 GoPro Inc.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -19,12 +19,16 @@
  * under the License.
  */
 
-#include "swapchain.h"
+#include "swapchain_util_ngfx.h"
+#include "debugutil_ngfx.h"
 
-int ngli_swapchain_ngfx_create(struct gctx *s) { return 0; }
+using namespace ngfx;
 
-void ngli_swapchain_ngfx_destroy(struct gctx *s) {}
+void swapchain_util_ngfx::acquire_image(GraphicsContext *ctx) {
+    TODO("");
+}
 
-int ngli_swapchain_ngfx_acquire_image(struct gctx *s, uint32_t *image_index) { return 0; }
+void swapchain_util_ngfx::present(GraphicsContext *ctx) {
+    TODO("");
+}
 
-int ngli_swapchain_ngfx_swap_buffers(struct gctx *s) { return 0; }
