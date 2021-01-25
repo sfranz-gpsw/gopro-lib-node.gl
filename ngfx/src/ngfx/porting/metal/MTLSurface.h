@@ -26,7 +26,12 @@ namespace ngfx {
     class MTLSurface : public Surface {
     public:
         virtual ~MTLSurface() {}
-        MTKView* mtkView;
     };
     MTL_CAST(Surface);
+
+    class MTKSurface : public MTLSurface {
+    public:
+        virtual ~MTKSurface() {}
+        MTKView* mtkView;
+    };
 }

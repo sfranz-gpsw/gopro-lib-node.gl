@@ -18,7 +18,7 @@ void MTLApplication::init() {
     else {
         appInit = [&](void* view) {
             graphicsContext.reset(GraphicsContext::create(appName.c_str(), enableDepthStencil, true));
-            MTLSurface surface;
+            MTKSurface surface;
             auto& mtkView = surface.mtkView;
             mtkView = (MTKView*)view;
             if (w != -1 && h != -1) {

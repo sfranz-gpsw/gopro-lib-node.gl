@@ -17,10 +17,12 @@ void MTLGraphicsContext::setSurface(Surface *surface) {
     defaultOffscreenSurfaceFormat = PixelFormat(MTLPixelFormatRGBA8Unorm);
     if (surface && !surface->offscreen) {
         offscreen = false;
-        mtkView = mtl(surface)->mtkView;
-        mtkView.device = mtlDevice.v;
-        mtlSurfaceFormat = mtkView.colorPixelFormat;
-        surfaceFormat = PixelFormat(mtlSurfaceFormat);
+        if (MTKSurface *mtkSurface = dynamic_cast<MTKSurface*>(surface)) {
+            mtkView = mtkSurface->mtkView;
+            mtkView.device = mtlDevice.v;
+            mtlSurfaceFormat = mtkView.colorPixelFormat;
+            surfaceFormat = PixelFormat(mtlSurfaceFormat);
+        }
     } else {
         offscreen = true;
         surfaceFormat = defaultOffscreenSurfaceFormat;
@@ -31,7 +33,7 @@ void MTLGraphicsContext::setSurface(Surface *surface) {
     if (surface && enableDepthStencil) {
         mtlDepthStencilTexture.reset(new MTLDepthStencilTexture);
         mtlDepthStencilTexture->create(this, surface->w, surface->h);
-        mtkView.depthStencilPixelFormat = mtlDepthStencilTexture->format;
+        if (mtkView) mtkView.depthStencilPixelFormat = mtlDepthStencilTexture->format;
         depthFormat = PixelFormat(mtlDepthStencilTexture->format);
         if (numSamples != 1) {
             TODO("");

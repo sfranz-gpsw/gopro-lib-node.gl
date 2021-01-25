@@ -53,7 +53,7 @@ namespace ngfx {
         id<MTLCommandQueue> mtlCommandQueue;
         MTLPipelineCache mtlPipelineCache;
         ::MTLPixelFormat mtlSurfaceFormat;
-        MTKView* mtkView;
+        MTKView* mtkView = nullptr; // The MetalKit view, if using MetalKit
         uint32_t numSwapchainImages;
         std::vector<MTLFramebuffer> mtlSwapchainFramebuffers;
         MTLRenderPass *mtlDefaultRenderPass = nullptr, *mtlDefaultOffscreenRenderPass = nullptr;

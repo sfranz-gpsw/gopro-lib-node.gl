@@ -8,9 +8,11 @@ MTLRenderPassDescriptor* MTLRenderPass::getDescriptor(MTLGraphicsContext* mtlCtx
     MTLRenderPassDescriptor* mtlRenderPassDescriptor;
     vector<MTLRenderPassColorAttachmentDescriptor*> colorAttachments;
     if (mtlFramebuffer->colorAttachments.empty()) {
-        auto view = mtlCtx->mtkView;
-        mtlRenderPassDescriptor = view.currentRenderPassDescriptor;
-        colorAttachments.push_back(mtlRenderPassDescriptor.colorAttachments[0]);
+        MTKView *view = mtlCtx->mtkView;
+        if (view) {
+            mtlRenderPassDescriptor = view.currentRenderPassDescriptor;
+            colorAttachments.push_back(mtlRenderPassDescriptor.colorAttachments[0]);
+        }
     } else {
         mtlRenderPassDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];
         for (uint32_t j = 0; j<mtlFramebuffer->colorAttachments.size(); j++) {
