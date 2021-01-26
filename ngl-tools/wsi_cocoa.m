@@ -41,6 +41,7 @@ int wsi_set_ngl_config(struct ngl_config *config, SDL_Window *window)
 
         // HACK: should be in libnodegl?
         NSBundle *bundle = [NSBundle bundleWithPath:@"/System/Library/Frameworks/QuartzCore.framework"];
+        view.wantsLayer = YES;
         view.layer = [[bundle classNamed:@"CAMetalLayer"] layer];
 
         config->platform = NGL_PLATFORM_MACOS;
