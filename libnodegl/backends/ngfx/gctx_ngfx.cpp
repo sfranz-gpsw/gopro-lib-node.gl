@@ -137,6 +137,7 @@ static int ngfx_init(struct gctx *s)
     else {
         ctx->surface = surface_util_ngfx::create_surface_from_window_handle(graphics_context, 
             config->platform, config->display, config->window, config->width, config->height);
+        ctx->swapchain_util = swapchain_util_ngfx::create(graphics_context, config->window);
     }
     //context will destroy the surface
     graphics_context->setSurface(ctx->surface);
@@ -206,7 +207,7 @@ static int ngfx_begin_draw(struct gctx *s, double t)
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     GraphicsContext *ctx = s_priv->graphics_context;
     if (!s->config.offscreen) {
-        swapchain_util_ngfx::acquire_image(ctx);
+        s_priv->swapchain_util->acquire_image();
     }
     s_priv->cur_command_buffer = s_priv->graphics_context->drawCommandBuffer();
     CommandBuffer *cmd_buf = s_priv->cur_command_buffer;
@@ -233,7 +234,7 @@ static int ngfx_end_draw(struct gctx *s, double t)
         output_texture->download(s->config.capture_buffer, size);
     }
     else {
-        swapchain_util_ngfx::present(ctx);
+        s_priv->swapchain_util->present(s_priv->cur_command_buffer);
     }
     return 0;
 }
@@ -257,6 +258,7 @@ static void ngfx_destroy(struct gctx *s)
     if (output_depth_texture) ngli_texture_freep(&output_depth_texture);
     if (output_color_texture) ngli_texture_freep(&output_color_texture);
     if (ctx->default_rendertarget) ngli_rendertarget_freep(&ctx->default_rendertarget);
+    if (ctx->swapchain_util) delete ctx->swapchain_util;
     delete ctx->graphics;
     delete ctx->graphics_context;
 }

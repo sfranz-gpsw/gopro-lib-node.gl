@@ -19,16 +19,22 @@
  * under the License.
  */
 
-#include "swapchain_util_ngfx.h"
+#include "swapchain_util_ngfx_mtl.h"
 #include "debugutil_ngfx.h"
+#include "ngfx/porting/metal/MTLCommandBuffer.h"
 
 using namespace ngfx;
 
-void swapchain_util_ngfx::acquire_image(GraphicsContext *ctx) {
-    TODO("");
+swapchain_util_ngfx *swapchain_util_ngfx::create(ngfx::GraphicsContext *ctx, uintptr_t window) {
+    return new swapchain_util_ngfx_mtl(ctx, window);
 }
 
-void swapchain_util_ngfx::present(GraphicsContext *ctx) {
-    TODO("");
+void swapchain_util_ngfx_mtl::acquire_image() {
+    NSView *view = (NSView *)window;
+    drawable = [view.layer nextDrawable];
+}
+
+void swapchain_util_ngfx_mtl::present(CommandBuffer *cmd_buffer) {
+    [mtl(cmd_buffer)->v presentDrawable:drawable];
 }
 

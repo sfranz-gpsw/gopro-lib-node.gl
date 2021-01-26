@@ -26,6 +26,7 @@
 #include "ngfx/graphics/GraphicsContext.h"
 #include "ngfx/graphics/Graphics.h"
 #include "ngfx/graphics/CommandBuffer.h"
+#include "swapchain_util_ngfx.h"
 #include <memory>
 
 struct gctx_ngfx {
@@ -48,6 +49,8 @@ struct gctx_ngfx {
         texture *color_texture = nullptr, *depth_texture = nullptr;
         rendertarget *rt = nullptr;
     } offscreen_resources;
+    
+    swapchain_util_ngfx *swapchain_util = nullptr;
 };
 
 #endif

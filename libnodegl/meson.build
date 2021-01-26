@@ -272,6 +272,35 @@ endif
 # Graphic backend dependencies
 #
 
+ngfx_cflags = []
+
+ngfx_src = [
+  'backends/ngfx/buffer_ngfx.cpp',
+  'backends/ngfx/format_ngfx.cpp',
+  'backends/ngfx/gctx_ngfx.cpp',
+  'backends/ngfx/surface_util_ngfx.cpp',
+  'backends/ngfx/pipeline_ngfx.cpp',
+  'backends/ngfx/program_ngfx.cpp',
+  'backends/ngfx/rendertarget_ngfx.cpp',
+  'backends/ngfx/texture_ngfx.cpp',
+  'backends/ngfx/topology_ngfx.cpp',
+  'backends/ngfx/util_ngfx.cpp',
+]
+
+ngfx_graphics_backend = get_option('ngfx_graphics_backend')
+if ngfx_graphics_backend == 'NGFX_GRAPHICS_BACKEND_DIRECT3D12' and host_system == 'windows'
+  ngfx_cflags += '-DNGFX_GRAPHICS_BACKEND_DIRECT3D12'
+  ngfx_src += 'backends/ngfx/swapchain_util_ngfx_d3d.cpp'
+elif ngfx_graphics_backend == 'NGFX_GRAPHICS_BACKEND_VULKAN'
+  ngfx_cflags += '-DNGFX_GRAPHICS_BACKEND_VULKAN'
+  ngfx_src += 'backends/ngfx/swapchain_util_ngfx_vk.cpp'
+elif ngfx_graphics_backend == 'NGFX_GRAPHICS_BACKEND_METAL' and host_system == 'darwin'
+  ngfx_cflags += '-DNGFX_GRAPHICS_BACKEND_METAL'
+  ngfx_src += 'backends/ngfx/swapchain_util_ngfx_mtl.mm'
+else
+  error('invalid value for ngfx_graphics_backend: @0@'.format(ngfx_graphics_backend))
+endif
+
 gbackends_cfg = {
   'gl': {
     'src': files(
@@ -356,45 +385,18 @@ gbackends_cfg = {
     },
   },
   'ngfx': {
-    'src': files(
-      'backends/ngfx/buffer_ngfx.cpp',
-      'backends/ngfx/format_ngfx.cpp',
-      'backends/ngfx/gctx_ngfx.cpp',
-      'backends/ngfx/surface_util_ngfx.cpp',
-      'backends/ngfx/pipeline_ngfx.cpp',
-      'backends/ngfx/program_ngfx.cpp',
-      'backends/ngfx/rendertarget_ngfx.cpp',
-      'backends/ngfx/texture_ngfx.cpp',
-      'backends/ngfx/topology_ngfx.cpp',
-      'backends/ngfx/util_ngfx.cpp',
-    ),
+    'src': files(ngfx_src),
     'cfg': 'BACKEND_NGFX',
     'hosts_cfg': {
       'windows': {
-        'src': files('backends/ngfx/swapchain_util_ngfx.cpp'),
       },
       'linux': {
-        'src': files('backends/ngfx/swapchain_util_ngfx.cpp'),
       },
       'darwin': {
-        'src': files('backends/ngfx/swapchain_util_ngfx_mtl.mm'),
       },
     },
   },
 }
-
-ngfx_cflags = []
-
-ngfx_graphics_backend = get_option('ngfx_graphics_backend')
-if ngfx_graphics_backend == 'NGFX_GRAPHICS_BACKEND_DIRECT3D12' and host_system == 'windows'
-  ngfx_cflags += '-DNGFX_GRAPHICS_BACKEND_DIRECT3D12'
-elif ngfx_graphics_backend == 'NGFX_GRAPHICS_BACKEND_VULKAN'
-  ngfx_cflags += '-DNGFX_GRAPHICS_BACKEND_VULKAN'
-elif ngfx_graphics_backend == 'NGFX_GRAPHICS_BACKEND_METAL' and host_system == 'darwin'
-  ngfx_cflags += '-DNGFX_GRAPHICS_BACKEND_METAL'
-else
-  error('invalid value for ngfx_graphics_backend: @0@'.format(ngfx_graphics_backend))
-endif
 
 ngfx_window_backend = get_option('ngfx_window_backend')
 if ngfx_window_backend == 'NGFX_WINDOW_BACKEND_WINDOWS' and host_system == 'windows'
@@ -487,6 +489,7 @@ endif
 if host_system in ['darwin', 'iphone']
   add_languages('objc')
   add_languages('objcpp')
+  add_global_arguments('-std=gnu++2a', language: 'objcpp')
 endif
 
 cc_lib_dirs = [ get_option('prefix') / get_option('libdir') ]

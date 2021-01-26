@@ -19,17 +19,17 @@
  * under the License.
  */
 
-#include "swapchain_util_ngfx.h"
+#include "swapchain_util_ngfx_vk.h"
 using namespace ngfx;
 
 swapchain_util_ngfx *create(ngfx::GraphicsContext *ctx, uintptr_t window) {
-    return new swapchain_util_ngfx(ctx, window);
+    return new swapchain_util_ngfx_vk(ctx, window);
 }
 
-void swapchain_util_ngfx::acquire_image() {
+void swapchain_util_ngfx_vk::acquire_image() {
     ctx->swapchain->acquireNextImage();
 }
 
-void swapchain_util_ngfx::present(CommandBuffer *cmd_buffer) {
+void swapchain_util_ngfx_vk::present(CommandBuffer *cmd_buffer) {
     ctx->queue->present();
 }

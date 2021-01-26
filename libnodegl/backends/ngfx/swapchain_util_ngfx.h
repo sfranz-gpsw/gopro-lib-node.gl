@@ -22,12 +22,24 @@
 #ifndef SWAPCHAIN_UTIL_NGFX_H
 #define SWAPCHAIN_UTIL_NGFX_H
 
-namespace ngfx { class GraphicsContext; }
+#include <cstdint>
 
-struct swapchain_util_ngfx {
-    static void acquire_image(ngfx::GraphicsContext *ctx);
-    static void present(ngfx::GraphicsContext *ctx);
+namespace ngfx { 
+    class GraphicsContext;
+    class CommandBuffer;
+}
+
+class swapchain_util_ngfx {
+public:
+    static swapchain_util_ngfx *create(ngfx::GraphicsContext *ctx, uintptr_t window);
+    swapchain_util_ngfx(ngfx::GraphicsContext *ctx, uintptr_t window)
+        : ctx(ctx), window(window) {}
+    virtual ~swapchain_util_ngfx() {}
+    virtual void acquire_image() = 0;
+    virtual void present(ngfx::CommandBuffer *cmd_buffer) = 0;
+    
+    ngfx::GraphicsContext *ctx = nullptr;
+    uintptr_t window = 0;
 };
 
 #endif
-

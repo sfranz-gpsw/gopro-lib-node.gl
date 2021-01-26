@@ -18,18 +18,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+ 
+#ifndef SWAPCHAIN_UTIL_NGFX_MTL_H
+#define SWAPCHAIN_UTIL_NGFX_MTL_H
 
+#include <cstdint>
 #include "swapchain_util_ngfx.h"
-using namespace ngfx;
+#import <MetalKit/MetalKit.h>
 
-swapchain_util_ngfx *create(ngfx::GraphicsContext *ctx, uintptr_t window) {
-    return new swapchain_util_ngfx(ctx, window);
-}
+class swapchain_util_ngfx_mtl : public swapchain_util_ngfx {
+public:
+    swapchain_util_ngfx_mtl(ngfx::GraphicsContext *ctx, uintptr_t window)
+        : swapchain_util_ngfx(ctx, window) {}
+    virtual ~swapchain_util_ngfx_mtl() {}
+    void acquire_image() override;
+    void present(ngfx::CommandBuffer *cmd_buffer) override;
+private:
+    NSView *view = nullptr;
+    id<CAMetalDrawable> drawable;
+};
 
-void swapchain_util_ngfx::acquire_image() {
-    ctx->swapchain->acquireNextImage();
-}
+#endif
 
-void swapchain_util_ngfx::present(CommandBuffer *cmd_buffer) {
-    ctx->queue->present();
-}
