@@ -21,7 +21,7 @@
 
 #include "format_vk.h"
 
-int ngli_format_get_vk_format(struct vkcontext *vk, int data_format, VkFormat *format)
+VkFormat ngli_format_get_vk_format(struct vkcontext *vk, int format)
 {
     static const struct entry {
         VkFormat format;
@@ -89,13 +89,9 @@ int ngli_format_get_vk_format(struct vkcontext *vk, int data_format, VkFormat *f
         [NGLI_FORMAT_S8_UINT]              = {VK_FORMAT_S8_UINT},
     };
 
-    ngli_assert(data_format >= 0 && data_format < NGLI_ARRAY_NB(format_map));
-    const struct entry *entry = &format_map[data_format];
+    ngli_assert(format >= 0 && format < NGLI_ARRAY_NB(format_map));
+    const struct entry *entry = &format_map[format];
+    ngli_assert(format == NGLI_FORMAT_UNDEFINED || entry->format);
 
-    ngli_assert(data_format == NGLI_FORMAT_UNDEFINED || entry->format);
-
-    if (format)
-        *format = entry->format;
-
-    return 0;
+    return entry->format;
 }

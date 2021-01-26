@@ -67,13 +67,13 @@ static int vt_darwin_map_frame(struct ngl_node *node, struct sxplayer_frame *fra
     IOSurfaceRef surface = CVPixelBufferGetIOSurface(cvpixbuf);
     if (!surface) {
         LOG(ERROR, "could not get IOSurface from buffer");
-        return -1;
+        return NGL_ERROR_EXTERNAL;
     }
 
     OSType format = IOSurfaceGetPixelFormat(surface);
     if (format != kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange) {
         LOG(ERROR, "unsupported IOSurface format: 0x%x", format);
-        return -1;
+        return NGL_ERROR_EXTERNAL;
     }
 
     for (int i = 0; i < 2; i++) {

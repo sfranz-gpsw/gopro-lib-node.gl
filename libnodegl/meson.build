@@ -325,7 +325,6 @@ gbackends_cfg = {
       'backends/vk/pipeline_vk.c',
       'backends/vk/program_vk.c',
       'backends/vk/texture_vk.c',
-      'backends/vk/topology_vk.c',
       'backends/vk/rendertarget_vk.c',
       'backends/vk/vkcontext.c',
       'backends/vk/vkutils.c',

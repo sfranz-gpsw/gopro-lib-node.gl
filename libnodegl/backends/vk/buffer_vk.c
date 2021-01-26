@@ -60,7 +60,7 @@ int ngli_buffer_vk_init(struct buffer *s, int size, int usage)
     };
     VkResult res = vkCreateBuffer(vk->device, &buffer_create_info, NULL, &s_priv->buffer);
     if (res != VK_SUCCESS)
-        return -1;
+        return NGL_ERROR_EXTERNAL;
 
     VkMemoryRequirements requirements;
     vkGetBufferMemoryRequirements(vk->device, s_priv->buffer, &requirements);
@@ -76,16 +76,12 @@ int ngli_buffer_vk_init(struct buffer *s, int size, int usage)
         .memoryTypeIndex = memory_type_index,
     };
     res = vkAllocateMemory(vk->device, &memory_allocate_info, NULL, &s_priv->memory);
-    if (res != VK_SUCCESS) {
-        LOG(ERROR, "can not allocate memory");
+    if (res != VK_SUCCESS)
         return NGL_ERROR_MEMORY;
-    }
 
     res = vkBindBufferMemory(vk->device, s_priv->buffer, s_priv->memory, 0);
-    if (res != VK_SUCCESS) {
-        LOG(ERROR, "can not bind memory");
-        return NGL_ERROR_MEMORY;
-    }
+    if (res != VK_SUCCESS)
+        return NGL_ERROR_EXTERNAL;
 
     return 0;
 }
@@ -102,13 +98,13 @@ int ngli_buffer_vk_upload(struct buffer *s, const void *data, int size)
     return 0;
 }
 
-int ngli_buffer_vk_download(struct buffer* s, void* data, uint32_t size, uint32_t offset)
+int ngli_buffer_vk_download(struct buffer *s, void *data, uint32_t size, uint32_t offset)
 {
-    void* src;
+    void *src;
     int ret = ngli_buffer_map(s, size, offset, &src);
-        if (ret < 0)
-            return ret;
-    memcpy(data, src + offset, size);
+    if (ret < 0)
+        return ret;
+    memcpy(data, (uint8_t *)src + offset, size);
     ngli_buffer_unmap(s);
     return 0;
 }
@@ -121,7 +117,7 @@ int ngli_buffer_vk_map(struct buffer *s, int size, uint32_t offset, void **data)
 
     VkResult res = vkMapMemory(vk->device, s_priv->memory, 0, size, 0, data);
     if (res != VK_SUCCESS)
-        return -1;
+        return NGL_ERROR_EXTERNAL;
 
     return 0;
 }

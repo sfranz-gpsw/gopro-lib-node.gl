@@ -143,6 +143,8 @@ static VkResult create_swapchain_resources(struct gctx *s)
     if (!imgs)
         return VK_ERROR_OUT_OF_HOST_MEMORY;
     s_priv->images = imgs;
+
+    // check return
     vkGetSwapchainImagesKHR(vk->device, s_priv->swapchain, &s_priv->nb_images, s_priv->images);
 
     for (uint32_t i = 0; i < s_priv->nb_images; i++) {
@@ -192,13 +194,15 @@ static VkResult create_swapchain_resources(struct gctx *s)
             .width = s_priv->extent.width,
             .height = s_priv->extent.height,
             .nb_colors = 1,
-            .colors[0].attachment = *wrapped_texture,
-            .colors[0].load_op = NGLI_LOAD_OP_LOAD,
-            .colors[0].clear_value[0] = config->clear_color[0],
-            .colors[0].clear_value[1] = config->clear_color[1],
-            .colors[0].clear_value[2] = config->clear_color[2],
-            .colors[0].clear_value[3] = config->clear_color[3],
-            .colors[0].store_op = NGLI_STORE_OP_STORE,
+            .colors[0] = {
+                .attachment = *wrapped_texture,
+                .load_op = NGLI_LOAD_OP_LOAD,
+                .clear_value[0] = config->clear_color[0],
+                .clear_value[1] = config->clear_color[1],
+                .clear_value[2] = config->clear_color[2],
+                .clear_value[3] = config->clear_color[3],
+                .store_op = NGLI_STORE_OP_STORE,
+            },
             .depth_stencil.attachment = *depth_texture,
             .depth_stencil.load_op = NGLI_LOAD_OP_LOAD,
             .depth_stencil.store_op = NGLI_STORE_OP_STORE,
@@ -245,64 +249,7 @@ static VkResult create_swapchain_resources(struct gctx *s)
     return VK_SUCCESS;
 }
 
-int ngli_gctx_vk_begin_transient_command(struct gctx *s, VkCommandBuffer *command_buffer)
-{
-    struct gctx_vk *s_priv = (struct gctx_vk *)s;
-    struct vkcontext *vk = s_priv->vkcontext;
-
-    VkCommandBufferAllocateInfo alloc_info = {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandPool = s_priv->transient_command_buffer_pool,
-        .commandBufferCount = 1,
-    };
-
-    VkResult res = vkAllocateCommandBuffers(vk->device, &alloc_info, command_buffer);
-    if (res != VK_SUCCESS)
-        return -1;
-
-    VkCommandBufferBeginInfo beginInfo = {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-    };
-
-    res = vkBeginCommandBuffer(*command_buffer, &beginInfo);
-    if (res != VK_SUCCESS) {
-        vkFreeCommandBuffers(vk->device, s_priv->transient_command_buffer_pool, 1, command_buffer);
-        return -1;
-    }
-
-    return 0;
-}
-
-int ngli_gctx_vk_execute_transient_command(struct gctx *s, VkCommandBuffer command_buffer)
-{
-    struct gctx_vk *s_priv = (struct gctx_vk *)s;
-    struct vkcontext *vk = s_priv->vkcontext;
-
-    vkEndCommandBuffer(command_buffer);
-
-    VkSubmitInfo submit_info = {
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .commandBufferCount = 1,
-        .pCommandBuffers = &command_buffer,
-    };
-
-    vkResetFences(vk->device, 1, &s_priv->transient_command_buffer_fence);
-
-    VkResult res = vkQueueSubmit(vk->graphic_queue, 1, &submit_info, s_priv->transient_command_buffer_fence);
-    if (res != VK_SUCCESS)
-        goto done;
-
-    res = vkWaitForFences(vk->device, 1, &s_priv->transient_command_buffer_fence, 1, UINT64_MAX);
-
-done:
-    vkFreeCommandBuffers(vk->device, s_priv->transient_command_buffer_pool, 1, &command_buffer);
-
-    return res;
-}
-
-static int create_command_pool_and_buffers(struct gctx *s)
+static VkResult create_command_pool_and_buffers(struct gctx *s)
 {
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
     struct vkcontext *vk = s_priv->vkcontext;
@@ -313,13 +260,13 @@ static int create_command_pool_and_buffers(struct gctx *s)
         .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // FIXME
     };
 
-    VkResult vkret = vkCreateCommandPool(vk->device, &command_pool_create_info, NULL, &s_priv->command_buffer_pool);
-    if (vkret != VK_SUCCESS)
-        return NGL_ERROR_EXTERNAL;
+    VkResult res = vkCreateCommandPool(vk->device, &command_pool_create_info, NULL, &s_priv->command_buffer_pool);
+    if (res != VK_SUCCESS)
+        return res;
 
     s_priv->command_buffers = ngli_calloc(s_priv->nb_in_flight_frames, sizeof(*s_priv->command_buffers));
     if (!s_priv->command_buffers)
-        return NGL_ERROR_MEMORY;
+        return VK_ERROR_OUT_OF_HOST_MEMORY;
 
     VkCommandBufferAllocateInfo command_buffers_allocate_info = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -328,11 +275,7 @@ static int create_command_pool_and_buffers(struct gctx *s)
         .commandBufferCount = s_priv->nb_in_flight_frames,
     };
 
-    VkResult ret = vkAllocateCommandBuffers(vk->device, &command_buffers_allocate_info, s_priv->command_buffers);
-    if (ret != VK_SUCCESS)
-        return NGL_ERROR_EXTERNAL;
-
-    return 0;
+    return vkAllocateCommandBuffers(vk->device, &command_buffers_allocate_info, s_priv->command_buffers);
 }
 
 static void destroy_command_pool_and_buffers(struct gctx *s)
@@ -373,15 +316,15 @@ static VkResult create_semaphores(struct gctx *s)
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
     };
 
-    VkResult ret;
+    VkResult res;
     for (int i = 0; i < s_priv->nb_in_flight_frames; i++) {
-        if ((ret = vkCreateSemaphore(vk->device, &semaphore_create_info, NULL,
+        if ((res = vkCreateSemaphore(vk->device, &semaphore_create_info, NULL,
                                      &s_priv->sem_img_avail[i])) != VK_SUCCESS ||
-            (ret = vkCreateSemaphore(vk->device, &semaphore_create_info, NULL,
+            (res = vkCreateSemaphore(vk->device, &semaphore_create_info, NULL,
                                      &s_priv->sem_render_finished[i])) != VK_SUCCESS ||
-            (ret = vkCreateFence(vk->device, &fence_create_info, NULL,
+            (res = vkCreateFence(vk->device, &fence_create_info, NULL,
                                  &s_priv->fences[i])) != VK_SUCCESS) {
-            return ret;
+            return res;
         }
     }
     return VK_SUCCESS;
@@ -424,7 +367,7 @@ static int reset_swapchain(struct gctx *gctx, struct vkcontext *vk)
     cleanup_swapchain(gctx);
     if ((ret = create_swapchain(gctx)) != VK_SUCCESS ||
         (ret = create_swapchain_resources(gctx)) != VK_SUCCESS)
-        return -1;
+        return NGL_ERROR_EXTERNAL;
 
     return 0;
 }
@@ -584,7 +527,7 @@ static int vk_init(struct gctx *s)
     s_priv->spirv_compiler      = shaderc_compiler_initialize();
     s_priv->spirv_compiler_opts = shaderc_compile_options_initialize();
     if (!s_priv->spirv_compiler || !s_priv->spirv_compiler_opts)
-        return -1;
+        return NGL_ERROR_EXTERNAL;
 
     shaderc_env_version env_version = VK_API_VERSION_1_0;
     switch (vk->api_version) {
@@ -604,22 +547,27 @@ static int vk_init(struct gctx *s)
         .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
     };
 
-    /* FIXME: check return */
-    vkCreateCommandPool(vk->device, &command_pool_create_info, NULL, &s_priv->transient_command_buffer_pool);
+    VkResult res = vkCreateCommandPool(vk->device, &command_pool_create_info, NULL, &s_priv->transient_command_buffer_pool);
+    if (res != VK_SUCCESS)
+        return NGL_ERROR_EXTERNAL;
 
     const VkQueryPoolCreateInfo query_pool_create_info = {
         .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
         .queryType = VK_QUERY_TYPE_TIMESTAMP,
         .queryCount = 2,
     };
-    vkCreateQueryPool(vk->device, &query_pool_create_info, NULL, &s_priv->query_pool);
+    res = vkCreateQueryPool(vk->device, &query_pool_create_info, NULL, &s_priv->query_pool);
+    if (res != VK_SUCCESS)
+        return NGL_ERROR_EXTERNAL;
 
     VkFenceCreateInfo fence_create_info = {
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
         .pNext = NULL,
         .flags = 0,
     };
-    vkCreateFence(vk->device, &fence_create_info, NULL, &s_priv->transient_command_buffer_fence);
+    res = vkCreateFence(vk->device, &fence_create_info, NULL, &s_priv->transient_command_buffer_fence);
+    if (res != VK_SUCCESS)
+        return NGL_ERROR_EXTERNAL;
 
     s_priv->nb_in_flight_frames = 1;
     s_priv->width = config->width;
@@ -630,24 +578,26 @@ static int vk_init(struct gctx *s)
             LOG(ERROR, "unsupported capture buffer type");
             return NGL_ERROR_UNSUPPORTED;
         }
-        ret = create_offscreen_resources(s);
-        if (ret != VK_SUCCESS)
-            return -1;
+        res = create_offscreen_resources(s);
+        if (res != VK_SUCCESS)
+            return NGL_ERROR_EXTERNAL;
     } else {
-        ret = create_swapchain(s);
-        if (ret != VK_SUCCESS)
-            return -1;
+        res = create_swapchain(s);
+        if (res != VK_SUCCESS)
+            return NGL_ERROR_EXTERNAL;
 
-        ret = create_swapchain_resources(s);
-        if (ret != VK_SUCCESS)
-            return -1;
+        res = create_swapchain_resources(s);
+        if (res != VK_SUCCESS)
+            return NGL_ERROR_EXTERNAL;
     }
 
-    ret = create_semaphores(s);
-    if (ret != VK_SUCCESS)
-        return -1;
+    res = create_semaphores(s);
+    if (res != VK_SUCCESS)
+        return NGL_ERROR_EXTERNAL;
 
-    create_command_pool_and_buffers(s);
+    res = create_command_pool_and_buffers(s);
+    if (res != VK_SUCCESS)
+        return NGL_ERROR_EXTERNAL;
 
     const int *viewport = config->viewport;
     if (viewport[2] > 0 && viewport[3] > 0) {
@@ -712,14 +662,14 @@ static int swapchain_acquire_image(struct gctx *s, uint32_t *image_index)
     case VK_ERROR_OUT_OF_DATE_KHR:
         res = reset_swapchain(s, vk);
         if (res != VK_SUCCESS)
-            return -1;
+            return NGL_ERROR_EXTERNAL;
         res = vkAcquireNextImageKHR(vk->device, s_priv->swapchain, UINT64_MAX, semaphore, NULL, image_index);
         if (res != VK_SUCCESS)
-            return -1;
+            return NGL_ERROR_EXTERNAL;
         break;
     default:
-        LOG(ERROR, "failed to acquire swapchain image: %s", vk_res2str(res));
-        return -1;
+        LOG(ERROR, "failed to acquire swapchain image: %s", ngli_vk_res2str(res));
+        return NGL_ERROR_EXTERNAL;
     }
 
     if (!ngli_darray_push(&s_priv->wait_semaphores, &semaphore))
@@ -750,8 +700,8 @@ static int swapchain_swap_buffers(struct gctx *s)
     case VK_SUBOPTIMAL_KHR:
         break;
     default:
-        LOG(ERROR, "failed to present image %s", vk_res2str(res));
-        return -1;
+        LOG(ERROR, "failed to present image %s", ngli_vk_res2str(res));
+        return NGL_ERROR_EXTERNAL;
     }
 
     return 0;
@@ -808,7 +758,7 @@ static int vk_begin_draw(struct gctx *s, double t)
     };
     VkResult vkret = vkBeginCommandBuffer(s_priv->cur_command_buffer, &command_buffer_begin_info);
     if (vkret != VK_SUCCESS)
-        return -1;
+        return NGL_ERROR_EXTERNAL;
     s_priv->cur_command_buffer_state = 1;
 
     if (config->hud) {
@@ -873,13 +823,14 @@ static int vk_query_draw_time(struct gctx *s, int64_t *time)
         return NGL_ERROR_INVALID_USAGE;
 
     // XXX: clean the code below
+    ngli_assert(s_priv->cur_command_buffer);
 
-    vkCmdWriteTimestamp(s_priv->cur_command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, s_priv->query_pool, 1);
 
     VkCommandBuffer command_buffer = s_priv->cur_command_buffer;
+    vkCmdWriteTimestamp(command_buffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, s_priv->query_pool, 1);
     VkResult res = vkEndCommandBuffer(command_buffer);
     if (res != VK_SUCCESS)
-        return -1;
+        return NGL_ERROR_EXTERNAL;
     s_priv->cur_command_buffer_state = 0;
 
     VkSubmitInfo submit_info = {
@@ -892,25 +843,26 @@ static int vk_query_draw_time(struct gctx *s, int64_t *time)
         .signalSemaphoreCount = 0,
         .pSignalSemaphores    = NULL,
     };
+    res = vkQueueSubmit(vk->graphic_queue, 1, &submit_info, s_priv->fences[s_priv->frame_index]);
+    if (res != VK_SUCCESS)
+        return NGL_ERROR_EXTERNAL;
+
     ngli_darray_clear(&s_priv->wait_semaphores);
     ngli_darray_clear(&s_priv->wait_stages);
 
-    res = vkQueueSubmit(vk->graphic_queue, 1, &submit_info, s_priv->fences[s_priv->frame_index]);
-    if (res != VK_SUCCESS) {
-        return -1;
-    }
-
     res = vkWaitForFences(vk->device, 1, &s_priv->fences[s_priv->frame_index], VK_TRUE, UINT64_MAX);
     if (res != VK_SUCCESS)
-        return -1;
+        return NGL_ERROR_EXTERNAL;
 
     res = vkResetFences(vk->device, 1, &s_priv->fences[s_priv->frame_index]);
     if (res != VK_SUCCESS)
-        return -1;
+        return NGL_ERROR_EXTERNAL;
 
     uint64_t results[2];
-    vkGetQueryPoolResults(vk->device, s_priv->query_pool, 0, 2, sizeof(results),
-                          results, sizeof(results[0]), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+    vkGetQueryPoolResults(vk->device,
+                          s_priv->query_pool, 0, 2,
+                          sizeof(results), results, sizeof(results[0]),
+                          VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
 
     *time = results[1] - results[0];
 
@@ -920,9 +872,40 @@ static int vk_query_draw_time(struct gctx *s, int64_t *time)
     };
     res = vkBeginCommandBuffer(s_priv->cur_command_buffer, &command_buffer_begin_info);
     if (res != VK_SUCCESS)
-        return -1;
+        return NGL_ERROR_EXTERNAL;
 
     return 0;
+}
+
+static void vk_flush(struct gctx *s)
+{
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+    struct vkcontext *vk = s_priv->vkcontext;
+
+    VkCommandBuffer cmd_buf = s_priv->cur_command_buffer;
+    VkResult vkret = vkEndCommandBuffer(cmd_buf);
+    if (vkret != VK_SUCCESS)
+        return;
+    s_priv->cur_command_buffer_state = 0;
+
+    VkSubmitInfo submit_info = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .waitSemaphoreCount = ngli_darray_count(&s_priv->wait_semaphores),
+        .pWaitSemaphores = ngli_darray_data(&s_priv->wait_semaphores),
+        .pWaitDstStageMask = ngli_darray_data(&s_priv->wait_stages),
+        .commandBufferCount = 1,
+        .pCommandBuffers = &cmd_buf,
+        .signalSemaphoreCount = ngli_darray_count(&s_priv->signal_semaphores),
+        .pSignalSemaphores = ngli_darray_data(&s_priv->signal_semaphores),
+    };
+
+    VkResult ret = vkQueueSubmit(vk->graphic_queue, 1, &submit_info, s_priv->fences[s_priv->frame_index]);
+    if (ret != VK_SUCCESS) {
+        return;
+    }
+
+    ngli_darray_clear(&s_priv->wait_semaphores);
+    ngli_darray_clear(&s_priv->wait_stages);
 }
 
 static int vk_end_draw(struct gctx *s, double t)
@@ -938,13 +921,13 @@ static int vk_end_draw(struct gctx *s, double t)
             struct rendertarget **rts = ngli_darray_data(&s_priv->rts);
             ngli_rendertarget_read_pixels(rts[s_priv->frame_index], config->capture_buffer);
         }
-        ngli_gctx_flush(s);
+        vk_flush(s);
     } else {
         struct texture **wrapped_textures = ngli_darray_data(&s_priv->wrapped_textures);
         ret = ngli_texture_vk_transition_layout(wrapped_textures[s_priv->image_index], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
         if (ret < 0)
             goto done;
-        ngli_gctx_flush(s);
+        vk_flush(s);
         ret = swapchain_swap_buffers(s);
     }
 
@@ -1047,9 +1030,9 @@ static void vk_wait_idle(struct gctx *s)
 static int vk_transform_cull_mode(struct gctx *s, int cull_mode)
 {
     static const int cull_mode_map[NGLI_CULL_MODE_NB] = {
-        [NGLI_CULL_MODE_NONE]           = NGLI_CULL_MODE_NONE,
-        [NGLI_CULL_MODE_FRONT_BIT]      = NGLI_CULL_MODE_BACK_BIT,
-        [NGLI_CULL_MODE_BACK_BIT]       = NGLI_CULL_MODE_FRONT_BIT,
+        [NGLI_CULL_MODE_NONE]      = NGLI_CULL_MODE_NONE,
+        [NGLI_CULL_MODE_FRONT_BIT] = NGLI_CULL_MODE_BACK_BIT,
+        [NGLI_CULL_MODE_BACK_BIT]  = NGLI_CULL_MODE_FRONT_BIT,
     };
     return cull_mode_map[cull_mode];
 }
@@ -1178,37 +1161,6 @@ static void vk_get_scissor(struct gctx *s, int *scissor)
     memcpy(scissor, &s_priv->scissor, sizeof(s_priv->scissor));
 }
 
-static void vk_flush(struct gctx *s)
-{
-    struct gctx_vk *s_priv = (struct gctx_vk *)s;
-    struct vkcontext *vk = s_priv->vkcontext;
-
-    VkCommandBuffer cmd_buf = s_priv->cur_command_buffer;
-    VkResult vkret = vkEndCommandBuffer(cmd_buf);
-    if (vkret != VK_SUCCESS)
-        return;
-    s_priv->cur_command_buffer_state = 0;
-
-    VkSubmitInfo submit_info = {
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .waitSemaphoreCount = ngli_darray_count(&s_priv->wait_semaphores),
-        .pWaitSemaphores = ngli_darray_data(&s_priv->wait_semaphores),
-        .pWaitDstStageMask = ngli_darray_data(&s_priv->wait_stages),
-        .commandBufferCount = 1,
-        .pCommandBuffers = &cmd_buf,
-        .signalSemaphoreCount = ngli_darray_count(&s_priv->signal_semaphores),
-        .pSignalSemaphores = ngli_darray_data(&s_priv->signal_semaphores),
-    };
-
-    VkResult ret = vkQueueSubmit(vk->graphic_queue, 1, &submit_info, s_priv->fences[s_priv->frame_index]);
-    if (ret != VK_SUCCESS) {
-        return;
-    }
-
-    ngli_darray_clear(&s_priv->wait_semaphores);
-    ngli_darray_clear(&s_priv->wait_stages);
-}
-
 static int vk_get_preferred_depth_format(struct gctx *s)
 {
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
@@ -1221,6 +1173,63 @@ static int vk_get_preferred_depth_stencil_format(struct gctx *s)
     struct gctx_vk *s_priv = (struct gctx_vk *)s;
     struct vkcontext *vk = s_priv->vkcontext;
     return vk->preferred_depth_stencil_format;
+}
+
+int ngli_gctx_vk_begin_transient_command(struct gctx *s, VkCommandBuffer *command_buffer)
+{
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+    struct vkcontext *vk = s_priv->vkcontext;
+
+    VkCommandBufferAllocateInfo alloc_info = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandPool = s_priv->transient_command_buffer_pool,
+        .commandBufferCount = 1,
+    };
+
+    VkResult res = vkAllocateCommandBuffers(vk->device, &alloc_info, command_buffer);
+    if (res != VK_SUCCESS)
+        return NGL_ERROR_EXTERNAL;
+
+    VkCommandBufferBeginInfo beginInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    };
+
+    res = vkBeginCommandBuffer(*command_buffer, &beginInfo);
+    if (res != VK_SUCCESS) {
+        vkFreeCommandBuffers(vk->device, s_priv->transient_command_buffer_pool, 1, command_buffer);
+        return NGL_ERROR_EXTERNAL;
+    }
+
+    return 0;
+}
+
+int ngli_gctx_vk_execute_transient_command(struct gctx *s, VkCommandBuffer command_buffer)
+{
+    struct gctx_vk *s_priv = (struct gctx_vk *)s;
+    struct vkcontext *vk = s_priv->vkcontext;
+
+    vkEndCommandBuffer(command_buffer);
+
+    VkSubmitInfo submit_info = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &command_buffer,
+    };
+
+    vkResetFences(vk->device, 1, &s_priv->transient_command_buffer_fence);
+
+    VkResult res = vkQueueSubmit(vk->graphic_queue, 1, &submit_info, s_priv->transient_command_buffer_fence);
+    if (res != VK_SUCCESS)
+        goto done;
+
+    res = vkWaitForFences(vk->device, 1, &s_priv->transient_command_buffer_fence, 1, UINT64_MAX);
+
+done:
+    vkFreeCommandBuffers(vk->device, s_priv->transient_command_buffer_pool, 1, &command_buffer);
+
+    return res;
 }
 
 const struct gctx_class ngli_gctx_vk = {
@@ -1254,8 +1263,6 @@ const struct gctx_class ngli_gctx_vk = {
 
     .get_preferred_depth_format         = vk_get_preferred_depth_format,
     .get_preferred_depth_stencil_format = vk_get_preferred_depth_stencil_format,
-
-    .flush                    = vk_flush,
 
     .buffer_create   = ngli_buffer_vk_create,
     .buffer_init     = ngli_buffer_vk_init,

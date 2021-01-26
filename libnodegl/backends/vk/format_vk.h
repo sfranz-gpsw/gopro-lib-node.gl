@@ -25,6 +25,6 @@
 #include "format.h"
 #include "vkcontext.h"
 
-int ngli_format_get_vk_format(struct vkcontext *vk, int data_format, VkFormat *format);
+VkFormat ngli_format_get_vk_format(struct vkcontext *vk, int format);
 
 #endif

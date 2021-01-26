@@ -24,6 +24,8 @@
 
 #include <vulkan/vulkan.h>
 
-const char *vk_res2str(VkResult res);
+const char *ngli_vk_res2str(VkResult res);
+
+VkSampleCountFlagBits ngli_vk_get_sample_count(int samples);
 
 #endif

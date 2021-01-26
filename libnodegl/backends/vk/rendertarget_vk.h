@@ -44,6 +44,5 @@ void ngli_rendertarget_vk_read_pixels(struct rendertarget *s, uint8_t *data);
 void ngli_rendertarget_vk_freep(struct rendertarget **sp);
 
 int ngli_vk_create_compatible_renderpass(struct gctx *s, const struct rendertarget_desc *desc, VkRenderPass *render_pass);
-VkSampleCountFlagBits ngli_vk_get_sample_count(int samples);
 
 #endif

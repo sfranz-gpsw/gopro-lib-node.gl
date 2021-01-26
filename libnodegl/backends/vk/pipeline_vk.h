@@ -49,7 +49,6 @@ struct pipeline_vk {
     VkDescriptorSet *desc_sets;
     VkPipelineLayout pipeline_layout;
     VkPipeline pipeline;
-    VkPipelineBindPoint bind_point;
 };
 
 struct pipeline *ngli_pipeline_vk_create(struct gctx *gctx);

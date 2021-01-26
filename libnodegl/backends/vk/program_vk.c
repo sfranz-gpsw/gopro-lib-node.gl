@@ -55,29 +55,39 @@ int ngli_program_vk_init(struct program *s, const char *vertex, const char *frag
     for (int i = 0; i < NGLI_ARRAY_NB(s_priv->shaders); i++) {
         if (!shaders[i].src)
             continue;
-        struct program_shader *shader = &s_priv->shaders[i];
 
-        shader->result = shaderc_compile_into_spv(gctx_vk->spirv_compiler,
-                                                  shaders[i].src, strlen(shaders[i].src),
-                                                  shaders[i].kind,
-                                                  "whatever", "main", gctx_vk->spirv_compiler_opts);
-        if (shaderc_result_get_compilation_status(shader->result) != shaderc_compilation_status_success) {
-            LOG(ERROR, "unable to compile shader: %s", shaderc_result_get_error_message(shader->result));
+        shaderc_compilation_result_t result = shaderc_compile_into_spv(gctx_vk->spirv_compiler,
+                                                                       shaders[i].src, strlen(shaders[i].src),
+                                                                       shaders[i].kind,
+                                                                       "whatever",
+                                                                       "main",
+                                                                       gctx_vk->spirv_compiler_opts);
+
+        shaderc_compilation_status status = shaderc_result_get_compilation_status(result);
+        if (status != shaderc_compilation_status_success) {
+            LOG(ERROR, "unable to compile shader: %s", shaderc_result_get_error_message(result));
+            char *s_with_numbers = ngli_numbered_lines(shaders[i].src);
+            if (s_with_numbers) {
+                LOG(ERROR, "%s", s_with_numbers);
+                ngli_free(s_with_numbers);
+            }
+            shaderc_result_release(result);
             return NGL_ERROR_EXTERNAL;
         }
 
-        const uint32_t *code = (const uint32_t *)shaderc_result_get_bytes(shader->result);
-        const size_t code_size = shaderc_result_get_length(shader->result);
+        const uint32_t *code = (const uint32_t *)shaderc_result_get_bytes(result);
+        const size_t code_size = shaderc_result_get_length(result);
         VkShaderModuleCreateInfo shader_module_create_info = {
             .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
             .codeSize = code_size,
             .pCode = code,
         };
-        VkResult ret = vkCreateShaderModule(vk->device, &shader_module_create_info, NULL, &shader->vkmodule);
-        if (ret != VK_SUCCESS) {
-            LOG(ERROR, "unable to create shader module");
+        VkResult res = vkCreateShaderModule(vk->device, &shader_module_create_info, NULL, &s_priv->shaders[i]);
+
+        shaderc_result_release(result);
+
+        if (res != VK_SUCCESS)
             return NGL_ERROR_EXTERNAL;
-        }
     }
 
     return 0;
@@ -91,10 +101,7 @@ void ngli_program_vk_freep(struct program **sp)
     struct program_vk *s_priv = (struct program_vk *)s;
     struct gctx_vk *gctx_vk = (struct gctx_vk *)s->gctx;
     struct vkcontext *vk = gctx_vk->vkcontext;
-    for (int i = 0; i < NGLI_ARRAY_NB(s_priv->shaders); i++) {
-        struct program_shader *shader = &s_priv->shaders[i];
-        vkDestroyShaderModule(vk->device, shader->vkmodule, NULL);
-        shaderc_result_release(shader->result);
-    }
+    for (int i = 0; i < NGLI_ARRAY_NB(s_priv->shaders); i++)
+        vkDestroyShaderModule(vk->device, s_priv->shaders[i], NULL);
     ngli_freep(sp);
 }

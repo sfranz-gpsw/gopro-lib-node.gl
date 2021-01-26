@@ -31,8 +31,6 @@ struct buffer_vk {
     VkDeviceMemory memory;
 };
 
-struct gctx;
-
 struct buffer *ngli_buffer_vk_create(struct gctx *gctx);
 int ngli_buffer_vk_init(struct buffer *s, int size, int usage);
 int ngli_buffer_vk_upload(struct buffer *s, const void *data, int size);

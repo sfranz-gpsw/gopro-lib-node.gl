@@ -11,6 +11,7 @@
 #include "texture_vk.h"
 #include "gctx_vk.h"
 #include "format_vk.h"
+#include "vkutils.h"
 
 static const VkAttachmentLoadOp load_op_map[] = {
     [NGLI_LOAD_OP_LOAD]      = VK_ATTACHMENT_LOAD_OP_LOAD,
@@ -38,25 +39,21 @@ static int vk_create_compatible_renderpass(struct gctx *s, const struct renderta
     struct gctx_vk *gctx_vk = (struct gctx_vk *)s;
     struct vkcontext *vk = gctx_vk->vkcontext;
 
-    int nb_descs = 0;
     VkAttachmentDescription descs[2 * (NGLI_MAX_COLOR_ATTACHMENTS + 1)] = {0};
+    int nb_descs = 0;
 
-    int nb_color_refs = 0;
     VkAttachmentReference color_refs[NGLI_MAX_COLOR_ATTACHMENTS] = {0};
+    int nb_color_refs = 0;
 
+    VkAttachmentReference resolve_refs[NGLI_MAX_COLOR_ATTACHMENTS + 1] = {0};
     int nb_resolve_refs = 0;
-    VkAttachmentReference resolve_refs[NGLI_MAX_COLOR_ATTACHMENTS+1] = {0};
 
     VkAttachmentReference depth_stencil_ref = {0};
     VkAttachmentReference *depth_stencil_refp = NULL;
-
     const VkSampleCountFlags samples = ngli_vk_get_sample_count(desc->samples);
 
     for (int i = 0; i < desc->nb_colors; i++) {
-        VkFormat format = VK_FORMAT_UNDEFINED;
-        int ret = ngli_format_get_vk_format(vk, desc->colors[i].format, &format);
-        if (ret < 0)
-            return ret;
+        VkFormat format = ngli_format_get_vk_format(vk, desc->colors[i].format);
 
         VkFormatProperties properties;
         vkGetPhysicalDeviceFormatProperties(vk->phy_device, format, &properties);
@@ -67,7 +64,7 @@ static int vk_create_compatible_renderpass(struct gctx *s, const struct renderta
             return NGL_ERROR_EXTERNAL;
         }
 
-        const VkAttachmentLoadOp load_op = params ? get_vk_load_op(params->colors[i].load_op) : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        const VkAttachmentLoadOp load_op   = params ? get_vk_load_op(params->colors[i].load_op)   : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         const VkAttachmentStoreOp store_op = params ? get_vk_store_op(params->colors[i].store_op) : VK_ATTACHMENT_STORE_OP_DONT_CARE;
         descs[nb_descs] = (VkAttachmentDescription) {
             .format         = format,
@@ -79,10 +76,14 @@ static int vk_create_compatible_renderpass(struct gctx *s, const struct renderta
             .initialLayout  = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         };
-        color_refs[nb_color_refs].attachment = nb_descs;
-        color_refs[nb_color_refs].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        nb_color_refs++;
+
+        color_refs[nb_color_refs] = (VkAttachmentReference) {
+            .attachment = nb_descs,
+            .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        };
+
         nb_descs++;
+        nb_color_refs++;
 
         if (desc->colors[i].resolve) {
             descs[nb_descs] = (VkAttachmentDescription) {
@@ -95,18 +96,19 @@ static int vk_create_compatible_renderpass(struct gctx *s, const struct renderta
                 .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
                 .finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             };
-            resolve_refs[nb_resolve_refs].attachment = nb_descs;
-            resolve_refs[nb_resolve_refs].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+            resolve_refs[nb_resolve_refs] = (VkAttachmentReference) {
+                .attachment = nb_descs,
+                .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            };
+
             nb_descs++;
             nb_resolve_refs++;
         }
     }
 
     if (desc->depth_stencil.format != NGLI_FORMAT_UNDEFINED) {
-        VkFormat format = VK_FORMAT_UNDEFINED;
-        int ret = ngli_format_get_vk_format(vk, desc->depth_stencil.format, &format);
-        if (ret < 0)
-            return ret;
+        VkFormat format = ngli_format_get_vk_format(vk, desc->depth_stencil.format);
 
         VkFormatProperties properties;
         vkGetPhysicalDeviceFormatProperties(vk->phy_device, format, &properties);
@@ -130,10 +132,14 @@ static int vk_create_compatible_renderpass(struct gctx *s, const struct renderta
             .initialLayout  = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
             .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
         };
-        depth_stencil_ref.attachment = nb_descs;
-        depth_stencil_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        depth_stencil_refp = &depth_stencil_ref;
+
+        depth_stencil_ref = (VkAttachmentReference) {
+            .attachment = nb_descs,
+            .layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        };
+
         nb_descs++;
+        depth_stencil_refp = &depth_stencil_ref;
 
         if (desc->depth_stencil.resolve) {
             descs[nb_descs] = (VkAttachmentDescription) {
@@ -147,8 +153,11 @@ static int vk_create_compatible_renderpass(struct gctx *s, const struct renderta
                 .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
             };
 
-            resolve_refs[nb_resolve_refs].attachment = nb_descs;
-            resolve_refs[nb_resolve_refs].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            resolve_refs[nb_resolve_refs] = (VkAttachmentReference) {
+                .attachment = nb_descs,
+                .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            };
+
             nb_descs++;
             nb_resolve_refs++;
         }
@@ -183,18 +192,18 @@ static int vk_create_compatible_renderpass(struct gctx *s, const struct renderta
     };
 
     VkRenderPassCreateInfo render_pass_create_info = {
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .attachmentCount = nb_descs,
-        .pAttachments = descs,
-        .subpassCount = 1,
-        .pSubpasses = &subpass_description,
+        .pAttachments    = descs,
+        .subpassCount    = 1,
+        .pSubpasses      = &subpass_description,
         .dependencyCount = NGLI_ARRAY_NB(dependencies),
-        .pDependencies = dependencies,
+        .pDependencies   = dependencies,
     };
 
     VkResult res = vkCreateRenderPass(vk->device, &render_pass_create_info, NULL, render_pass);
     if (res != VK_SUCCESS)
-        return -1;
+        return NGL_ERROR_EXTERNAL;
 
     return 0;
 }
@@ -202,29 +211,6 @@ static int vk_create_compatible_renderpass(struct gctx *s, const struct renderta
 int ngli_vk_create_compatible_renderpass(struct gctx *s, const struct rendertarget_desc *desc, VkRenderPass *render_pass)
 {
     return vk_create_compatible_renderpass(s, desc, NULL, render_pass);
-}
-
-VkSampleCountFlagBits ngli_vk_get_sample_count(int samples)
-{
-    switch(samples) {
-    case 0:
-    case 1:
-        return VK_SAMPLE_COUNT_1_BIT;
-    case 2:
-        return VK_SAMPLE_COUNT_2_BIT;
-    case 4:
-        return VK_SAMPLE_COUNT_4_BIT;
-    case 8:
-        return VK_SAMPLE_COUNT_8_BIT;
-    case 16:
-        return VK_SAMPLE_COUNT_16_BIT;
-    case 32:
-        return VK_SAMPLE_COUNT_32_BIT;
-    case 64:
-        return VK_SAMPLE_COUNT_64_BIT;
-    default:
-        ngli_assert(0);
-    }
 }
 
 static VkImageAspectFlags get_vk_image_aspect_flags(VkFormat format)
@@ -241,6 +227,28 @@ static VkImageAspectFlags get_vk_image_aspect_flags(VkFormat format)
     default:
         return VK_IMAGE_ASPECT_COLOR_BIT;
     }
+}
+
+static VkResult create_framebuffer_image_view(const struct rendertarget *s, const struct texture *texture, uint32_t layer, VkImageView *view)
+{
+    const struct gctx_vk *gctx_vk = (struct gctx_vk *)s->gctx;
+    const struct vkcontext *vk = gctx_vk->vkcontext;
+    const struct texture_vk *texture_vk = (struct texture_vk *)texture;
+
+    VkImageViewCreateInfo view_info = {
+        .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .image    = texture_vk->image,
+        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+        .format   = texture_vk->format,
+        .subresourceRange = {
+            .aspectMask     = get_vk_image_aspect_flags(texture_vk->format),
+            .baseMipLevel   = 0,
+            .levelCount     = 1,
+            .baseArrayLayer = layer,
+            .layerCount     = 1,
+        },
+    };
+    return vkCreateImageView(vk->device, &view_info, NULL, view);
 }
 
 struct rendertarget *ngli_rendertarget_vk_create(struct gctx *gctx)
@@ -293,54 +301,45 @@ int ngli_rendertarget_vk_init(struct rendertarget *s, const struct rendertarget_
 
     for (int i = 0; i < params->nb_colors; i++) {
         const struct attachment *attachment = &params->colors[i];
-        const struct texture_vk *texture_vk = (struct texture_vk *)attachment->attachment;
-        VkImageViewCreateInfo view_info = {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .image = texture_vk->image,
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = texture_vk->format,
-            .subresourceRange.aspectMask = get_vk_image_aspect_flags(texture_vk->format),
-            .subresourceRange.baseMipLevel = 0,
-            .subresourceRange.levelCount = 1,
-            .subresourceRange.baseArrayLayer = attachment->attachment_layer,
-            .subresourceRange.layerCount = 1,
-        };
 
-        VkResult vkret = vkCreateImageView(vk->device, &view_info, NULL, &s_priv->attachments[s_priv->nb_attachments]);
-        if (vkret != VK_SUCCESS)
-            return -1;
+        VkImageView view;
+        VkResult res = create_framebuffer_image_view(s, attachment->attachment, attachment->attachment_layer, &view);
+        if (res != VK_SUCCESS)
+            return NGL_ERROR_EXTERNAL;
+
+        s_priv->attachments[s_priv->nb_attachments] = view;
         s_priv->nb_attachments++;
 
-        const float *clear_value = attachment->clear_value;
         s_priv->clear_values[s_priv->nb_clear_values] = (VkClearValue) {
             .color = {
-                .float32 = {clear_value[0], clear_value[1], clear_value[2], clear_value[3]},
-            },
+                .float32 = {
+                    attachment->clear_value[0],
+                    attachment->clear_value[1],
+                    attachment->clear_value[2],
+                    attachment->clear_value[3],
+                },
+            }
         };
         s_priv->nb_clear_values++;
 
         if (attachment->resolve_target) {
-            const struct texture_vk *texture_vk = (struct texture_vk *)attachment->resolve_target;
-            VkImageViewCreateInfo view_info = {
-                .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                .image = texture_vk->image,
-                .viewType = VK_IMAGE_VIEW_TYPE_2D,
-                .format = texture_vk->format,
-                .subresourceRange.aspectMask = get_vk_image_aspect_flags(texture_vk->format),
-                .subresourceRange.baseMipLevel = 0,
-                .subresourceRange.levelCount = 1,
-                .subresourceRange.baseArrayLayer = attachment->resolve_target_layer,
-                .subresourceRange.layerCount = 1,
-            };
+            VkImageView view;
+            VkResult res = create_framebuffer_image_view(s, attachment->resolve_target, attachment->resolve_target_layer, &view);
+            if (res != VK_SUCCESS)
+                return NGL_ERROR_EXTERNAL;
 
-            VkResult vkret = vkCreateImageView(vk->device, &view_info, NULL, &s_priv->attachments[s_priv->nb_attachments]);
-            if (vkret != VK_SUCCESS)
-                return -1;
+            s_priv->attachments[s_priv->nb_attachments] = view;
             s_priv->nb_attachments++;
+
             s_priv->clear_values[s_priv->nb_clear_values] = (VkClearValue) {
                 .color = {
-                    .float32 = {clear_value[0], clear_value[1], clear_value[2], clear_value[3]},
-                },
+                    .float32 = {
+                        attachment->clear_value[0],
+                        attachment->clear_value[1],
+                        attachment->clear_value[2],
+                        attachment->clear_value[3],
+                    },
+                }
             };
             s_priv->nb_clear_values++;
         }
@@ -349,55 +348,27 @@ int ngli_rendertarget_vk_init(struct rendertarget *s, const struct rendertarget_
     attachment = &params->depth_stencil;
     texture = attachment->attachment;
     if (texture) {
-        struct texture_vk *texture_vk = (struct texture_vk *)texture;
-        VkImageViewCreateInfo view_info = {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .image = texture_vk->image,
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = texture_vk->format,
-            .subresourceRange.aspectMask = get_vk_image_aspect_flags(texture_vk->format),
-            .subresourceRange.baseMipLevel = 0,
-            .subresourceRange.levelCount = 1,
-            .subresourceRange.baseArrayLayer = 0,
-            .subresourceRange.layerCount = 1,
-        };
+        VkImageView view;
+        VkResult res = create_framebuffer_image_view(s, texture, attachment->attachment_layer, &view);
+        if (res != VK_SUCCESS)
+            return NGL_ERROR_EXTERNAL;
 
-        VkResult vkret = vkCreateImageView(vk->device, &view_info, NULL, &s_priv->attachments[s_priv->nb_attachments]);
-        if (vkret != VK_SUCCESS)
-            return -1;
+        s_priv->attachments[s_priv->nb_attachments] = view;
         s_priv->nb_attachments++;
 
-        s_priv->clear_values[s_priv->nb_clear_values] = (VkClearValue) {
-            .depthStencil = {
-                .depth = 1.0f,
-                .stencil = 0,
-            },
-        };
+        s_priv->clear_values[s_priv->nb_clear_values] = (VkClearValue) {.depthStencil = {1.f, 0}};
         s_priv->nb_clear_values++;
 
         if (attachment->resolve_target) {
-            struct texture_vk *resolve_target_vk = (struct texture_vk *)attachment->resolve_target;
-            VkImageViewCreateInfo view_info = {
-                .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                .image = resolve_target_vk->image,
-                .viewType = VK_IMAGE_VIEW_TYPE_2D,
-                .format = resolve_target_vk->format,
-                .subresourceRange.aspectMask = get_vk_image_aspect_flags(resolve_target_vk->format),
-                .subresourceRange.baseMipLevel = 0,
-                .subresourceRange.levelCount = 1,
-                .subresourceRange.baseArrayLayer = 0,
-                .subresourceRange.layerCount = 1,
-            };
-            VkResult vkret = vkCreateImageView(vk->device, &view_info, NULL, &s_priv->attachments[s_priv->nb_attachments]);
-            if (vkret != VK_SUCCESS)
-                return -1;
+            VkImageView view;
+            VkResult res = create_framebuffer_image_view(s, attachment->resolve_target, attachment->resolve_target_layer, &view);
+            if (res != VK_SUCCESS)
+                return NGL_ERROR_EXTERNAL;
+
+            s_priv->attachments[s_priv->nb_attachments] = view;
             s_priv->nb_attachments++;
-            s_priv->clear_values[s_priv->nb_clear_values] = (VkClearValue) {
-                .depthStencil = {
-                    .depth = 1.0f,
-                    .stencil = 0,
-                },
-            };
+
+            s_priv->clear_values[s_priv->nb_clear_values] = (VkClearValue) {.depthStencil = {1.f, 0}};
             s_priv->nb_clear_values++;
         }
     }
@@ -414,7 +385,7 @@ int ngli_rendertarget_vk_init(struct rendertarget *s, const struct rendertarget_
 
     VkResult res = vkCreateFramebuffer(vk->device, &framebuffer_create_info, NULL, &s_priv->framebuffer);
     if (res != VK_SUCCESS)
-        return -1;
+        return NGL_ERROR_EXTERNAL;
 
     if (params->readable) {
         const struct attachment *attachment = &params->colors[0];
@@ -423,14 +394,14 @@ int ngli_rendertarget_vk_init(struct rendertarget *s, const struct rendertarget_
 
         s_priv->staging_buffer_size = s->width * s->height * ngli_format_get_bytes_per_pixel(params->format);
         VkBufferCreateInfo buffer_create_info = {
-            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .size = s_priv->staging_buffer_size,
-            .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            .sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size        = s_priv->staging_buffer_size,
+            .usage       = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
         };
         VkResult res = vkCreateBuffer(vk->device, &buffer_create_info, NULL, &s_priv->staging_buffer);
         if (res != VK_SUCCESS)
-            return -1;
+            return NGL_ERROR_EXTERNAL;
 
         VkMemoryRequirements requirements;
         vkGetBufferMemoryRequirements(vk->device, s_priv->staging_buffer, &requirements);
@@ -441,8 +412,8 @@ int ngli_rendertarget_vk_init(struct rendertarget *s, const struct rendertarget_
             return NGL_ERROR_EXTERNAL;
 
         VkMemoryAllocateInfo memory_allocate_info = {
-            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            .allocationSize = requirements.size,
+            .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .allocationSize  = requirements.size,
             .memoryTypeIndex = memory_type_index,
         };
         res = vkAllocateMemory(vk->device, &memory_allocate_info, NULL, &s_priv->staging_memory);
@@ -480,13 +451,15 @@ void ngli_rendertarget_vk_read_pixels(struct rendertarget *s, uint8_t *data)
     VkCommandBuffer command_buffer = gctx_vk->cur_command_buffer;
 
     const VkBufferImageCopy region = {
-        .bufferOffset = 0,
-        .bufferRowLength = 0,
+        .bufferOffset      = 0,
+        .bufferRowLength   = 0,
         .bufferImageHeight = 0,
-        .imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-        .imageSubresource.mipLevel = 0,
-        .imageSubresource.baseArrayLayer = 0,
-        .imageSubresource.layerCount = 1,
+        .imageSubresource = {
+            .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+            .mipLevel       = 0,
+            .baseArrayLayer = 0,
+            .layerCount     = 1,
+        },
         .imageOffset = {0, 0, 0},
         .imageExtent = {s->width, s->height, 1},
     };
@@ -513,9 +486,8 @@ void ngli_rendertarget_vk_read_pixels(struct rendertarget *s, uint8_t *data)
     ngli_darray_clear(&gctx_vk->wait_stages);
 
     res = vkQueueSubmit(vk->graphic_queue, 1, &submit_info, gctx_vk->fences[gctx_vk->frame_index]);
-    if (res != VK_SUCCESS) {
+    if (res != VK_SUCCESS)
         return;
-    }
 
     res = vkWaitForFences(vk->device, 1, &gctx_vk->fences[gctx_vk->frame_index], VK_TRUE, UINT64_MAX);
     if (res != VK_SUCCESS)

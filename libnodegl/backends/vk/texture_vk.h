@@ -65,12 +65,6 @@ void ngli_vk_transition_image_layout(struct vkcontext *vk,
                                      VkImageLayout new_layout,
                                      const VkImageSubresourceRange *subres_range);
 
-VkFilter ngli_texture_get_vk_filter(int filter);
-
-VkSamplerMipmapMode ngli_texture_get_vk_mipmap_mode(int mipmap_filter);
-
-VkSamplerAddressMode ngli_texture_get_vk_wrap(int wrap);
-
 int ngli_texture_vk_wrap(struct texture *s,
                          const struct texture_params *params,
                          VkImage image, VkImageLayout layout);

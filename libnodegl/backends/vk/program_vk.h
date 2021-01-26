@@ -29,14 +29,9 @@
 
 struct gctx;
 
-struct program_shader {
-    VkShaderModule vkmodule;
-    shaderc_compilation_result_t result;
-};
-
 struct program_vk {
     struct program parent;
-    struct program_shader shaders[NGLI_PROGRAM_SHADER_NB];
+    VkShaderModule shaders[NGLI_PROGRAM_SHADER_NB];
 };
 
 struct program *ngli_program_vk_create(struct gctx *gctx);

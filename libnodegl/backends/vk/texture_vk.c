@@ -20,6 +20,7 @@
  */
 
 #include <string.h>
+#include <stdint.h>
 
 #include "log.h"
 #include "utils.h"
@@ -29,13 +30,14 @@
 #include "texture_vk.h"
 #include "nodes.h"
 #include "gctx_vk.h"
+#include "vkutils.h"
 
 static const VkFilter vk_filter_map[NGLI_NB_FILTER] = {
     [NGLI_FILTER_NEAREST] = VK_FILTER_NEAREST,
     [NGLI_FILTER_LINEAR]  = VK_FILTER_LINEAR,
 };
 
-VkFilter ngli_texture_get_vk_filter(int filter)
+static VkFilter get_vk_filter(int filter)
 {
     return vk_filter_map[filter];
 }
@@ -46,7 +48,7 @@ static const VkSamplerMipmapMode vk_mipmap_mode_map[NGLI_NB_MIPMAP] = {
     [NGLI_MIPMAP_FILTER_LINEAR]  = VK_SAMPLER_MIPMAP_MODE_LINEAR,
 };
 
-VkSamplerMipmapMode ngli_texture_get_vk_mipmap_mode(int mipmap_filter)
+static VkSamplerMipmapMode get_vk_mipmap_mode(int mipmap_filter)
 {
     return vk_mipmap_mode_map[mipmap_filter];
 }
@@ -57,7 +59,7 @@ static const VkSamplerAddressMode vk_wrap_map[NGLI_NB_WRAP] = {
     [NGLI_WRAP_REPEAT]          = VK_SAMPLER_ADDRESS_MODE_REPEAT,
 };
 
-VkSamplerAddressMode ngli_texture_get_vk_wrap(int wrap)
+static VkSamplerAddressMode get_vk_wrap(int wrap)
 {
     return vk_wrap_map[wrap];
 }
@@ -98,66 +100,6 @@ static const VkImageViewType image_view_type_map[NGLI_TEXTURE_TYPE_NB] = {
 static VkImageViewType get_vk_image_view_type(int type)
 {
     return image_view_type_map[type];
-}
-
-static VkSampleCountFlagBits get_vk_sample_count_flags(int samples)
-{
-    switch (samples) {
-    case 0:
-    case 1:
-        return VK_SAMPLE_COUNT_1_BIT;
-    case 2:
-        return VK_SAMPLE_COUNT_2_BIT;
-    case 4:
-        return VK_SAMPLE_COUNT_4_BIT;
-    case 8:
-        return VK_SAMPLE_COUNT_8_BIT;
-    case 16:
-        return VK_SAMPLE_COUNT_16_BIT;
-    case 32:
-        return VK_SAMPLE_COUNT_32_BIT;
-    case 64:
-        return VK_SAMPLE_COUNT_64_BIT;
-    default:
-        ngli_assert(0);
-    }
-}
-
-static VkResult create_buffer(struct vkcontext *vk, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer *buffer, VkDeviceMemory *memory)
-{
-    VkBufferCreateInfo buffer_create_info = {
-        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .size = size,
-        .usage = usage,
-        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-    };
-
-    VkResult res = vkCreateBuffer(vk->device, &buffer_create_info, NULL, buffer);
-    if (res != VK_SUCCESS)
-        return res;
-
-    VkMemoryRequirements requirements;
-    vkGetBufferMemoryRequirements(vk->device, *buffer, &requirements);
-
-    int memory_index = ngli_vkcontext_find_memory_type(vk, requirements.memoryTypeBits, properties);
-    if (memory_index < 0)
-        return -1;
-
-    VkMemoryAllocateInfo memory_allocate_info = {
-        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        .allocationSize = requirements.size,
-        .memoryTypeIndex = memory_index,
-    };
-
-    res = vkAllocateMemory(vk->device, &memory_allocate_info, NULL, memory);
-    if (res != VK_SUCCESS)
-        return res;
-
-    res = vkBindBufferMemory(vk->device, *buffer, *memory, 0);
-    if (res != VK_SUCCESS)
-        return res;
-
-    return VK_SUCCESS;
 }
 
 static VkAccessFlagBits get_vk_access_mask_from_image_layout(VkImageLayout layout, int dst_mask)
@@ -296,8 +238,7 @@ struct texture *ngli_texture_vk_create(struct gctx *gctx)
     return (struct texture *)s;
 }
 
-int ngli_texture_vk_init(struct texture *s,
-                      const struct texture_params *params)
+int ngli_texture_vk_init(struct texture *s, const struct texture_params *params)
 {
     struct gctx_vk *gctx_vk = (struct gctx_vk *)s->gctx;
     struct vkcontext *vk = gctx_vk->vkcontext;
@@ -305,14 +246,11 @@ int ngli_texture_vk_init(struct texture *s,
 
     s->params = *params;
 
-    int ret = ngli_format_get_vk_format(vk, s->params.format, &s_priv->format);
-    if (ret < 0)
-        return ret;
+    s_priv->format = ngli_format_get_vk_format(vk, s->params.format);
 
     const VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
     const VkImageUsageFlags usage = get_vk_image_usage(params->usage);
     const VkFormatFeatureFlags features = get_vk_format_features(params->usage);
-    const VkMemoryPropertyFlags memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
     VkFormatProperties properties;
     vkGetPhysicalDeviceFormatProperties(vk->phy_device, s_priv->format, &properties);
@@ -328,7 +266,7 @@ int ngli_texture_vk_init(struct texture *s,
     if ((properties.optimalTilingFeatures & features) != features) {
         LOG(ERROR, "unsupported format %d, supported features: 0x%x, requested features: 0x%x",
             s_priv->format, supported_features, features);
-        return -1;
+        return NGL_ERROR_UNSUPPORTED;
     }
 
     uint32_t depth = 1;
@@ -363,21 +301,22 @@ int ngli_texture_vk_init(struct texture *s,
         .tiling        = tiling,
         .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
         .usage         = usage,
-        .samples       = get_vk_sample_count_flags(params->samples),
+        .samples       = ngli_vk_get_sample_count(params->samples),
         .sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
         .flags         = flags,
     };
 
     VkResult res = vkCreateImage(vk->device, &image_create_info, NULL, &s_priv->image);
     if (res != VK_SUCCESS)
-        return -1;
+        return NGL_ERROR_EXTERNAL;
 
     VkMemoryRequirements requirements;
     vkGetImageMemoryRequirements(vk->device, s_priv->image, &requirements);
 
-    int memory_index = ngli_vkcontext_find_memory_type(vk, requirements.memoryTypeBits, memory_property_flags);
+    const VkMemoryPropertyFlags memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    int32_t memory_index = ngli_vkcontext_find_memory_type(vk, requirements.memoryTypeBits, memory_property_flags);
     if (memory_index < 0)
-        return -1;
+        return NGL_ERROR_UNSUPPORTED;
 
     VkMemoryAllocateInfo alloc_info = {
         .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -387,16 +326,16 @@ int ngli_texture_vk_init(struct texture *s,
 
     res = vkAllocateMemory(vk->device, &alloc_info, NULL, &s_priv->image_memory);
     if (res != VK_SUCCESS)
-        return -1;
+        return NGL_ERROR_EXTERNAL;
 
     res = vkBindImageMemory(vk->device, s_priv->image, s_priv->image_memory, 0);
     if (res != VK_SUCCESS)
-        return -1;
+        return NGL_ERROR_EXTERNAL;
 
     s_priv->image_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     VkCommandBuffer command_buffer = VK_NULL_HANDLE;
-    ret = ngli_gctx_vk_begin_transient_command(s->gctx, &command_buffer);
+    int32_t ret = ngli_gctx_vk_begin_transient_command(s->gctx, &command_buffer);
     if (ret < 0)
         return ret;
 
@@ -417,42 +356,41 @@ int ngli_texture_vk_init(struct texture *s,
 
     s_priv->image_layout = VK_IMAGE_LAYOUT_GENERAL;
 
-    if (params->staging)
-        return 0;
-
     VkImageViewCreateInfo view_info = {
-        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        .image = s_priv->image,
+        .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .image    = s_priv->image,
         .viewType = get_vk_image_view_type(params->type),
-        .format = s_priv->format,
-        .subresourceRange.aspectMask = get_vk_image_aspect_flags(s_priv->format),
-        .subresourceRange.baseMipLevel = 0,
-        .subresourceRange.levelCount = s_priv->mipmap_levels,
-        .subresourceRange.baseArrayLayer = 0,
-        .subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS,
+        .format   = s_priv->format,
+        .subresourceRange = {
+            .aspectMask     = get_vk_image_aspect_flags(s_priv->format),
+            .baseMipLevel   = 0,
+            .levelCount     = s_priv->mipmap_levels,
+            .baseArrayLayer = 0,
+            .layerCount     = VK_REMAINING_ARRAY_LAYERS,
+        }
     };
 
     res = vkCreateImageView(vk->device, &view_info, NULL, &s_priv->image_view);
     if (res != VK_SUCCESS)
-        return -1;
+        return NGL_ERROR_EXTERNAL;
 
     VkSamplerCreateInfo sampler_info = {
-        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        .magFilter = ngli_texture_get_vk_filter(s->params.mag_filter),
-        .minFilter = ngli_texture_get_vk_filter(s->params.min_filter),
-        .addressModeU = ngli_texture_get_vk_wrap(s->params.wrap_s),
-        .addressModeV = ngli_texture_get_vk_wrap(s->params.wrap_t),
-        .addressModeW = ngli_texture_get_vk_wrap(s->params.wrap_r),
-        .anisotropyEnable = VK_FALSE,
-        .maxAnisotropy = 1.0f,
-        .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+        .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .magFilter               = get_vk_filter(s->params.mag_filter),
+        .minFilter               = get_vk_filter(s->params.min_filter),
+        .addressModeU            = get_vk_wrap(s->params.wrap_s),
+        .addressModeV            = get_vk_wrap(s->params.wrap_t),
+        .addressModeW            = get_vk_wrap(s->params.wrap_r),
+        .anisotropyEnable        = VK_FALSE,
+        .maxAnisotropy           = 1.0f,
+        .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
         .unnormalizedCoordinates = VK_FALSE,
-        .compareEnable = VK_FALSE,
-        .compareOp = VK_COMPARE_OP_ALWAYS,
-        .mipmapMode = ngli_texture_get_vk_mipmap_mode(s->params.mipmap_filter),
-        .minLod = 0.0f,
-        .maxLod = s_priv->mipmap_levels,
-        .mipLodBias = 0.0f,
+        .compareEnable           = VK_FALSE,
+        .compareOp               = VK_COMPARE_OP_ALWAYS,
+        .mipmapMode              = get_vk_mipmap_mode(s->params.mipmap_filter),
+        .minLod                  = 0.0f,
+        .maxLod                  = s_priv->mipmap_levels,
+        .mipLodBias              = 0.0f,
     };
 
     res = vkCreateSampler(vk->device, &sampler_info, NULL, &s_priv->image_sampler);
@@ -462,9 +400,7 @@ int ngli_texture_vk_init(struct texture *s,
     return 0;
 }
 
-int ngli_texture_vk_wrap(struct texture *s,
-                         const struct texture_params *params,
-                         VkImage image, VkImageLayout layout)
+int ngli_texture_vk_wrap(struct texture *s, const struct texture_params *params, VkImage image, VkImageLayout layout)
 {
     struct gctx_vk *gctx_vk = (struct gctx_vk *)s->gctx;
     struct vkcontext *vk = gctx_vk->vkcontext;
@@ -474,9 +410,7 @@ int ngli_texture_vk_wrap(struct texture *s,
 
     s->params = *params;
 
-    int ret = ngli_format_get_vk_format(vk, s->params.format, &s_priv->format);
-    if (ret < 0)
-        return ret;
+    s_priv->format = ngli_format_get_vk_format(vk, s->params.format);
 
     s_priv->array_layers = 1;
     if (params->type == NGLI_TEXTURE_TYPE_CUBE)
@@ -489,15 +423,17 @@ int ngli_texture_vk_wrap(struct texture *s,
     s_priv->image_layout = layout;
 
     VkImageViewCreateInfo view_info = {
-        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        .image = s_priv->image,
+        .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .image    = s_priv->image,
         .viewType = get_vk_image_view_type(params->type),
-        .format = s_priv->format,
-        .subresourceRange.aspectMask = get_vk_image_aspect_flags(s_priv->format),
-        .subresourceRange.baseMipLevel = 0,
-        .subresourceRange.levelCount = s_priv->mipmap_levels,
-        .subresourceRange.baseArrayLayer = 0,
-        .subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS,
+        .format   = s_priv->format,
+        .subresourceRange = {
+            .aspectMask     = get_vk_image_aspect_flags(s_priv->format),
+            .baseMipLevel   = 0,
+            .levelCount     = s_priv->mipmap_levels,
+            .baseArrayLayer = 0,
+            .layerCount     = VK_REMAINING_ARRAY_LAYERS,
+        }
     };
 
     VkResult res = vkCreateImageView(vk->device, &view_info, NULL, &s_priv->image_view);
@@ -505,22 +441,22 @@ int ngli_texture_vk_wrap(struct texture *s,
         return NGL_ERROR_EXTERNAL;
 
     VkSamplerCreateInfo sampler_info = {
-        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        .magFilter = ngli_texture_get_vk_filter(s->params.mag_filter),
-        .minFilter = ngli_texture_get_vk_filter(s->params.min_filter),
-        .addressModeU = ngli_texture_get_vk_wrap(s->params.wrap_s),
-        .addressModeV = ngli_texture_get_vk_wrap(s->params.wrap_t),
-        .addressModeW = ngli_texture_get_vk_wrap(s->params.wrap_r),
-        .anisotropyEnable = VK_FALSE,
-        .maxAnisotropy = 1.0f,
-        .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+        .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .magFilter               = get_vk_filter(s->params.mag_filter),
+        .minFilter               = get_vk_filter(s->params.min_filter),
+        .addressModeU            = get_vk_wrap(s->params.wrap_s),
+        .addressModeV            = get_vk_wrap(s->params.wrap_t),
+        .addressModeW            = get_vk_wrap(s->params.wrap_r),
+        .anisotropyEnable        = VK_FALSE,
+        .maxAnisotropy           = 1.0f,
+        .borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
         .unnormalizedCoordinates = VK_FALSE,
-        .compareEnable = VK_FALSE,
-        .compareOp = VK_COMPARE_OP_ALWAYS,
-        .mipmapMode = ngli_texture_get_vk_mipmap_mode(s->params.mipmap_filter),
-        .minLod = 0.0f,
-        .maxLod = s_priv->mipmap_levels,
-        .mipLodBias = 0.0f,
+        .compareEnable           = VK_FALSE,
+        .compareOp               = VK_COMPARE_OP_ALWAYS,
+        .mipmapMode              = get_vk_mipmap_mode(s->params.mipmap_filter),
+        .minLod                  = 0.0f,
+        .maxLod                  = s_priv->mipmap_levels,
+        .mipLodBias              = 0.0f,
     };
 
     res = vkCreateSampler(vk->device, &sampler_info, NULL, &s_priv->image_sampler);
@@ -553,13 +489,12 @@ int ngli_texture_vk_transition_layout(struct texture *s, VkImageLayout layout)
     VkCommandBuffer command_buffer = gctx_vk->cur_command_buffer;
 
     const VkImageSubresourceRange subres_range = {
-        .aspectMask = get_vk_image_aspect_flags(s_priv->format),
-        .baseMipLevel = 0,
-        .levelCount = VK_REMAINING_MIP_LEVELS,
+        .aspectMask     = get_vk_image_aspect_flags(s_priv->format),
+        .baseMipLevel   = 0,
+        .levelCount     = VK_REMAINING_MIP_LEVELS,
         .baseArrayLayer = 0,
-        .layerCount = VK_REMAINING_ARRAY_LAYERS,
+        .layerCount     = VK_REMAINING_ARRAY_LAYERS,
     };
-
     ngli_vk_transition_image_layout(vk, command_buffer, s_priv->image, s_priv->image_layout, layout, &subres_range);
 
     s_priv->image_layout = layout;
@@ -576,27 +511,55 @@ int ngli_texture_vk_upload(struct texture *s, const uint8_t *data, int linesize)
 
     /* texture with external storage (including wrapped textures and render
      * buffers) cannot update their content with this function */
-    // FIXME
-    //ngli_assert(!s->external_storage && !(params->usage & NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY));
+    ngli_assert(!s->external_storage);
+    ngli_assert(params->usage & NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT);
 
     if (!data)
         return 0;
 
-    // XXX: cleanups
     if (!s_priv->staging_buffer || s_priv->staging_buffer_row_length != linesize) {
-        const int bytes_per_pixel = ngli_format_get_bytes_per_pixel(params->format);
-        const int width = linesize ? linesize : s->params.width;
+        const int32_t bytes_per_pixel = ngli_format_get_bytes_per_pixel(params->format);
+        const int32_t width = linesize ? linesize : s->params.width;
         s_priv->staging_buffer_size = width * s->params.height * s->params.depth * bytes_per_pixel * s_priv->array_layers;
 
-        const VkBufferUsageFlags buffer_usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        const VkMemoryPropertyFlags memory_property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        vkDestroyBuffer(vk->device, s_priv->staging_buffer, NULL);
+        s_priv->staging_buffer = VK_NULL_HANDLE;
 
-        VkResult res = create_buffer(vk, s_priv->staging_buffer_size, buffer_usage, memory_property_flags,
-                            &s_priv->staging_buffer, &s_priv->staging_buffer_memory);
+        vkFreeMemory(vk->device, s_priv->staging_buffer_memory, NULL);
+        s_priv->staging_buffer_memory = VK_NULL_HANDLE;
+
+        VkBufferCreateInfo buffer_create_info = {
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = s_priv->staging_buffer_size,
+            .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        };
+
+        VkResult res = vkCreateBuffer(vk->device, &buffer_create_info, NULL, &s_priv->staging_buffer);
         if (res != VK_SUCCESS)
             return NGL_ERROR_EXTERNAL;
 
+        VkMemoryRequirements requirements;
+        vkGetBufferMemoryRequirements(vk->device, s_priv->staging_buffer, &requirements);
+
+        const VkMemoryPropertyFlags props = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        int32_t memory_index = ngli_vkcontext_find_memory_type(vk, requirements.memoryTypeBits, props);
+        if (memory_index < 0)
+            return NGL_ERROR_UNSUPPORTED;
+
+        VkMemoryAllocateInfo memory_allocate_info = {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .allocationSize = requirements.size,
+            .memoryTypeIndex = memory_index,
+        };
+
+        res = vkAllocateMemory(vk->device, &memory_allocate_info, NULL, &s_priv->staging_buffer_memory);
+        if (res != VK_SUCCESS)
+            return NGL_ERROR_EXTERNAL;
+
+        res = vkBindBufferMemory(vk->device, s_priv->staging_buffer, s_priv->staging_buffer_memory, 0);
+        if (res != VK_SUCCESS)
+            return NGL_ERROR_EXTERNAL;
 
         s_priv->staging_buffer_row_length = linesize;
     }
@@ -605,6 +568,7 @@ int ngli_texture_vk_upload(struct texture *s, const uint8_t *data, int linesize)
     VkResult res = vkMapMemory(vk->device, s_priv->staging_buffer_memory, 0, s_priv->staging_buffer_size, 0, &mapped_data);
     if (res != VK_SUCCESS)
         return NGL_ERROR_EXTERNAL;
+
     memcpy(mapped_data, data, s_priv->staging_buffer_size);
     vkUnmapMemory(vk->device, s_priv->staging_buffer_memory);
 
@@ -620,23 +584,34 @@ int ngli_texture_vk_upload(struct texture *s, const uint8_t *data, int linesize)
         .baseArrayLayer = 0,
         .layerCount = VK_REMAINING_ARRAY_LAYERS,
     };
-    ngli_vk_transition_image_layout(vk, command_buffer, s_priv->image, s_priv->image_layout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &subres_range);
+    ngli_vk_transition_image_layout(vk,
+                                    command_buffer,
+                                    s_priv->image,
+                                    s_priv->image_layout,
+                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                    &subres_range);
 
     struct darray copy_regions;
     ngli_darray_init(&copy_regions, sizeof(VkBufferImageCopy), 0);
 
-    int layer_size = s->params.width * s->params.height * ngli_format_get_bytes_per_pixel(s->params.format);
-    for (int i = 0; i < s_priv->array_layers; i++) {
+    int32_t layer_size = s->params.width * s->params.height * ngli_format_get_bytes_per_pixel(s->params.format);
+    for (int32_t i = 0; i < s_priv->array_layers; i++) {
         VkDeviceSize offset = i * layer_size;
         VkBufferImageCopy region = {
-            .bufferOffset = offset,
-            .bufferRowLength = linesize,
+            .bufferOffset      = offset,
+            .bufferRowLength   = linesize,
             .bufferImageHeight = 0,
-            .imageSubresource.aspectMask = get_vk_image_aspect_flags(s_priv->format),
-            .imageSubresource.mipLevel = 0,
-            .imageSubresource.baseArrayLayer = i,
-            .imageSubresource.layerCount = 1,
-            .imageOffset = {0, 0, 0},
+            .imageSubresource = {
+                .aspectMask     = get_vk_image_aspect_flags(s_priv->format),
+                .mipLevel       = 0,
+                .baseArrayLayer = i,
+                .layerCount     = 1,
+            },
+            .imageOffset = {
+                0,
+                0,
+                0,
+            },
             .imageExtent = {
                 params->width,
                 params->height,
@@ -646,15 +621,23 @@ int ngli_texture_vk_upload(struct texture *s, const uint8_t *data, int linesize)
 
         if (!ngli_darray_push(&copy_regions, &region)) {
             ngli_darray_reset(&copy_regions);
-            return -1;
+            return NGL_ERROR_MEMORY;
         }
     }
 
-    vkCmdCopyBufferToImage(command_buffer, s_priv->staging_buffer, s_priv->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                           ngli_darray_count(&copy_regions), ngli_darray_data(&copy_regions));
+    vkCmdCopyBufferToImage(command_buffer,
+                           s_priv->staging_buffer,
+                           s_priv->image,
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                           ngli_darray_count(&copy_regions),
+                           ngli_darray_data(&copy_regions));
 
-    ngli_vk_transition_image_layout(vk, command_buffer, s_priv->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                    s_priv->image_layout, &subres_range);
+    ngli_vk_transition_image_layout(vk,
+                                    command_buffer,
+                                    s_priv->image,
+                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                    s_priv->image_layout,
+                                    &subres_range);
 
     ret = ngli_gctx_vk_execute_transient_command(s->gctx, command_buffer);
     if (ret < 0)
@@ -673,13 +656,11 @@ int ngli_texture_vk_generate_mipmap(struct texture *s)
     const struct texture_params *params = &s->params;
     struct texture_vk *s_priv = (struct texture_vk *)s;
 
-    // FIXME
-    //ngli_assert(!(params->usage & NGLI_TEXTURE_USAGE_ATTACHMENT_ONLY));
+    ngli_assert(params->usage & NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT);
+    ngli_assert(params->usage & NGLI_TEXTURE_USAGE_TRANSFER_DST_BIT);
 
-    VkCommandBuffer command_buffer;
-    if (gctx_vk->cur_command_buffer) {
-        command_buffer = gctx_vk->cur_command_buffer;
-    } else {
+    VkCommandBuffer command_buffer = gctx_vk->cur_command_buffer ? gctx_vk->cur_command_buffer : VK_NULL_HANDLE;
+    if (!command_buffer) {
         int ret = ngli_gctx_vk_begin_transient_command(s->gctx, &command_buffer);
         if (ret < 0)
             return ret;
@@ -692,19 +673,24 @@ int ngli_texture_vk_generate_mipmap(struct texture *s)
         .baseArrayLayer = 0,
         .layerCount = VK_REMAINING_ARRAY_LAYERS,
     };
-
-    ngli_vk_transition_image_layout(vk, command_buffer, s_priv->image, s_priv->image_layout,
-                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &subres_range);
+    ngli_vk_transition_image_layout(vk,
+                                    command_buffer,
+                                    s_priv->image,
+                                    s_priv->image_layout,
+                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                    &subres_range);
 
     VkImageMemoryBarrier barrier = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
         .image = s_priv->image,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-        .subresourceRange.baseArrayLayer = 0,
-        .subresourceRange.layerCount = params->type == NGLI_TEXTURE_TYPE_CUBE ? 6 : 1,
-        .subresourceRange.levelCount = 1,
+        .subresourceRange = {
+            .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseArrayLayer = 0,
+            .layerCount     = params->type == NGLI_TEXTURE_TYPE_CUBE ? 6 : 1,
+            .levelCount     = 1,
+        }
     };
 
     int32_t mipmap_width = s->params.width;
@@ -717,10 +703,12 @@ int ngli_texture_vk_generate_mipmap(struct texture *s)
         barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 
         vkCmdPipelineBarrier(command_buffer,
-            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
-            0, NULL,
-            0, NULL,
-            1, &barrier);
+                             VK_PIPELINE_STAGE_TRANSFER_BIT,
+                             VK_PIPELINE_STAGE_TRANSFER_BIT,
+                             0,
+                             0, NULL,
+                             0, NULL,
+                             1, &barrier);
 
         VkImageBlit blit = {
             .srcOffsets[0] = {
@@ -733,24 +721,28 @@ int ngli_texture_vk_generate_mipmap(struct texture *s)
                 .y = mipmap_height,
                 .z = 1,
             },
-            .srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .srcSubresource.mipLevel = i - 1,
-            .srcSubresource.baseArrayLayer = 0,
-            .srcSubresource.layerCount = s_priv->array_layers,
+            .srcSubresource = {
+                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                .mipLevel       = i - 1,
+                .baseArrayLayer = 0,
+                .layerCount     = s_priv->array_layers,
+            },
             .dstOffsets[0] = {
                 .x = 0,
                 .y = 0,
                 .z = 0,
             },
             .dstOffsets[1] = {
-                .x = mipmap_width > 1 ? mipmap_width / 2 : 1,
-                .y = mipmap_height > 1 ? mipmap_height / 2 : 1,
+                .x = NGLI_MAX(mipmap_width >> 1, 1),
+                .y = NGLI_MAX(mipmap_height >> 1, 1),
                 .z = 1,
             },
-            .dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .dstSubresource.mipLevel = i,
-            .dstSubresource.baseArrayLayer = 0,
-            .dstSubresource.layerCount = params->type == NGLI_TEXTURE_TYPE_CUBE ? 6 : 1,
+            .dstSubresource = {
+                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                .mipLevel       = i,
+                .baseArrayLayer = 0,
+                .layerCount     = params->type == NGLI_TEXTURE_TYPE_CUBE ? 6 : 1,
+            }
         };
 
         vkCmdBlitImage(command_buffer,
@@ -765,16 +757,15 @@ int ngli_texture_vk_generate_mipmap(struct texture *s)
         barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
         vkCmdPipelineBarrier(command_buffer,
-                             VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+                             VK_PIPELINE_STAGE_TRANSFER_BIT,
+                             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                             0,
                              0, NULL,
                              0, NULL,
                              1, &barrier);
 
-        if (mipmap_width > 1)
-            mipmap_width /= 2;
-
-        if (mipmap_height > 1)
-            mipmap_height /= 2;
+        mipmap_width = NGLI_MAX(mipmap_width >> 1, 1);
+        mipmap_height = NGLI_MAX(mipmap_height >> 1, 1);
     }
 
     barrier.subresourceRange.baseMipLevel = s_priv->mipmap_levels - 1;
@@ -784,7 +775,9 @@ int ngli_texture_vk_generate_mipmap(struct texture *s)
     barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
     vkCmdPipelineBarrier(command_buffer,
-                         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                         0,
                          0, NULL,
                          0, NULL,
                          1, &barrier);
