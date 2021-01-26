@@ -1,5 +1,6 @@
 #include "ngfx/porting/metal/MTLRenderPass.h"
 #include "ngfx/porting/metal/MTLGraphicsContext.h"
+#include "ngfx/porting/metal/MTLSurface.h"
 using namespace ngfx;
 using namespace std;
 
@@ -8,9 +9,14 @@ MTLRenderPassDescriptor* MTLRenderPass::getDescriptor(MTLGraphicsContext* mtlCtx
     MTLRenderPassDescriptor* mtlRenderPassDescriptor;
     vector<MTLRenderPassColorAttachmentDescriptor*> colorAttachments;
     if (mtlFramebuffer->colorAttachments.empty()) {
-        MTKView *view = mtlCtx->mtkView;
-        if (view) {
-            mtlRenderPassDescriptor = view.currentRenderPassDescriptor;
+        MTLSurface *surface = (MTLSurface*)mtlCtx->surface;
+        NSView *view = surface->view;
+        MTKView *mtkView = nullptr;
+        if ([view class] == [MTKView class]) {
+            mtkView = (MTKView*)view;
+        }
+        if (mtkView) {
+            mtlRenderPassDescriptor = mtkView.currentRenderPassDescriptor;
             colorAttachments.push_back(mtlRenderPassDescriptor.colorAttachments[0]);
         }
     } else {

@@ -18,9 +18,9 @@ void MTLApplication::init() {
     else {
         appInit = [&](void* view) {
             graphicsContext.reset(GraphicsContext::create(appName.c_str(), enableDepthStencil, true));
-            MTKSurface surface;
-            auto& mtkView = surface.mtkView;
-            mtkView = (MTKView*)view;
+            MTLSurface surface;
+            MTKView* mtkView = (MTKView*)view;
+            surface.view = mtkView;
             if (w != -1 && h != -1) {
                 [mtkView setFrame: NSMakeRect(0, 0, w, h)];
             }
@@ -32,8 +32,6 @@ void MTLApplication::init() {
             onInit();
         };
         appPaint = [&](void* view) {
-            auto ctx = mtl(graphicsContext.get());
-            ctx->mtkView = (MTKView*) view;
             paint();
         };
         appUpdate = [&](void*) { onUpdate(); };
@@ -53,7 +51,8 @@ void MTLApplication::paint() {
     commandBuffer.v = [ctx->mtlCommandQueue commandBuffer];
     onRecordCommandBuffer(&commandBuffer);
     if (!offscreen) {
-        [commandBuffer.v presentDrawable:ctx->mtkView.currentDrawable];
+        MTKView* mtkView = (MTKView*)mtl(ctx->surface)->view;
+        [commandBuffer.v presentDrawable:mtkView.currentDrawable];
     }
     [commandBuffer.v commit];
     if (offscreen) graphics->waitIdle(&commandBuffer);

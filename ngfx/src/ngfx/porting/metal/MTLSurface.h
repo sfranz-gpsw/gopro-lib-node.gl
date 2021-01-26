@@ -20,18 +20,14 @@
  */
 #pragma once
 #include "ngfx/graphics/Surface.h"
+#include "ngfx/porting/metal/MTLUtil.h"
 #include <MetalKit/MetalKit.h>
 
 namespace ngfx {
     class MTLSurface : public Surface {
     public:
         virtual ~MTLSurface() {}
+        NSView *view = nullptr;
     };
     MTL_CAST(Surface);
-
-    class MTKSurface : public MTLSurface {
-    public:
-        virtual ~MTKSurface() {}
-        MTKView* mtkView;
-    };
 }

@@ -15,14 +15,17 @@ MTLGraphicsContext::~MTLGraphicsContext() {}
 
 void MTLGraphicsContext::setSurface(Surface *surface) {
     defaultOffscreenSurfaceFormat = PixelFormat(MTLPixelFormatRGBA8Unorm);
+    MTKView *mtkView = nullptr;
     if (surface && !surface->offscreen) {
         offscreen = false;
-        if (MTKSurface *mtkSurface = dynamic_cast<MTKSurface*>(surface)) {
-            mtkView = mtkSurface->mtkView;
+        NSView *view = mtl(surface)->view;
+        if ([view class] == [MTKView class]) {
+            mtkView = (MTKView*)view;
             mtkView.device = mtlDevice.v;
-            mtlSurfaceFormat = mtkView.colorPixelFormat;
-            surfaceFormat = PixelFormat(mtlSurfaceFormat);
         }
+        CAMetalLayer *layer = (CAMetalLayer*)view.layer;
+        mtlSurfaceFormat = layer.pixelFormat;
+        surfaceFormat = PixelFormat(mtlSurfaceFormat);
     } else {
         offscreen = true;
         surfaceFormat = defaultOffscreenSurfaceFormat;
@@ -60,6 +63,7 @@ void MTLGraphicsContext::setSurface(Surface *surface) {
         createSwapchainFramebuffers(mtkView.drawableSize.width, mtkView.drawableSize.height);
     }
     createBindings();
+    this->surface = surface;
 }
 
 RenderPass* MTLGraphicsContext::getRenderPass(RenderPassConfig config) {

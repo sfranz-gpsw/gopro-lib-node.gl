@@ -94,17 +94,18 @@ namespace ngfx {
 
         std::vector<Framebuffer*> swapchainFramebuffers;
         Queue* queue = nullptr;
-        RenderPass *defaultRenderPass, *defaultOffscreenRenderPass;
-        Swapchain* swapchain;
+        RenderPass *defaultRenderPass = nullptr, *defaultOffscreenRenderPass = nullptr;
+        Swapchain* swapchain = nullptr;
+        Surface* surface = nullptr;
         uint32_t currentImageIndex = 0;
         std::vector<Fence*> frameFences;
-        Fence* computeFence;
+        Fence* computeFence = nullptr;
         Semaphore *presentCompleteSemaphore = nullptr, *renderCompleteSemaphore = nullptr;
-        PipelineCache *pipelineCache;
+        PipelineCache *pipelineCache = nullptr;
         PixelFormat surfaceFormat = PIXELFORMAT_UNDEFINED, defaultOffscreenSurfaceFormat = PIXELFORMAT_UNDEFINED,
             depthFormat = PIXELFORMAT_UNDEFINED;
         glm::vec4 clearColor = glm::vec4(0.0f);
     protected:
-        bool debug, enableDepthStencil = false;
+        bool debug = false, enableDepthStencil = false;
     };
 };
