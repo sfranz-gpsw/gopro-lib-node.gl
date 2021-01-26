@@ -428,7 +428,6 @@ ifeq ($(TARGET_OS),Windows)
 	($(CMD) pushd external\\win64\\pthreads_x64-windows \&\& python.exe scripts/install.py "$(W_PREFIX)" \& popd)
 	($(CMD) pushd external\\win64\\sdl2_x64-windows \&\& python.exe scripts/install.py "$(W_PREFIX)" \& popd)
 	($(CMD) pushd external\\win64\\shaderc_x64-windows \&\& python.exe scripts/install.py "$(W_PREFIX)" \& popd)
-	($(CMD) $(ACTIVATE) \&\& pip install meson ninja)
 	(sed -i -e 's/Libs: .*/Libs: -L\${libdir} -lSDL2 -L\${libdir}/manual-link -lSDL2main/' $(PREFIX)/Lib/pkgconfig/sdl2.pc)
 	(cp external/win64/ffmpeg_x64-windows/tools/ffmpeg/*.exe $(PREFIX)/Scripts/.)
 	(cp external/win64/ffmpeg_x64-windows/bin/*.dll $(PREFIX)/Scripts/.)
@@ -439,7 +438,6 @@ else ifeq ($(TARGET_OS),MinGW-w64)
 	$(PYTHON) -m venv --system-site-packages $(PREFIX)
 else
 	$(PYTHON) -m venv $(PREFIX)
-	(. $(ACTIVATE) && pip install meson ninja)
 endif
 
 tests: nodegl-tests tests-setup
