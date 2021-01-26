@@ -104,6 +104,8 @@ else
 MESON_BACKEND ?= ninja
 endif
 
+MESON_BUILDDIR ?= builddir
+
 ifeq ($(TARGET_OS),Windows)
 MESON_SETUP   = meson setup --prefix="$(W_PREFIX)" --pkg-config-path=$(PREFIX)\\Lib\\pkgconfig -Drpath=true
 # Set PKG_CONFIG and PKG_CONFIG_PATH environment variables when invoking command shell
@@ -167,15 +169,15 @@ endif
 
 ngl-tools-install: nodegl-install
 ifeq ($(TARGET_OS),Windows)
-	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) ngl-tools builddir\\ngl-tools)
+	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) ngl-tools $(MESON_BUILDDIR)\\ngl-tools)
 ifeq ($(DEBUG),yes)
 	# Set RuntimeLibrary to MultithreadedDLL using a script
 	# Note: MESON doesn't support
-	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL builddir/ngl-tools
+	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL $(MESON_BUILDDIR)/ngl-tools
 endif
-	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) --backend $(MESON_BACKEND) ngl-tools builddir\\ngl-tools \&\& $(MESON_COMPILE) -C builddir\\ngl-tools \&\& $(MESON_INSTALL) -C builddir\\ngl-tools)
+	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) --backend $(MESON_BACKEND) ngl-tools $(MESON_BUILDDIR)\\ngl-tools \&\& $(MESON_COMPILE) -C $(MESON_BUILDDIR)\\ngl-tools \&\& $(MESON_INSTALL) -C $(MESON_BUILDDIR)\\ngl-tools)
 else
-	(. $(ACTIVATE) && $(MESON_SETUP) --backend $(MESON_BACKEND) ngl-tools builddir/ngl-tools && $(MESON_COMPILE) -C builddir/ngl-tools && $(MESON_INSTALL) -C builddir/ngl-tools)
+	(. $(ACTIVATE) && $(MESON_SETUP) --backend $(MESON_BACKEND) ngl-tools $(MESON_BUILDDIR)/ngl-tools && $(MESON_COMPILE) -C $(MESON_BUILDDIR)/ngl-tools && $(MESON_INSTALL) -C $(MESON_BUILDDIR)/ngl-tools)
 endif
 
 pynodegl-utils-install: pynodegl-utils-deps-install
@@ -219,11 +221,11 @@ ifeq ($(TARGET_OS),Windows)
 	(cp external/win64/ffmpeg_x64-windows/bin/*.dll pynodegl/.)
 	(cp external/win64/pthreads_x64-windows/bin/*.dll pynodegl/.)
 	(cp external/win64/shaderc_x64-windows/bin/*.dll pynodegl/.)
-	(cp builddir/sxplayer/*.dll pynodegl/.)
-	(cp builddir/libnodegl/*.dll pynodegl/.)
+	(cp $(MESON_BUILDDIR)/sxplayer/*.dll pynodegl/.)
+	(cp $(MESON_BUILDDIR)/libnodegl/*.dll pynodegl/.)
 	(cp external/win64/RenderDoc_1.11_64/renderdoc.dll pynodegl/.)
-	(cp builddir/sxplayer/*.dll $(PREFIX)/Scripts/.)
-	(cp builddir/libnodegl/*.dll $(PREFIX)/Scripts/.)
+	(cp $(MESON_BUILDDIR)/sxplayer/*.dll $(PREFIX)/Scripts/.)
+	(cp $(MESON_BUILDDIR)/libnodegl/*.dll $(PREFIX)/Scripts/.)
 else
 	(. $(ACTIVATE) && PKG_CONFIG_PATH=$(PREFIX)/lib/pkgconfig LDFLAGS=$(RPATH_LDFLAGS) pip -v install -e ./pynodegl)
 endif
@@ -237,24 +239,24 @@ endif
 
 nodegl-install: nodegl-setup
 ifeq ($(TARGET_OS),Windows)
-	($(CMD) $(ACTIVATE) \&\& $(MESON_COMPILE) -C builddir\\libnodegl \&\& $(MESON_INSTALL) -C builddir\\libnodegl)
+	($(CMD) $(ACTIVATE) \&\& $(MESON_COMPILE) -C $(MESON_BUILDDIR)\\libnodegl \&\& $(MESON_INSTALL) -C $(MESON_BUILDDIR)\\libnodegl)
 	# patch libnodegl.pc TODO: remove
 	sed -i -e 's/Libs.private: .*/Libs.private: OpenGL32.lib gdi32.lib/' nodegl-env/Lib/pkgconfig/libnodegl.pc
 else
-	(. $(ACTIVATE) && $(MESON_COMPILE) -C builddir/libnodegl && $(MESON_INSTALL) -C builddir/libnodegl)
+	(. $(ACTIVATE) && $(MESON_COMPILE) -C $(MESON_BUILDDIR)/libnodegl && $(MESON_INSTALL) -C $(MESON_BUILDDIR)/libnodegl)
 endif
 
 nodegl-setup: sxplayer-install ngfx-install shader-tools-install
 ifeq ($(TARGET_OS),Windows)
-	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) --backend $(MESON_BACKEND) $(NODEGL_SETUP_OPTS) $(NODEGL_DEBUG_OPTS) --default-library shared libnodegl builddir\\libnodegl)
+	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) --backend $(MESON_BACKEND) $(NODEGL_SETUP_OPTS) $(NODEGL_DEBUG_OPTS) --default-library shared libnodegl $(MESON_BUILDDIR)\\libnodegl)
 ifeq ($(DEBUG),yes)
 	# Set RuntimeLibrary to MultithreadedDLL
-	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL builddir/libnodegl
+	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL $(MESON_BUILDDIR)/libnodegl
 endif
 	# Enable MultiProcessorCompilation
-	bash build_scripts/win64/patch_vcxproj_files.sh --set-multiprocessor-compilation true builddir/libnodegl
+	bash build_scripts/win64/patch_vcxproj_files.sh --set-multiprocessor-compilation true $(MESON_BUILDDIR)/libnodegl
 else
-	(. $(ACTIVATE) && $(MESON_SETUP) --backend $(MESON_BACKEND) $(NODEGL_SETUP_OPTS) $(NODEGL_DEBUG_OPTS) libnodegl builddir/libnodegl)
+	(. $(ACTIVATE) && $(MESON_SETUP) --backend $(MESON_BACKEND) $(NODEGL_SETUP_OPTS) $(NODEGL_DEBUG_OPTS) libnodegl $(MESON_BUILDDIR)/libnodegl)
 endif
 
 shell:
@@ -264,9 +266,9 @@ endif
 
 sxplayer-install: sxplayer $(PREFIX)
 ifeq ($(TARGET_OS),Windows)
-	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) --backend $(MESON_BACKEND) --default-library shared sxplayer builddir\\sxplayer \&\& $(MESON_COMPILE) -C builddir\\sxplayer \&\& $(MESON_INSTALL) -C builddir\\sxplayer)
+	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) --backend $(MESON_BACKEND) --default-library shared sxplayer $(MESON_BUILDDIR)\\sxplayer \&\& $(MESON_COMPILE) -C $(MESON_BUILDDIR)\\sxplayer \&\& $(MESON_INSTALL) -C $(MESON_BUILDDIR)\\sxplayer)
 else
-	(. $(ACTIVATE) && $(MESON_SETUP) --backend $(MESON_BACKEND) sxplayer builddir/sxplayer && $(MESON_COMPILE) -C builddir/sxplayer && $(MESON_INSTALL) -C builddir/sxplayer)
+	(. $(ACTIVATE) && $(MESON_SETUP) --backend $(MESON_BACKEND) sxplayer $(MESON_BUILDDIR)/sxplayer && $(MESON_COMPILE) -C $(MESON_BUILDDIR)/sxplayer && $(MESON_INSTALL) -C $(MESON_BUILDDIR)/sxplayer)
 endif
 
 # Note for developers: in order to customize the sxplayer you're building
@@ -442,28 +444,28 @@ endif
 
 tests: nodegl-tests tests-setup
 ifeq ($(TARGET_OS),Windows)
-	($(CMD) $(ACTIVATE) \&\& meson test $(MESON_TESTS_SUITE_OPTS) -C builddir\\tests)
+	($(CMD) $(ACTIVATE) \&\& meson test $(MESON_TESTS_SUITE_OPTS) -C $(MESON_BUILDDIR)\\tests)
 else
-	(. $(ACTIVATE) && meson test $(MESON_TESTS_SUITE_OPTS) -C builddir/tests)
+	(. $(ACTIVATE) && meson test $(MESON_TESTS_SUITE_OPTS) -C $(MESON_BUILDDIR)/tests)
 endif
 
 tests-setup: ngl-tools-install pynodegl-utils-install
 ifeq ($(TARGET_OS),Windows)
 	# meson test only unsupports ninja backend
-	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) --backend ninja builddir\\tests tests)
+	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) --backend ninja $(MESON_BUILDDIR)\\tests tests)
 else
-	(. $(ACTIVATE) && $(MESON_SETUP) --backend ninja builddir/tests tests)
+	(. $(ACTIVATE) && $(MESON_SETUP) --backend ninja $(MESON_BUILDDIR)/tests tests)
 endif
 
 nodegl-tests: nodegl-install
 ifeq ($(TARGET_OS),Windows)
-	($(CMD) $(ACTIVATE) \&\& meson test -C builddir\\libnodegl)
+	($(CMD) $(ACTIVATE) \&\& meson test -C $(MESON_BUILDDIR)\\libnodegl)
 else
-	(. $(ACTIVATE) && meson test -C builddir/libnodegl)
+	(. $(ACTIVATE) && meson test -C $(MESON_BUILDDIR)/libnodegl)
 endif
 
 nodegl-%: nodegl-setup
-	(. $(ACTIVATE) && $(MESON_COMPILE) -C builddir/libnodegl $(subst nodegl-,,$@))
+	(. $(ACTIVATE) && $(MESON_COMPILE) -C $(MESON_BUILDDIR)/libnodegl $(subst nodegl-,,$@))
 
 clean_py:
 	$(RM) pynodegl/nodes_def.pyx
@@ -476,19 +478,19 @@ clean_py:
 	$(RM) -r pynodegl-utils/.eggs
 
 clean: clean_py
-	$(RM) -r builddir/sxplayer
-	$(RM) -r builddir/libnodegl
-	$(RM) -r builddir/ngl-tools
-	$(RM) -r builddir/tests
+	$(RM) -r $(MESON_BUILDDIR)/sxplayer
+	$(RM) -r $(MESON_BUILDDIR)/libnodegl
+	$(RM) -r $(MESON_BUILDDIR)/ngl-tools
+	$(RM) -r $(MESON_BUILDDIR)/tests
 
 # You need to build and run with COVERAGE set to generate data.
 # For example: `make clean && make -j8 tests COVERAGE=yes`
 # We don't use `meson coverage` here because of
 # https://github.com/mesonbuild/meson/issues/7895
 coverage-html:
-	(. $(ACTIVATE) && ninja -C builddir/libnodegl coverage-html)
+	(. $(ACTIVATE) && ninja -C $(MESON_BUILDDIR)/libnodegl coverage-html)
 coverage-xml:
-	(. $(ACTIVATE) && ninja -C builddir/libnodegl coverage-xml)
+	(. $(ACTIVATE) && ninja -C $(MESON_BUILDDIR)/libnodegl coverage-xml)
 
 .PHONY: all
 .PHONY: ngl-tools-install
