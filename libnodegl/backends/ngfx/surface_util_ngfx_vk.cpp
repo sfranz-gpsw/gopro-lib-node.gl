@@ -22,26 +22,16 @@
 #include "surface_util_ngfx.h"
 #include "gctx_ngfx.h"
 #include "debugutil_ngfx.h"
-#if defined(NGFX_GRAPHICS_BACKEND_VULKAN)
 #include "ngfx/porting/vulkan/VKGraphicsContext.h"
 #if defined(TARGET_LINUX)
 #define VK_USE_PLATFORM_XLIB_KHR
 #include <X11/Xlib.h>
 #include <vulkan/vulkan_xlib.h>
-#endif
-#elif defined(NGFX_GRAPHICS_BACKEND_DIRECT3D12)
-#include "ngfx/porting/d3d/D3DGraphicsContext.h"
-#endif
 using namespace ngfx;
-
-ngfx::Surface* surface_util_ngfx::create_offscreen_surface(int w, int h) {
-    return new ngfx::Surface(w, h, true);
-}
 
 ngfx::Surface* surface_util_ngfx::create_surface_from_window_handle(ngfx::GraphicsContext *ctx, 
         int platform, uintptr_t display, uintptr_t window, uintptr_t width, uintptr_t height) {
     ngfx::Surface *surface = nullptr;
-#if defined(NGFX_GRAPHICS_BACKEND_VULKAN) and defined(VK_USE_PLATFORM_XLIB_KHR)
     if (platform == NGL_PLATFORM_XLIB) {
         ngfx::VKGraphicsContext *vk_ctx = (ngfx::VKGraphicsContext *)ctx;
         ngfx::VKSurface *vk_surface = new ngfx::VKSurface();
@@ -56,14 +46,5 @@ ngfx::Surface* surface_util_ngfx::create_surface_from_window_handle(ngfx::Graphi
         vk_surface->offscreen = false;
         surface = vk_surface;
     }
-#elif defined(NGFX_GRAPHICS_BACKEND_DIRECT3D12)
-    ngfx::D3DGraphicsContext* d3d_ctx = (ngfx::D3DGraphicsContext*)ctx;
-    ngfx::D3DSurface* d3d_surface = new ngfx::D3DSurface();
-    d3d_surface->v = HWND(window);
-    d3d_surface->w = width;
-    d3d_surface->h = height;
-    d3d_surface->offscreen = false;
-    surface = d3d_surface;
-#endif
     return surface;
 }

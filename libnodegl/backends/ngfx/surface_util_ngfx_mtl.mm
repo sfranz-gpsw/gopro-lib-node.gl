@@ -19,19 +19,17 @@
  * under the License.
  */
 
-#ifndef SURFACE_UTIL_NGFX_H
-#define SURFACE_UTIL_NGFX_H
+#include "surface_util_ngfx.h"
+#include "gctx_ngfx.h"
+#include "debugutil_ngfx.h"
+#include "ngfx/porting/metal/MTLSurface.h"
+#import <MetalKit/MetalKit.h>
+using namespace ngfx;
 
-#include "ngfx/graphics/Surface.h"
-
-namespace ngfx { class GraphicsContext; }
-    
-struct surface_util_ngfx {
-    static inline ngfx::Surface* create_offscreen_surface(int w, int h) {
-        return new ngfx::Surface(w, h, true);
-    }
-    static ngfx::Surface* create_surface_from_window_handle(ngfx::GraphicsContext *ctx,
-        int platform, uintptr_t display, uintptr_t window, uintptr_t width, uintptr_t height);
-};
-
-#endif
+ngfx::Surface* surface_util_ngfx::create_surface_from_window_handle(ngfx::GraphicsContext *ctx, 
+        int platform, uintptr_t display, uintptr_t window, uintptr_t width, uintptr_t height) {
+    ngfx::MTLSurface *mtl_surface = new ngfx::MTLSurface();
+    mtl_surface->w = width; mtl_surface->h = height; mtl_surface->offscreen = false;
+    NSView *view = (NSView*)window;
+    return mtl_surface;
+}

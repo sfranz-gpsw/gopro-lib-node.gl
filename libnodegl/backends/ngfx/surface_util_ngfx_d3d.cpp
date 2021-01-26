@@ -19,19 +19,19 @@
  * under the License.
  */
 
-#ifndef SURFACE_UTIL_NGFX_H
-#define SURFACE_UTIL_NGFX_H
+#include "surface_util_ngfx.h"
+#include "gctx_ngfx.h"
+#include "debugutil_ngfx.h"
+#include "ngfx/porting/d3d/D3DSurface.h"
 
-#include "ngfx/graphics/Surface.h"
+using namespace ngfx;
 
-namespace ngfx { class GraphicsContext; }
-    
-struct surface_util_ngfx {
-    static inline ngfx::Surface* create_offscreen_surface(int w, int h) {
-        return new ngfx::Surface(w, h, true);
-    }
-    static ngfx::Surface* create_surface_from_window_handle(ngfx::GraphicsContext *ctx,
-        int platform, uintptr_t display, uintptr_t window, uintptr_t width, uintptr_t height);
-};
-
-#endif
+ngfx::Surface* surface_util_ngfx::create_surface_from_window_handle(ngfx::GraphicsContext *ctx, 
+        int platform, uintptr_t display, uintptr_t window, uintptr_t width, uintptr_t height) {
+    ngfx::D3DSurface *d3d_surface = new ngfx::D3DSurface();
+    d3d_surface->v = HWND(window);
+    d3d_surface->w = width;
+    d3d_surface->h = height;
+    d3d_surface->offscreen = false;
+    return d3d_surface;
+}
