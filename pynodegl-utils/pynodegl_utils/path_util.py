@@ -20,29 +20,13 @@
 # under the License.
 #
 
-import sys
 import platform
 import os.path as op
-from pynodegl_utils.path_util import *
-from PySide2 import QtWidgets, QtCore
 
-from .ui.main_window import MainWindow
+def path_norm(p):
+    if platform.system() == 'Windows':
+        p = p.replace('\\','/')
+    return p
 
-
-def run():
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-m', dest='module', default='pynodegl_utils.examples',
-                        help='set the module name containing the scene functions')
-    default_hooks_dir = path_join(op.relpath(op.dirname(__file__)), 'hooks', 'desktop')
-    parser.add_argument('--hooks-dir', dest='hooksdirs',
-                        default=[default_hooks_dir],
-                        action='append',
-                        help='set the directory path containing event hooks')
-    pargs = parser.parse_args(sys.argv[1:])
-
-    app = QtWidgets.QApplication(sys.argv)
-    window = MainWindow(pargs.module, pargs.hooksdirs)
-    window.show()
-    app.exec_()
+def path_join(path, *paths):
+    return path_norm(op.join(path, *paths))
