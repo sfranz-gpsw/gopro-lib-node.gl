@@ -23,6 +23,7 @@
 #include "debugutil_ngfx.h"
 #include "ngfx/porting/metal/MTLGraphicsContext.h"
 #include "ngfx/porting/metal/MTLCommandBuffer.h"
+#include "ngfx/porting/metal/MTLSurface.h"
 
 using namespace ngfx;
 
@@ -31,16 +32,15 @@ swapchain_util_ngfx *swapchain_util_ngfx::create(ngfx::GraphicsContext *ctx, uin
 }
 
 swapchain_util_ngfx_mtl::swapchain_util_ngfx_mtl(ngfx::GraphicsContext *ctx, uintptr_t window)
-    : swapchain_util_ngfx(ctx, window) {
-    view = (NSView *)window;
-    layer = (CAMetalLayer *)view.layer;
-    layer.device = mtl(ctx)->mtlDevice.v;
-}
+    : swapchain_util_ngfx(ctx, window) {}
+
 void swapchain_util_ngfx_mtl::acquire_image() {
-    drawable = [view.layer nextDrawable];
+    MTLSurface *mtl_surface = mtl(ctx->surface);
+    mtl_surface->drawable = [mtl_surface->getMetalLayer() nextDrawable];
 }
 
 void swapchain_util_ngfx_mtl::present(CommandBuffer *cmd_buffer) {
-    [mtl(cmd_buffer)->v presentDrawable:drawable];
+    MTLSurface *mtl_surface = mtl(ctx->surface);
+    [mtl(cmd_buffer)->v presentDrawable:mtl_surface->drawable];
 }
 

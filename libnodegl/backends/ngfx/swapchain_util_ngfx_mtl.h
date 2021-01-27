@@ -32,10 +32,6 @@ public:
     virtual ~swapchain_util_ngfx_mtl() {}
     void acquire_image() override;
     void present(ngfx::CommandBuffer *cmd_buffer) override;
-private:
-    NSView *view = nullptr;
-    id<CAMetalDrawable> drawable;
-    CAMetalLayer *layer = nullptr;
 };
 
 #endif

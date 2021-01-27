@@ -22,6 +22,7 @@
 #include "surface_util_ngfx.h"
 #include "gctx_ngfx.h"
 #include "debugutil_ngfx.h"
+#include "ngfx/porting/metal/MTLGraphicsContext.h"
 #include "ngfx/porting/metal/MTLSurface.h"
 #import <MetalKit/MetalKit.h>
 using namespace ngfx;
@@ -31,5 +32,7 @@ ngfx::Surface* surface_util_ngfx::create_surface_from_window_handle(ngfx::Graphi
     ngfx::MTLSurface *mtl_surface = new ngfx::MTLSurface();
     mtl_surface->w = width; mtl_surface->h = height; mtl_surface->offscreen = false;
     mtl_surface->view = (NSView*)window;
+    CAMetalLayer *layer = (CAMetalLayer *)mtl_surface->view.layer;
+    layer.device = mtl(ctx)->mtlDevice.v;
     return mtl_surface;
 }
