@@ -27,7 +27,11 @@ namespace ngfx {
     class MTLSurface : public Surface {
     public:
         virtual ~MTLSurface() {}
+        inline CAMetalLayer* getMetalLayer() {
+            return (CAMetalLayer*)view.layer;
+        }
         NSView *view = nullptr;
+        id<CAMetalDrawable> drawable;
     };
     MTL_CAST(Surface);
 }

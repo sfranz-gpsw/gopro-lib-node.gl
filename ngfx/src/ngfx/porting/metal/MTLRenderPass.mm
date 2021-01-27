@@ -22,7 +22,7 @@ MTLRenderPassDescriptor* MTLRenderPass::getDescriptor(MTLGraphicsContext* mtlCtx
         else {
             mtlRenderPassDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];
             auto colorAttachment = mtlRenderPassDescriptor.colorAttachments[0];
-            //TODO: colorAttachment.texture = drawable.texture;
+            colorAttachment.texture = surface->drawable.texture;
             colorAttachments.push_back(colorAttachment);
         }
     } else {

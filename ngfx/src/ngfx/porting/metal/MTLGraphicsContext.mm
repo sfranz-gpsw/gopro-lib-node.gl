@@ -24,7 +24,7 @@ void MTLGraphicsContext::setSurface(Surface *surface) {
             mtkView = (MTKView*)view;
             mtkView.device = mtlDevice.v;
         }
-        CAMetalLayer *layer = (CAMetalLayer*)view.layer;
+        CAMetalLayer *layer = mtl_surface->getMetalLayer();
         mtlSurfaceFormat = layer.pixelFormat;
         surfaceFormat = PixelFormat(mtlSurfaceFormat);
     } else {
@@ -59,7 +59,7 @@ void MTLGraphicsContext::setSurface(Surface *surface) {
     };
     mtlDefaultOffscreenRenderPass = (MTLRenderPass*)getRenderPass(offscreenRenderPassConfig);
     if (surface && !surface->offscreen) {
-        CAMetalLayer* metalLayer = (CAMetalLayer*)mtl_surface->view.layer;
+        CAMetalLayer* metalLayer = mtl_surface->getMetalLayer();
         numSwapchainImages = metalLayer.maximumDrawableCount;
         createSwapchainFramebuffers(metalLayer.drawableSize.width, metalLayer.drawableSize.height);
     }
