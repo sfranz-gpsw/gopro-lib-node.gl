@@ -31,5 +31,6 @@ void swapchain_util_ngfx_vk::acquire_image() {
 }
 
 void swapchain_util_ngfx_vk::present(CommandBuffer *cmd_buffer) {
+    ctx->submit(cmd_buffer);
     ctx->queue->present();
 }

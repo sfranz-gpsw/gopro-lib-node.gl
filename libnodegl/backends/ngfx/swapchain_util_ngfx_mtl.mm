@@ -42,5 +42,6 @@ void swapchain_util_ngfx_mtl::acquire_image() {
 void swapchain_util_ngfx_mtl::present(CommandBuffer *cmd_buffer) {
     MTLSurface *mtl_surface = mtl(ctx->surface);
     [mtl(cmd_buffer)->v presentDrawable:mtl_surface->drawable];
+    ctx->submit(cmd_buffer);
 }
 
