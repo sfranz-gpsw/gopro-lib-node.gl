@@ -20,6 +20,7 @@
  */
 #pragma once
 #include "ngfx/graphics/Surface.h"
+#include "ngfx/porting/metal/MTLDepthStencilTexture.h"
 #include "ngfx/porting/metal/MTLUtil.h"
 #include <MetalKit/MetalKit.h>
 
@@ -32,6 +33,7 @@ namespace ngfx {
         }
         NSView *view = nullptr;
         id<CAMetalDrawable> drawable;
+        std::unique_ptr<MTLDepthStencilTexture> depthStencilTexture;
     };
     MTL_CAST(Surface);
 }

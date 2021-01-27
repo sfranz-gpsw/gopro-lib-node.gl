@@ -56,7 +56,6 @@ namespace ngfx {
         uint32_t numSwapchainImages;
         std::vector<MTLFramebuffer> mtlSwapchainFramebuffers;
         MTLRenderPass *mtlDefaultRenderPass = nullptr, *mtlDefaultOffscreenRenderPass = nullptr;
-        std::unique_ptr<MTLDepthStencilTexture> mtlDepthStencilTexture;
         bool offscreen = true;
         uint32_t numSamples = 1;
     private:

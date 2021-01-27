@@ -35,10 +35,12 @@ void MTLGraphicsContext::setSurface(Surface *surface) {
         TODO("");
     }
     if (surface && enableDepthStencil) {
-        mtlDepthStencilTexture.reset(new MTLDepthStencilTexture);
-        mtlDepthStencilTexture->create(this, surface->w, surface->h);
-        if (mtkView) mtkView.depthStencilPixelFormat = mtlDepthStencilTexture->format;
-        depthFormat = PixelFormat(mtlDepthStencilTexture->format);
+        depthFormat = PixelFormat(MTLPixelFormatDepth24Unorm_Stencil8);
+        if (mtkView) mtkView.depthStencilPixelFormat = ::MTLPixelFormat(depthFormat);
+        else {
+            mtl_surface->depthStencilTexture.reset(new MTLDepthStencilTexture);
+            mtl_surface->depthStencilTexture->create(this, mtl_surface->w, mtl_surface->h);
+        }
         if (numSamples != 1) {
             TODO("");
         }
