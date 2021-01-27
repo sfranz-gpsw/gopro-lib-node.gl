@@ -22,13 +22,14 @@
 
 import hashlib
 import os
+import platform
 import os.path as op
 import tempfile
 import subprocess
 import time
 
 from PySide2 import QtCore
-
+from pynodegl_utils.path_util import *
 
 class _HooksCaller:
 
@@ -43,7 +44,7 @@ class _HooksCaller:
     def _get_hook(self, name):
         if not self._hooksdir:
             return None
-        hook = op.join(self._hooksdir, 'hook.' + name)
+        hook = path_join(self._hooksdir, 'hook.' + name)
         if not op.exists(hook):
             return
         return hook
@@ -53,11 +54,14 @@ class _HooksCaller:
         if not hook:
             return None
         cmd = [hook] + list(args)
+        if platform.system() == 'Windows':
+            cmd = ['bash.exe'] + cmd
+        print(cmd)
         return subprocess.check_output(cmd, text=True).rstrip()
 
     def get_session_info(self, session_id):
         ret = {}
-        session_info_output = self._get_hook_output('get_session_info', session_id)
+        session_info_output = self._get_hook_output('get_session_info', platform.system(), session_id)
         if session_info_output:
             for line in session_info_output.splitlines():
                 k, v = line.split('=', 1)
@@ -66,7 +70,7 @@ class _HooksCaller:
 
     def get_sessions(self):
         sessions = []
-        sessions_output = self._get_hook_output('get_sessions')
+        sessions_output = self._get_hook_output('get_sessions', platform.system())
         session_lines = sessions_output.splitlines() if sessions_output is not None else []
         for session_line in session_lines:
             session_id, session_desc = session_line.split(None, 1)
@@ -91,6 +95,7 @@ class _HooksCaller:
     def scene_change(self, session_id, local_scene, cfg):
         self._get_hook_output(
             'scene_change',
+            platform.system(),
             session_id,
             local_scene,
             'duration=%f' % cfg['duration'],
@@ -109,10 +114,10 @@ class _HooksCaller:
         sha256.update(str(statinfo.st_mtime).encode())
         digest = sha256.hexdigest()
         _, ext = op.splitext(filename)
-        return op.join(digest + ext)
+        return path_join(digest + ext)
 
     def sync_file(self, session_id, localfile):
-        return self._get_hook_output('sync_file', session_id, localfile, self._hash_filename(localfile))
+        return self._get_hook_output('sync_file', platform.system(), session_id, localfile, self._hash_filename(localfile))
 
 
 class HooksCaller:
@@ -126,6 +131,9 @@ class HooksCaller:
         return self._callers[int(istr)], session_id
 
     def get_sessions(self):
+        #if os.name == 'nt':
+        #    print('[HooksCaller::get_sessions] TODO: port to Windows')
+        #    return []
         '''
         Session IDs may be identical accross hook systems. A pathological case
         is with several instances of the same hook system, but it could
@@ -220,7 +228,13 @@ class _HooksThread(QtCore.QThread):
             # communicated with additional parameters to the user
             # FIXME: this won't work on Windows, see
             # https://docs.python.org/3/library/tempfile.html#tempfile.NamedTemporaryFile
-            with tempfile.NamedTemporaryFile('w', prefix='ngl_scene_', suffix='.ngl', delete=True) as f:
+
+            # Don't delete temporary scene file on Windows
+            # Otherwise, file is deleted before the hook script reads the file
+            delete_scene_file = True
+            if platform.system() == 'Windows':
+                delete_scene_file = False
+            with tempfile.NamedTemporaryFile('w', prefix='ngl_scene_', suffix='.ngl', delete=delete_scene_file) as f:
                 f.write(serialized_scene)
                 f.flush()
                 self.sendingScene.emit(session_id, self._scene_id)

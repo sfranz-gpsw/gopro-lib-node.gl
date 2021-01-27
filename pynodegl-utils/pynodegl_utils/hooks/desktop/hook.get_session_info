@@ -1,10 +1,17 @@
 #!/bin/sh
 
-set -e
+set -ex
+OS=$1
+session=$2
 
-session=$1
+if [ $OS == "Windows" ]; then
+NGL_IPC=./ngl-ipc.exe
+else
+NGL_IPC=ngl-ipc
+fi
+
 host=${session%%-*}
 port=${session##*-}
 
 set -x
-ngl-ipc -x "$host" -p "$port" -?
+$NGL_IPC -x "$host" -p "$port" -?
