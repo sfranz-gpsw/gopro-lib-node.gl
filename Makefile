@@ -169,13 +169,13 @@ endif
 
 ngl-tools-install: nodegl-install
 ifeq ($(TARGET_OS),Windows)
-	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) ngl-tools $(MESON_BUILDDIR)\\ngl-tools)
+	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) --backend $(MESON_BACKEND) ngl-tools $(MESON_BUILDDIR)\\ngl-tools)
 ifeq ($(DEBUG),yes)
 	# Set RuntimeLibrary to MultithreadedDLL using a script
 	# Note: MESON doesn't support
 	bash build_scripts/win64/patch_vcxproj_files.sh --set-runtime-library MultiThreadedDLL $(MESON_BUILDDIR)/ngl-tools
 endif
-	($(CMD) $(ACTIVATE) \&\& $(MESON_SETUP) --backend $(MESON_BACKEND) ngl-tools $(MESON_BUILDDIR)\\ngl-tools \&\& $(MESON_COMPILE) -C $(MESON_BUILDDIR)\\ngl-tools \&\& $(MESON_INSTALL) -C $(MESON_BUILDDIR)\\ngl-tools)
+	($(CMD) $(ACTIVATE) \&\& $(MESON_COMPILE) -C $(MESON_BUILDDIR)\\ngl-tools \&\& $(MESON_INSTALL) -C $(MESON_BUILDDIR)\\ngl-tools)
 else
 	(. $(ACTIVATE) && $(MESON_SETUP) --backend $(MESON_BACKEND) ngl-tools $(MESON_BUILDDIR)/ngl-tools && $(MESON_COMPILE) -C $(MESON_BUILDDIR)/ngl-tools && $(MESON_INSTALL) -C $(MESON_BUILDDIR)/ngl-tools)
 endif
