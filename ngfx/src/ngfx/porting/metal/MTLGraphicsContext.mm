@@ -36,8 +36,8 @@ void MTLGraphicsContext::setSurface(Surface *surface) {
     }
     if (surface && enableDepthStencil) {
         depthFormat = PixelFormat(MTLPixelFormatDepth24Unorm_Stencil8);
-        if (mtkView) mtkView.depthStencilPixelFormat = ::MTLPixelFormat(depthFormat);
-        else {
+        if (!surface->offscreen && mtkView) mtkView.depthStencilPixelFormat = ::MTLPixelFormat(depthFormat);
+        else if (!surface->offscreen) {
             mtl_surface->depthStencilTexture.reset(new MTLDepthStencilTexture);
             mtl_surface->depthStencilTexture->create(this, mtl_surface->w, mtl_surface->h);
         }

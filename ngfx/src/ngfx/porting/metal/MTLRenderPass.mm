@@ -26,6 +26,8 @@ MTLRenderPassDescriptor* MTLRenderPass::getDescriptor(MTLGraphicsContext* mtlCtx
             colorAttachments.push_back(colorAttachment);
             auto depthAttachment = mtlRenderPassDescriptor.depthAttachment;
             depthAttachment.texture = surface->depthStencilTexture.get()->v;
+            auto stencilAttachment = mtlRenderPassDescriptor.stencilAttachment;
+            stencilAttachment.texture = surface->depthStencilTexture.get()->v;
         }
     } else {
         mtlRenderPassDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];
