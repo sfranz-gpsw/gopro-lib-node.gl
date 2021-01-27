@@ -21,10 +21,11 @@
 #
 
 import sys
+import platform
 
 from PySide2 import QtCore, QtGui, QtWidgets
 
-from pynodegl_utils.com import query_subproc
+from pynodegl_utils.com import query_subproc, query_inplace
 from pynodegl_utils.config import Config
 from pynodegl_utils.scriptsmgr import ScriptsManager
 from pynodegl_utils.hooks import HooksController, HooksCaller
@@ -147,7 +148,11 @@ class MainWindow(QtWidgets.QSplitter):
         cfg.update(cfg_overrides)
 
         self._scripts_mgr.pause()
-        ret = query_subproc(query='scene', **cfg)
+        if platform.system() == 'Windows':
+            # TODO: query via subprocess
+            ret = query_inplace(query='scene', **cfg)
+        else:
+            ret = query_subproc(query='scene', **cfg)
         if 'error' in ret:
             self._scripts_mgr.update_filelist(ret['filelist'])
             self._scripts_mgr.resume()

@@ -20,6 +20,8 @@
 # under the License.
 #
 
+import os
+import platform
 import os.path as op
 
 from threading import Timer
@@ -28,7 +30,7 @@ from watchdog.events import FileSystemEventHandler
 
 from PySide2 import QtCore
 
-from .com import query_subproc
+from .com import query_subproc, query_inplace
 
 MIN_RELOAD_INTERVAL = 0.0015
 
@@ -66,7 +68,10 @@ class ScriptsManager(QtCore.QObject):
     @QtCore.Slot()
     def reload(self):
         self.pause()
-        odict = query_subproc(query='list', pkg=self._module_pkgname)
+        if platform.system() == 'Windows':
+            odict = query_inplace(query='list', pkg=self._module_pkgname)
+        else:
+            odict = query_subproc(query='list', pkg=self._module_pkgname)
         if 'error' in odict:
             self.update_filelist(odict['filelist'])
             self.resume()
