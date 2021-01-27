@@ -30,6 +30,6 @@ ngfx::Surface* surface_util_ngfx::create_surface_from_window_handle(ngfx::Graphi
         int platform, uintptr_t display, uintptr_t window, uintptr_t width, uintptr_t height) {
     ngfx::MTLSurface *mtl_surface = new ngfx::MTLSurface();
     mtl_surface->w = width; mtl_surface->h = height; mtl_surface->offscreen = false;
-    NSView *view = (NSView*)window;
+    mtl_surface->view = (NSView*)window;
     return mtl_surface;
 }
