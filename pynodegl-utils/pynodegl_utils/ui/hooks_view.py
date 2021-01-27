@@ -21,6 +21,7 @@
 #
 
 import os
+import platform
 import subprocess
 from PySide2 import QtCore, QtGui, QtWidgets
 
@@ -101,7 +102,7 @@ class _SpawnView(QtWidgets.QGroupBox):
         listen = self._listen_text.text()
         port = self._port_spin.value()
         cmd = ['ngl-desktop', '--host', listen, '--backend', backend, '--loglevel', loglevel, '--port', str(port)]
-        if os.name == 'nt':
+        if platform.system() == 'Windows':
             cmd[0] += '.exe'
         subprocess.Popen(cmd)
 

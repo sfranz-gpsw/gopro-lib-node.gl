@@ -22,6 +22,7 @@
 
 import hashlib
 import os
+import platform
 import os.path as op
 import tempfile
 import subprocess
@@ -29,6 +30,13 @@ import time
 
 from PySide2 import QtCore
 
+def path_norm(p):
+    if platform.system() == 'Windows':
+        p = p.replace('\\','/')
+    return p
+
+def path_join(path, *paths):
+    return path_norm(op.join(path, *paths))
 
 class _HooksCaller:
 
@@ -43,7 +51,7 @@ class _HooksCaller:
     def _get_hook(self, name):
         if not self._hooksdir:
             return None
-        hook = op.join(self._hooksdir, 'hook.' + name)
+        hook = path_join(self._hooksdir, 'hook.' + name)
         if not op.exists(hook):
             return
         return hook
@@ -53,6 +61,9 @@ class _HooksCaller:
         if not hook:
             return None
         cmd = [hook] + list(args)
+        if platform.system() == 'Windows':
+            cmd = ['bash.exe'] + cmd
+        print(cmd)
         return subprocess.check_output(cmd, text=True).rstrip()
 
     def get_session_info(self, session_id):
@@ -66,7 +77,7 @@ class _HooksCaller:
 
     def get_sessions(self):
         sessions = []
-        sessions_output = self._get_hook_output('get_sessions')
+        sessions_output = self._get_hook_output('get_sessions', platform.system())
         session_lines = sessions_output.splitlines() if sessions_output is not None else []
         for session_line in session_lines:
             session_id, session_desc = session_line.split(None, 1)
@@ -109,7 +120,7 @@ class _HooksCaller:
         sha256.update(str(statinfo.st_mtime).encode())
         digest = sha256.hexdigest()
         _, ext = op.splitext(filename)
-        return op.join(digest + ext)
+        return path_join(digest + ext)
 
     def sync_file(self, session_id, localfile):
         return self._get_hook_output('sync_file', session_id, localfile, self._hash_filename(localfile))
@@ -126,9 +137,9 @@ class HooksCaller:
         return self._callers[int(istr)], session_id
 
     def get_sessions(self):
-        if os.name == 'nt':
-            print('[HooksCaller::get_sessions] TODO: port to Windows')
-            return []
+        #if os.name == 'nt':
+        #    print('[HooksCaller::get_sessions] TODO: port to Windows')
+        #    return []
         '''
         Session IDs may be identical accross hook systems. A pathological case
         is with several instances of the same hook system, but it could

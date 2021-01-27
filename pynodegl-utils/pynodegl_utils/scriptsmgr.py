@@ -21,6 +21,7 @@
 #
 
 import os
+import platform
 import os.path as op
 
 from threading import Timer
@@ -67,7 +68,7 @@ class ScriptsManager(QtCore.QObject):
     @QtCore.Slot()
     def reload(self):
         self.pause()
-        if os.name == 'nt':
+        if platform.system() == 'Windows':
             odict = query_inplace(query='list', pkg=self._module_pkgname)
         else:
             odict = query_subproc(query='list', pkg=self._module_pkgname)
