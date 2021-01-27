@@ -1,13 +1,22 @@
 #!/bin/sh
 
 set -e
+OS=$1
 
-for session_dir in /tmp/ngl-desktop/*; do
+if [ $OS == "Windows" ]; then
+TMP_DIR=/mnt/c/Users/$USER/AppData/Local/Temp
+NGL_IPC=./ngl-ipc.exe
+else
+TMP_DIR=/tmp
+NGL_IPC=ngl-ipc
+fi
+
+for session_dir in $TMP_DIR/ngl-desktop/*; do
     [ ! -e "$session_dir/session" ] && continue  # for when no file is available
     session=${session_dir##*/}
     host=${session%%-*}
     port=${session##*-}
-    if ngl-ipc -x $host -p $port >/dev/null; then
+    if $NGL_IPC -x $host -p $port >/dev/null; then
         echo $session local ngl-desktop
     fi
 done
@@ -15,7 +24,7 @@ done
 for session in $NGL_DESKTOP_REMOTE_SESSIONS; do
     host=${session%%-*}
     port=${session##*-}
-    if ngl-ipc -x $host -p $port >/dev/null; then
+    if $NGL_IPC -x $host -p $port >/dev/null; then
         echo $session remote ngl-desktop
     fi
 done
