@@ -20,9 +20,10 @@
  */
 
 #include "swapchain_util_ngfx_d3d.h"
+#include "ngfx/graphics/GraphicsContext.h"
 using namespace ngfx;
 
-swapchain_util_ngfx *create(ngfx::GraphicsContext *ctx, uintptr_t window) {
+swapchain_util_ngfx *swapchain_util_ngfx::create(ngfx::GraphicsContext *ctx, uintptr_t window) {
     return new swapchain_util_ngfx_d3d(ctx, window);
 }
 
