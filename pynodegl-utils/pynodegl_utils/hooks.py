@@ -126,6 +126,9 @@ class HooksCaller:
         return self._callers[int(istr)], session_id
 
     def get_sessions(self):
+        if os.name == 'nt':
+            print('[HooksCaller::get_sessions] TODO: port to Windows')
+            return []
         '''
         Session IDs may be identical accross hook systems. A pathological case
         is with several instances of the same hook system, but it could

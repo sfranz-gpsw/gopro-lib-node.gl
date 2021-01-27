@@ -20,6 +20,7 @@
 # under the License.
 #
 
+import os
 import os.path as op
 
 from threading import Timer
@@ -66,7 +67,11 @@ class ScriptsManager(QtCore.QObject):
     @QtCore.Slot()
     def reload(self):
         self.pause()
-        odict = query_subproc(query='list', pkg=self._module_pkgname)
+        if os.name == 'nt':
+            print('[ScriptsManager::reload] TODO: port to Windows')
+            odict = {'filelist':[],'scenes':[]}
+        else:
+            odict = query_subproc(query='list', pkg=self._module_pkgname)
         if 'error' in odict:
             self.update_filelist(odict['filelist'])
             self.resume()
