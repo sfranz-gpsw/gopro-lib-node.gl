@@ -6,7 +6,7 @@ using namespace std;
 
 MTLRenderPassDescriptor* MTLRenderPass::getDescriptor(MTLGraphicsContext* mtlCtx, MTLFramebuffer* mtlFramebuffer,
        glm::vec4 clearColor, float clearDepth, uint32_t clearStencil) {
-    MTLRenderPassDescriptor* mtlRenderPassDescriptor;
+    MTLRenderPassDescriptor* mtlRenderPassDescriptor = nullptr;
     vector<MTLRenderPassColorAttachmentDescriptor*> colorAttachments;
     if (mtlFramebuffer->colorAttachments.empty()) {
         MTLSurface *surface = (MTLSurface*)mtlCtx->surface;
@@ -18,6 +18,12 @@ MTLRenderPassDescriptor* MTLRenderPass::getDescriptor(MTLGraphicsContext* mtlCtx
         if (mtkView) {
             mtlRenderPassDescriptor = mtkView.currentRenderPassDescriptor;
             colorAttachments.push_back(mtlRenderPassDescriptor.colorAttachments[0]);
+        }
+        else {
+            mtlRenderPassDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];
+            auto colorAttachment = mtlRenderPassDescriptor.colorAttachments[0];
+            //TODO: colorAttachment.texture = drawable.texture;
+            colorAttachments.push_back(colorAttachment);
         }
     } else {
         mtlRenderPassDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];

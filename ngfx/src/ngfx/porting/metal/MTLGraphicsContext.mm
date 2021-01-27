@@ -15,10 +15,11 @@ MTLGraphicsContext::~MTLGraphicsContext() {}
 
 void MTLGraphicsContext::setSurface(Surface *surface) {
     defaultOffscreenSurfaceFormat = PixelFormat(MTLPixelFormatRGBA8Unorm);
+    MTLSurface *mtl_surface = mtl(surface);
     MTKView *mtkView = nullptr;
     if (surface && !surface->offscreen) {
         offscreen = false;
-        NSView *view = mtl(surface)->view;
+        NSView *view = mtl_surface->view;
         if ([view class] == [MTKView class]) {
             mtkView = (MTKView*)view;
             mtkView.device = mtlDevice.v;
@@ -58,9 +59,9 @@ void MTLGraphicsContext::setSurface(Surface *surface) {
     };
     mtlDefaultOffscreenRenderPass = (MTLRenderPass*)getRenderPass(offscreenRenderPassConfig);
     if (surface && !surface->offscreen) {
-        CAMetalLayer* metalLayer = (CAMetalLayer*)mtkView.layer;
+        CAMetalLayer* metalLayer = (CAMetalLayer*)mtl_surface->view.layer;
         numSwapchainImages = metalLayer.maximumDrawableCount;
-        createSwapchainFramebuffers(mtkView.drawableSize.width, mtkView.drawableSize.height);
+        createSwapchainFramebuffers(metalLayer.drawableSize.width, metalLayer.drawableSize.height);
     }
     createBindings();
     this->surface = surface;
