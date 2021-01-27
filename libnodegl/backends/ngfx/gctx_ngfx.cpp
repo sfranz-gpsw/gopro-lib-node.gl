@@ -226,7 +226,7 @@ static int ngfx_end_draw(struct gctx *s, double t)
     gctx_ngfx *s_priv = (gctx_ngfx *)s;
     GraphicsContext *ctx = s_priv->graphics_context;
     ngfx_end_render_pass(s);
-    s_priv->cur_command_buffer->end();
+    s_priv->cur_command_buffer->end(); //TODO: in Metal backend, commit should be called after presentDrawable
     ctx->submit(s_priv->cur_command_buffer);
     if (s->config.offscreen && s->config.capture_buffer) {
         uint32_t size = s->config.width * s->config.height * 4;
