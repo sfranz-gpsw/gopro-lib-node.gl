@@ -2,9 +2,16 @@
 
 set -e
 
-session=$1
-ifile=$2
-ofile=$3
+OS=$1
+session=$2
+ifile=$3
+ofile=$4
+
+if [ $OS == "Windows" ]; then
+NGL_IPC=./ngl-ipc.exe
+else
+NGL_IPC=ngl-ipc
+fi
 
 host=${session%%-*}
 port=${session##*-}
@@ -16,4 +23,4 @@ if [ "$host" = "localhost" ]; then
 fi
 
 set -x
-ngl-ipc -x "$host" -p "$port" -u "$ofile=$ifile"
+$NGL_IPC -x "$host" -p "$port" -u "$ofile=$ifile"

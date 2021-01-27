@@ -20,6 +20,8 @@
 # under the License.
 #
 
+import os
+import platform
 import subprocess
 from PySide2 import QtCore, QtGui, QtWidgets
 
@@ -99,7 +101,10 @@ class _SpawnView(QtWidgets.QGroupBox):
         backend = self._config.CHOICES['backend'][self._backend_cbbox.currentIndex()]
         listen = self._listen_text.text()
         port = self._port_spin.value()
-        subprocess.Popen(['ngl-desktop', '--host', listen, '--backend', backend, '--loglevel', loglevel, '--port', str(port)])
+        cmd = ['ngl-desktop', '--host', listen, '--backend', backend, '--loglevel', loglevel, '--port', str(port)]
+        if platform.system() == 'Windows':
+            cmd[0] += '.exe'
+        subprocess.Popen(cmd)
 
 
 class HooksView(QtWidgets.QWidget):
