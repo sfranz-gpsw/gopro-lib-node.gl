@@ -327,7 +327,7 @@ else ifeq ($(TARGET_OS), Linux)
 	( \
 	  cd shader-tools && \
 	  cmake -H. -B$(CMAKE_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR)  -D$(NGFX_GRAPHICS_BACKEND)=ON && \
-	  cmake --build $(CMAKE_BUILD_DIR) -j8 && \
+	  cmake --build $(CMAKE_BUILD_DIR) -j8 --config $(CMAKE_BUILD_TYPE) && \
 	  cmake --install $(CMAKE_BUILD_DIR) --config $(CMAKE_BUILD_TYPE) --prefix ../external/linux/shader_tools_x64-linux \
 	)
 	cp external/linux/shader_tools_x64-linux/lib/libshader_tools.so $(PREFIX)/lib
@@ -335,7 +335,7 @@ else ifeq ($(TARGET_OS), Darwin)
 	( \
 	  cd shader-tools && \
 	  cmake -H. -B$(CMAKE_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR)  -D$(NGFX_GRAPHICS_BACKEND)=ON && \
-	  cmake --build $(CMAKE_BUILD_DIR) -j8 && \
+	  cmake --build $(CMAKE_BUILD_DIR) -j8 --config $(CMAKE_BUILD_TYPE) && \
 	  cmake --install $(CMAKE_BUILD_DIR) --config $(CMAKE_BUILD_TYPE) --prefix ../external/darwin/shader_tools_x64-darwin \
 	)
 	cp external/darwin/shader_tools_x64-darwin/lib/libshader_tools.dylib $(PREFIX)/lib
@@ -359,7 +359,7 @@ else ifeq ($(TARGET_OS), Linux)
 	( \
 	  cd ngfx && \
 	  cmake -H. -B$(CMAKE_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) -D$(NGFX_GRAPHICS_BACKEND)=ON && \
-	  cmake --build $(CMAKE_BUILD_DIR) -j8 && \
+	  cmake --build $(CMAKE_BUILD_DIR) -j8 --config $(CMAKE_BUILD_TYPE) && \
 	  cmake --install $(CMAKE_BUILD_DIR) --prefix ../external/linux/ngfx_x64-linux \
 	)
 	cp external/linux/ngfx_x64-linux/lib/libngfx.so $(PREFIX)/lib
@@ -367,7 +367,7 @@ else ifeq ($(TARGET_OS), Darwin)
 	( \
 	  cd ngfx && \
 	  cmake -H. -B$(CMAKE_BUILD_DIR) -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G $(CMAKE_GENERATOR) -D$(NGFX_GRAPHICS_BACKEND)=ON && \
-	  cmake --build $(CMAKE_BUILD_DIR) -j8 && \
+	  cmake --build $(CMAKE_BUILD_DIR) -j8 --config $(CMAKE_BUILD_TYPE) && \
 	  cmake --install $(CMAKE_BUILD_DIR) --config $(CMAKE_BUILD_TYPE) --prefix ../external/darwin/ngfx_x64-darwin \
 	)
 	cp external/darwin/ngfx_x64-darwin/lib/libngfx.dylib $(PREFIX)/lib
@@ -386,7 +386,7 @@ else ifeq ($(TARGET_OS), Linux)
 	( \
 	  cd ngl-debug-tools && \
 	  cmake -H. -B$(CMAKE_BUILD_DIR) -G $(CMAKE_GENERATOR) && \
-	  cmake --build $(CMAKE_BUILD_DIR) -j8 \
+	  cmake --build $(CMAKE_BUILD_DIR) -j8 --config $(CMAKE_BUILD_TYPE) \
 	)
 endif
 
