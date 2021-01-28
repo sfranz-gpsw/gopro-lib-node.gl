@@ -25,6 +25,8 @@ import os.path as op
 
 def path_norm(p):
     if platform.system() == 'Windows':
+        # This is a trick to produce a path that works in both WSL and Windows
+        p = op.relpath(p)
         p = p.replace('\\','/')
     return p
 
