@@ -56,10 +56,10 @@ endif
 endif
 
 ifeq ($(DEBUG),yes)
-CMAKE_BUILD_TYPE = "Debug"
+CMAKE_BUILD_TYPE = Debug
 CMAKE_BUILD_DIR = cmake-build-debug
 else
-CMAKE_BUILD_TYPE = "Release"
+CMAKE_BUILD_TYPE = Release
 CMAKE_BUILD_DIR = cmake-build-release
 endif
 
