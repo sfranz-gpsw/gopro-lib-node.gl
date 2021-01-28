@@ -61,7 +61,7 @@ class _HooksCaller:
 
     def get_session_info(self, session_id):
         ret = {}
-        session_info_output = self._get_hook_output('get_session_info', session_id)
+        session_info_output = self._get_hook_output('get_session_info', platform.system(), session_id)
         if session_info_output:
             for line in session_info_output.splitlines():
                 k, v = line.split('=', 1)
