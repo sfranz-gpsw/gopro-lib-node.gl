@@ -95,6 +95,7 @@ class _HooksCaller:
     def scene_change(self, session_id, local_scene, cfg):
         self._get_hook_output(
             'scene_change',
+            platform.system(),
             session_id,
             local_scene,
             'duration=%f' % cfg['duration'],

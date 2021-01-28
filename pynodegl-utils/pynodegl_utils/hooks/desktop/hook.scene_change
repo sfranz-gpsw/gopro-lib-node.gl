@@ -2,8 +2,16 @@
 
 set -e
 
-session=$1
-scenefile=$2
+OS=$1
+session=$2
+scenefile=$3
+
+if [ $OS == "Windows" ]; then
+NGL_IPC=./ngl-ipc.exe
+else
+NGL_IPC=ngl-ipc
+fi
+
 shift 2
 eval $@
 
@@ -12,7 +20,7 @@ port=${session##*-}
 
 set -x
 
-ngl-ipc -x "$host"              \
+$NGL_IPC -x "$host"              \
         -p "$port"              \
         -f "$scenefile"         \
         -t "$duration"          \
