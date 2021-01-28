@@ -29,14 +29,7 @@ import subprocess
 import time
 
 from PySide2 import QtCore
-
-def path_norm(p):
-    if platform.system() == 'Windows':
-        p = p.replace('\\','/')
-    return p
-
-def path_join(path, *paths):
-    return path_norm(op.join(path, *paths))
+from pynodegl_utils.path_util import *
 
 class _HooksCaller:
 
