@@ -116,7 +116,7 @@ class _HooksCaller:
         return path_join(digest + ext)
 
     def sync_file(self, session_id, localfile):
-        return self._get_hook_output('sync_file', session_id, localfile, self._hash_filename(localfile))
+        return self._get_hook_output('sync_file', platform.system(), session_id, localfile, self._hash_filename(localfile))
 
 
 class HooksCaller:
