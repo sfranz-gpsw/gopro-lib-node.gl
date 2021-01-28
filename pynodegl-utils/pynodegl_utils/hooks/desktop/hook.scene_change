@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -e
+set -ex
 
 OS=$1
 session=$2
@@ -12,7 +12,7 @@ else
 NGL_IPC=ngl-ipc
 fi
 
-shift 2
+shift 3
 eval $@
 
 host=${session%%-*}
