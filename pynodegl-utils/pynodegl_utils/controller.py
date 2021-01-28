@@ -35,7 +35,7 @@ def run():
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', dest='module', default='pynodegl_utils.examples',
                         help='set the module name containing the scene functions')
-    default_hooks_dir = path_join(op.relpath(op.dirname(__file__)), 'hooks', 'desktop')
+    default_hooks_dir = path_join(op.dirname(__file__), 'hooks', 'desktop')
     parser.add_argument('--hooks-dir', dest='hooksdirs',
                         default=[default_hooks_dir],
                         action='append',
