@@ -93,6 +93,8 @@ class _HooksCaller:
         return uint_color
 
     def scene_change(self, session_id, local_scene, cfg):
+        local_scene = (path_norm(local_scene))
+        print(local_scene)
         self._get_hook_output(
             'scene_change',
             platform.system(),
