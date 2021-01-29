@@ -97,8 +97,11 @@ static int cmd_configure(struct ngl_ctx *s, void *arg)
 {
     struct ngl_config *config = arg;
 
-    if (s->scene)
+    if (s->scene) {
+        if (s->gctx)
+            ngli_gctx_wait_idle(s->gctx);
         ngli_node_detach_ctx(s->scene, s);
+    }
     ngli_rnode_clear(&s->rnode);
 
     cmd_stop(s, arg);
@@ -210,6 +213,7 @@ static int cmd_set_capture_buffer(struct ngl_ctx *s, void *capture_buffer)
 static int cmd_set_scene(struct ngl_ctx *s, void *arg)
 {
     if (s->scene) {
+        ngli_gctx_wait_idle(s->gctx);
         ngli_node_detach_ctx(s->scene, s);
         ngl_node_unrefp(&s->scene);
     }
