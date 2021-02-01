@@ -26,37 +26,37 @@
 
 struct buffer *ngli_buffer_create(struct gctx *gctx)
 {
-    return gctx->class->buffer_create(gctx);
+    return gctx->clazz->buffer_create(gctx);
 }
 
 int ngli_buffer_init(struct buffer *s, int size, int usage)
 {
-    return s->gctx->class->buffer_init(s, size, usage);
+    return s->gctx->clazz->buffer_init(s, size, usage);
 }
 
 int ngli_buffer_upload(struct buffer *s, const void *data, int size)
 {
-    return s->gctx->class->buffer_upload(s, data, size);
+    return s->gctx->clazz->buffer_upload(s, data, size);
 }
 
 int ngli_buffer_download(struct buffer *s, void *data, uint32_t size, uint32_t offset)
 {
-    return s->gctx->class->buffer_download(s, data, size, offset);
+    return s->gctx->clazz->buffer_download(s, data, size, offset);
 }
 
 int ngli_buffer_map(struct buffer *s, int size, uint32_t offset, void **data)
 {
-    return s->gctx->class->buffer_map(s, size, offset, data);
+    return s->gctx->clazz->buffer_map(s, size, offset, data);
 }
 
 void ngli_buffer_unmap(struct buffer *s)
 {
-    s->gctx->class->buffer_unmap(s);
+    s->gctx->clazz->buffer_unmap(s);
 }
 
 void ngli_buffer_freep(struct buffer **sp)
 {
     if (!*sp)
         return;
-    (*sp)->gctx->class->buffer_freep(sp);
+    (*sp)->gctx->clazz->buffer_freep(sp);
 }
