@@ -324,7 +324,7 @@ static int allowed_node(const struct ngl_node *node, const int *allowed_ids)
 {
     if (!allowed_ids)
         return 1;
-    const int id = node->class->id;
+    const int id = node->clazz->id;
     for (int i = 0; allowed_ids[i] != -1; i++)
         if (id == allowed_ids[i])
             return 1;
@@ -494,7 +494,7 @@ int ngli_params_set(uint8_t *base_ptr, const struct node_param *par, va_list *ap
             struct ngl_node *node = va_arg(*ap, struct ngl_node *);
             if (!allowed_node(node, par->node_types)) {
                 LOG(ERROR, "%s (%s) is not an allowed type for %s",
-                    node->label, node->class->name, par->key);
+                    node->label, node->clazz->name, par->key);
                 return NGL_ERROR_INVALID_ARG;
             }
             ngl_node_unrefp((struct ngl_node **)dstp);
@@ -509,7 +509,7 @@ int ngli_params_set(uint8_t *base_ptr, const struct node_param *par, va_list *ap
             struct ngl_node *node = va_arg(*ap, struct ngl_node *);
             if (node && !allowed_node(node, par->node_types)) {
                 LOG(ERROR, "%s (%s) is not an allowed type for %s",
-                    node->label, node->class->name, par->key);
+                    node->label, node->clazz->name, par->key);
                 return NGL_ERROR_INVALID_ARG;
             }
             LOG(VERBOSE, "set %s to (%s,%p)", par->key, name, node);
@@ -653,7 +653,7 @@ int ngli_params_add(uint8_t *base_ptr, const struct node_param *par,
                 const struct ngl_node *e = add_elems[i];
                 if (!allowed_node(e, par->node_types)) {
                     LOG(ERROR, "%s (%s) is not an allowed type for %s list",
-                        e->label, e->class->name, par->key);
+                        e->label, e->clazz->name, par->key);
                     return NGL_ERROR_INVALID_ARG;
                 }
             }
