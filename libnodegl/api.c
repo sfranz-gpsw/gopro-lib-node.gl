@@ -499,7 +499,7 @@ static int backend_probe(struct ngl_backend *backend, const struct ngl_config *c
 
     backend->id         = config->backend;
     backend->string_id  = gctx->backend_str;
-    backend->name       = gctx->class->name;
+    backend->name       = gctx->clazz->name;
 
     ret = load_caps(backend, gctx);
     if (ret < 0)
