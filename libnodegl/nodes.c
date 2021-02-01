@@ -34,6 +34,7 @@
 #include "params.h"
 #include "utils.h"
 #include "nodes_register.h"
+#include "gctx.h"
 
 enum {
     STATE_INIT_FAILED   = -1,
@@ -469,6 +470,7 @@ done:
 
 void ngli_node_detach_ctx(struct ngl_node *node, struct ngl_ctx *ctx)
 {
+    ctx->gctx->clazz->wait_idle(ctx->gctx);
     int ret = node_set_ctx(node, NULL, ctx);
     ngli_assert(ret == 0);
 }
