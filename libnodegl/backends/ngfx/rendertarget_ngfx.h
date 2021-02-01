@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 GoPro Inc.
+ * Copyright 2018 GoPro Inc.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -19,26 +19,22 @@
  * under the License.
  */
 
-#include "swapchain.h"
-#include "gctx.h"
+#ifndef RENDERTARGET_NGFX_H
+#define RENDERTARGET_NGFX_H
 
-int ngli_swapchain_create(struct gctx *gctx)
-{
-    if (!gctx->class->swapchain_create)
-        return NGL_ERROR_UNSUPPORTED;
-    return gctx->class->swapchain_create(gctx);
-}
+#include "rendertarget.h"
+#include "ngfx/graphics/Framebuffer.h"
 
-void ngli_swapchain_destroy(struct gctx *gctx)
-{
-    if (!gctx->class->swapchain_destroy)
-        return;
-    gctx->class->swapchain_destroy(gctx);
-}
+struct rendertarget_ngfx {
+    struct rendertarget parent;
+    ngfx::RenderPass *render_pass = nullptr;
+    ngfx::Framebuffer *output_framebuffer = nullptr;
+};
 
-int ngli_swapchain_acquire_image(struct gctx *gctx, uint32_t *image_index)
-{
-    if (!gctx->class->swapchain_acquire_image)
-        return NGL_ERROR_UNSUPPORTED;
-    return gctx->class->swapchain_acquire_image(gctx, image_index);
-}
+struct rendertarget *ngli_rendertarget_ngfx_create(struct gctx *gctx);
+int ngli_rendertarget_ngfx_init(struct rendertarget *s, const struct rendertarget_params *params);
+void ngli_rendertarget_ngfx_resolve(struct rendertarget *s);
+void ngli_rendertarget_ngfx_read_pixels(struct rendertarget *s, uint8_t *data);
+void ngli_rendertarget_ngfx_freep(struct rendertarget **sp);
+
+#endif
