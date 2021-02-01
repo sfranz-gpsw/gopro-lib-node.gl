@@ -1,0 +1,7 @@
+.
+backends/gl
+backends/ngfx
+backends/vk
+tools/capture
+../ngfx/src
+../builddir/libnodegl
