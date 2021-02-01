@@ -157,10 +157,10 @@ int ngli_node_block_upload(struct ngl_node *node)
 
 static int get_node_data_type(const struct ngl_node *node)
 {
-    if (node->class->category == NGLI_NODE_CATEGORY_UNIFORM) {
+    if (node->clazz->category == NGLI_NODE_CATEGORY_UNIFORM) {
         const struct variable_priv *variable = node->priv_data;
         return variable->data_type;
-    } else if (node->class->category == NGLI_NODE_CATEGORY_BUFFER) {
+    } else if (node->clazz->category == NGLI_NODE_CATEGORY_BUFFER) {
         const struct buffer_priv *buffer = node->priv_data;
         return buffer->data_type;
     } else {
@@ -170,9 +170,9 @@ static int get_node_data_type(const struct ngl_node *node)
 
 static int get_node_data_count(const struct ngl_node *node)
 {
-    if (node->class->category == NGLI_NODE_CATEGORY_UNIFORM) {
+    if (node->clazz->category == NGLI_NODE_CATEGORY_UNIFORM) {
         return 0;
-    } else if (node->class->category == NGLI_NODE_CATEGORY_BUFFER) {
+    } else if (node->clazz->category == NGLI_NODE_CATEGORY_BUFFER) {
         const struct buffer_priv *buffer = node->priv_data;
         return buffer->count;
     } else {

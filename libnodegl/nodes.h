@@ -124,7 +124,7 @@ struct ngl_ctx {
 };
 
 struct ngl_node {
-    const struct node_class *class;
+    const struct node_class *clazz;
     struct ngl_ctx *ctx;
 
     int state;

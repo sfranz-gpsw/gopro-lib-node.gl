@@ -443,7 +443,7 @@ static int set_node_params(struct darray *nodes_array, char *str,
                            const struct ngl_node *node)
 {
     uint8_t *base_ptr = node->priv_data;
-    const struct node_param *params = node->class->params;
+    const struct node_param *params = node->clazz->params;
 
     if (!params)
         return 0;
@@ -457,7 +457,7 @@ static int set_node_params(struct darray *nodes_array, char *str,
         const struct node_param *par = ngli_node_param_find(node, str, &base_ptr);
         if (!par) {
             LOG(ERROR, "unable to find parameter %s.%s",
-                node->class->name, str);
+                node->clazz->name, str);
             return NGL_ERROR_INVALID_DATA;
         }
 
@@ -465,7 +465,7 @@ static int set_node_params(struct darray *nodes_array, char *str,
         int ret = parse_param(nodes_array, base_ptr, par, str);
         if (ret < 0) {
             LOG(ERROR, "unable to set node param %s.%s: %s",
-                node->class->name, par->key, NGLI_RET_STR(ret));
+                node->clazz->name, par->key, NGLI_RET_STR(ret));
             return ret;
         }
 
