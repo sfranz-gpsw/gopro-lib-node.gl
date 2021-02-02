@@ -366,7 +366,10 @@ gbackends_cfg = {
         'libs': ['dl'],
       },
       'darwin': {
-        'src': files('backends/vk/hwupload_videotoolbox_darwin_vk.m'),
+        'src': files(
+            'backends/vk/hwupload_videotoolbox_darwin_vk.m',
+            'backends/vk/mvk_util.m'
+        ),
         'deps': ['shaderc'],
         'libs': ['MoltenVK'],
         'frameworks': ['Metal'],
