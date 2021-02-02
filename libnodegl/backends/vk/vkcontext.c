@@ -43,6 +43,10 @@
 #include "nodegl.h"
 #include "vkcontext.h"
 
+#ifdef VK_USE_PLATFORM_MACOS_MVK
+# include "mvk_util.h"
+#endif
+
 
 #ifdef DEBUG_VK
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
@@ -478,6 +482,10 @@ static VkResult select_physical_device(struct vkcontext *s, const struct ngl_con
         LOG(ERROR, "no valid physical device found");
         return VK_ERROR_DEVICE_LOST;
     }
+
+#ifdef VK_USE_PLATFORM_MACOS_MVK
+    mvk_util_on_physical_device_created(s->phy_device);
+#endif
 
     LOG(DEBUG, "select physical device: %s, graphics queue: %d, present queue: %d",
         s->phy_device_props.deviceName, s->graphics_queue_index, s->present_queue_index);
