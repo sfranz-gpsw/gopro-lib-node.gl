@@ -399,6 +399,9 @@ gbackends_cfg = {
       'linux': {
       },
       'darwin': {
+        'src': files(
+          'backends/ngfx/hwupload_videotoolbox_darwin_ngfx.mm'
+        ),
       },
     },
   },
