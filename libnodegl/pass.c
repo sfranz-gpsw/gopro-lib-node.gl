@@ -195,6 +195,7 @@ static int register_block(struct pass *s, const char *name, struct ngl_node *blo
     }
 
     int writable = 0;
+    int variadic = 0;
     const struct pass_params *params = &s->params;
     if (params->properties) {
         const struct ngl_node *resprops_node = ngli_hmap_get(params->properties, name);
@@ -202,6 +203,7 @@ static int register_block(struct pass *s, const char *name, struct ngl_node *blo
             const struct resourceprops_priv *resprops = resprops_node->priv_data;
             if (resprops->variadic || resprops->writable)
                 type = NGLI_TYPE_STORAGE_BUFFER;
+            variadic = resprops->variadic;
             writable = resprops->writable;
         }
     }
@@ -211,6 +213,7 @@ static int register_block(struct pass *s, const char *name, struct ngl_node *blo
     struct pgcraft_block crafter_block = {
         .type     = type,
         .stage    = stage,
+        .variadic = variadic,
         .writable = writable,
         .block    = block,
         .buffer   = block_priv->buffer,
