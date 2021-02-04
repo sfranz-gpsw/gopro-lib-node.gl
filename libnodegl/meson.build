@@ -514,7 +514,11 @@ if host_system == 'windows' and cc.get_id() == 'msvc'
 
   lib_include_dirs += include_directories(vulkan_sdk_dir + '\\Include')
   cc_lib_dirs += vulkan_sdk_library_directories
+endif
 
+if meson.backend() == 'xcode'
+  add_global_arguments('-I/usr/local/include', language: [ 'c', 'cpp', 'objc', 'objcpp'])
+  add_global_link_arguments('-L/usr/local/lib', language: [ 'c', 'cpp', 'objc', 'objcpp'])
 endif
 
 #GPU Capture Options
