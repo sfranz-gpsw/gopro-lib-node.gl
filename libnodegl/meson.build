@@ -650,34 +650,35 @@ dest_datadir = get_option('datadir') / 'nodegl'
 install_data(files(specs_filename), install_dir: dest_datadir)
 install_data(files('android/java/OnFrameAvailableListener.java'), install_dir: dest_datadir / 'java/org/nodegl')
 
-# XXX: should we use an intermediate static_library() to share the objects
-# between the library and these tools?
-# https://git.archlinux.org/pacman.git/tree/meson.build?id=4533c6a8e0f39c7707e671b7f9687607b46f1417#n310
-# seem to imply some extract_all_objects(recursive: true)
-gen_specs = executable(
-  'gen_specs',
-  lib_src + files('gen_specs.c'),
-  dependencies: lib_deps,
-  build_by_default: false,
-  native: true,
-)
-specs_file = custom_target(
-  specs_filename,
-  command: gen_specs,
-  capture: true,
-  output: specs_filename,
-)
-run_target(
-  'updatespecs',
-  command: [cp, specs_file, meson.current_source_dir()],
-)
-
+if meson.backend() != 'xcode'
+  # XXX: should we use an intermediate static_library() to share the objects
+  # between the library and these tools?
+  # https://git.archlinux.org/pacman.git/tree/meson.build?id=4533c6a8e0f39c7707e671b7f9687607b46f1417#n310
+  # seem to imply some extract_all_objects(recursive: true)
+  gen_specs = executable(
+    'gen_specs',
+    lib_src + files('gen_specs.c'),
+    dependencies: lib_deps,
+    build_by_default: false,
+    native: true,
+  )
+  specs_file = custom_target(
+    specs_filename,
+    command: gen_specs,
+    capture: true,
+    output: specs_filename,
+  )
+  run_target(
+    'updatespecs',
+    command: [cp, specs_file, meson.current_source_dir()],
+  )
+endif
 
 #
 # Doc
 #
 
-if not get_option('small')
+if not get_option('small') and meson.backend() != 'xcode'
   gen_doc = executable(
     'gen_doc',
     lib_src + files('gen_doc.c'),
@@ -702,36 +703,39 @@ endif
 # OpenGL specifications
 #
 
-gl_xml = custom_target(
-  'gl.xml',
-  command: [find_program('curl'), 'https://raw.githubusercontent.com/KhronosGroup/OpenGL-Registry/master/xml/gl.xml', '-o', '@OUTPUT@'],
-  capture: false,
-  output: 'gl.xml',
-)
-gl_generated_files = custom_target(
-  'gl_generated_files',
-  command: [find_program('gen-gl-wrappers.py'), '@INPUT@', '@OUTPUT@'],
-  capture: false,
-  input: gl_xml,
-  output: ['glfunctions.h', 'gldefinitions_data.h', 'glwrappers.h'],
-)
-run_target(
-  'updateglwrappers',
-  command: [
-    cp,
-    # FIXME: In 0.56.0, we get "WARNING: custom_target 'gl_generated_files' has
-    # more than one output!  Using the first one.", so we need to do this
-    # instead of just using gl_generated_files. It also requires the "depends:"
-    # entry below.
-    # See https://github.com/mesonbuild/meson/issues/7891 for more information
-    gl_generated_files[0].full_path(),
-    gl_generated_files[1].full_path(),
-    gl_generated_files[2].full_path(),
-    meson.current_source_dir() / 'backends/gl'
-  ],
-  depends: gl_generated_files,
-)
+if meson.backend() != 'xcode'
 
+  gl_xml = custom_target(
+    'gl.xml',
+    command: [find_program('curl'), 'https://raw.githubusercontent.com/KhronosGroup/OpenGL-Registry/master/xml/gl.xml', '-o', '@OUTPUT@'],
+    capture: false,
+    output: 'gl.xml',
+  )
+  gl_generated_files = custom_target(
+    'gl_generated_files',
+    command: [find_program('gen-gl-wrappers.py'), '@INPUT@', '@OUTPUT@'],
+    capture: false,
+    input: gl_xml,
+    output: ['glfunctions.h', 'gldefinitions_data.h', 'glwrappers.h'],
+  )
+  run_target(
+    'updateglwrappers',
+    command: [
+      cp,
+      # FIXME: In 0.56.0, we get "WARNING: custom_target 'gl_generated_files' has
+      # more than one output!  Using the first one.", so we need to do this
+      # instead of just using gl_generated_files. It also requires the "depends:"
+      # entry below.
+      # See https://github.com/mesonbuild/meson/issues/7891 for more information
+      gl_generated_files[0].full_path(),
+      gl_generated_files[1].full_path(),
+      gl_generated_files[2].full_path(),
+      meson.current_source_dir() / 'backends/gl'
+    ],
+    depends: gl_generated_files,
+  )
+
+endif
 
 #
 # Tests
