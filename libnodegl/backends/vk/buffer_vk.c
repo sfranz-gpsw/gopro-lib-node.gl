@@ -29,10 +29,23 @@
 #include "gctx_vk.h"
 #include "vkcontext.h"
 
-#define USAGE (VK_BUFFER_USAGE_VERTEX_BUFFER_BIT  | \
-               VK_BUFFER_USAGE_INDEX_BUFFER_BIT   | \
-               VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | \
-               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)  \
+static VkBufferUsageFlags get_vk_buffer_usage_flags(int usage)
+{
+    VkBufferUsageFlags flags = 0;
+    if (usage & NGLI_BUFFER_USAGE_TRANSFER_SRC_BIT)
+        flags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    if (usage & NGLI_BUFFER_USAGE_TRANSFER_DST_BIT)
+        flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    if (usage & NGLI_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+        flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    if (usage & NGLI_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+        flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    if (usage & NGLI_BUFFER_USAGE_INDEX_BUFFER_BIT)
+        flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    if (usage & NGLI_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+        flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    return flags;
+}
 
 struct buffer *ngli_buffer_vk_create(struct gctx *gctx)
 {
@@ -55,7 +68,7 @@ int ngli_buffer_vk_init(struct buffer *s, int size, int usage)
     VkBufferCreateInfo buffer_create_info = {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = size,
-        .usage = USAGE,
+        .usage = get_vk_buffer_usage_flags(usage),
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
     VkResult res = vkCreateBuffer(vk->device, &buffer_create_info, NULL, &s_priv->buffer);
