@@ -565,7 +565,9 @@ static int inject_ublock(struct pgcraft *s, struct bstr *b, int stage)
         return NGL_ERROR_MEMORY;
     s->ubuffer[stage] = ubuffer;
 
-    int ret = ngli_buffer_init(ubuffer, block->size, NGLI_BUFFER_USAGE_DYNAMIC);
+    int ret = ngli_buffer_init(ubuffer, block->size, NGLI_BUFFER_USAGE_DYNAMIC_BIT      |
+                                                     NGLI_BUFFER_USAGE_TRANSFER_DST_BIT |
+                                                     NGLI_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
     if (ret < 0)
         return ret;
 
