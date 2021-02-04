@@ -125,15 +125,6 @@ int ngli_node_block_ref(struct ngl_node *node)
         s->buffer = ngli_buffer_create(gctx);
         if (!s->buffer)
             return NGL_ERROR_MEMORY;
-
-        int ret = ngli_buffer_init(s->buffer, s->data_size, s->usage);
-        if (ret < 0)
-            return ret;
-
-        ret = ngli_buffer_upload(s->buffer, s->data, s->data_size);
-        if (ret < 0)
-            return ret;
-
         s->buffer_last_upload_time = -1.;
     }
 

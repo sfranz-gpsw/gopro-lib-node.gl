@@ -45,7 +45,7 @@ struct ngl_node *ngli_node_geometry_generate_buffer(struct ngl_ctx *ctx, int typ
             goto fail;
     }
 
-    ret = ngli_node_attach_ctx(node, ctx);
+    ret = ngli_node_attach_ctx_internal(node, ctx);
     if (ret < 0)
         goto fail;
 

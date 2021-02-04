@@ -399,7 +399,7 @@ static int node_set_ctx(struct ngl_node *node, struct ngl_ctx *ctx, struct ngl_c
     return 0;
 }
 
-int ngli_node_attach_ctx(struct ngl_node *node, struct ngl_ctx *ctx)
+int ngli_node_attach_ctx_internal(struct ngl_node *node, struct ngl_ctx *ctx)
 {
     int ret = node_set_ctx(node, ctx, ctx);
     if (ret < 0)
@@ -409,6 +409,61 @@ int ngli_node_attach_ctx(struct ngl_node *node, struct ngl_ctx *ctx)
     if (ret < 0)
         return ret;
 
+    return 0;
+}
+
+int ngli_node_attach_ctx(struct ngl_node *node, struct ngl_ctx *ctx)
+{
+    ngli_darray_init(&ctx->pending_init_buffer_nodes, sizeof(struct ngl_node *), 0);
+    ngli_darray_init(&ctx->pending_init_block_nodes, sizeof(struct ngl_node *), 0);
+
+    int ret = node_set_ctx(node, ctx, ctx);
+    if (ret < 0)
+        goto done;
+
+    struct ngl_node **pending_init_buffer_nodes = ngli_darray_data(&ctx->pending_init_buffer_nodes);
+    for (int i = 0; i < ngli_darray_count(&ctx->pending_init_buffer_nodes); i++) {
+        struct ngl_node *buffer_node = pending_init_buffer_nodes[i];
+        struct buffer_priv *buffer_priv = buffer_node->priv_data;
+        struct buffer *buffer = buffer_priv->buffer;
+        const int data_size = buffer_priv->data_size;
+        const int usage = buffer_priv->usage;
+        const void *data = buffer_priv->data;
+
+        ret = ngli_buffer_init(buffer, data_size, usage);
+        if (ret < 0)
+            goto done;
+
+        ret = ngli_buffer_upload(buffer, data, data_size);
+        if (ret < 0)
+            goto done;
+    }
+
+    struct ngl_node **pending_init_block_nodes = ngli_darray_data(&ctx->pending_init_block_nodes);
+    for (int i = 0; i < ngli_darray_count(&ctx->pending_init_block_nodes); i++) {
+        struct ngl_node *block_node = pending_init_block_nodes[i];
+        struct block_priv *block_priv = block_node->priv_data;
+        struct buffer *buffer = block_priv->buffer;
+        const int data_size = block_priv->data_size;
+        const int usage = block_priv->usage;
+        const void *data = block_priv->data;
+
+        ret = ngli_buffer_init(buffer, data_size, usage);
+        if (ret < 0)
+            goto done;
+
+        ret = ngli_buffer_upload(buffer, data, data_size);
+        if (ret < 0)
+            goto done;
+    }
+
+    ret = ngli_node_prepare(node);
+    if (ret < 0)
+        goto done;
+
+done:
+    ngli_darray_reset(&ctx->pending_init_buffer_nodes);
+    ngli_darray_reset(&ctx->pending_init_block_nodes);
     return ret;
 }
 

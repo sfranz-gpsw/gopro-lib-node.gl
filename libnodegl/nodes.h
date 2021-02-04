@@ -92,6 +92,8 @@ struct ngl_ctx {
     struct darray modelview_matrix_stack;
     struct darray projection_matrix_stack;
     struct darray activitycheck_nodes;
+    struct darray pending_init_buffer_nodes;
+    struct darray pending_init_block_nodes;
     struct texture *font_atlas;
     struct pgcache pgcache;
 #if defined(HAVE_VAAPI_X11)
@@ -492,6 +494,7 @@ int ngli_prepare_draw(struct ngl_ctx *s, double t);
 void ngli_node_draw(struct ngl_node *node);
 
 int ngli_node_attach_ctx(struct ngl_node *node, struct ngl_ctx *ctx);
+int ngli_node_attach_ctx_internal(struct ngl_node *node, struct ngl_ctx *ctx);
 void ngli_node_detach_ctx(struct ngl_node *node, struct ngl_ctx *ctx);
 
 char *ngli_node_default_label(const char *class_name);

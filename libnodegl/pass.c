@@ -211,6 +211,11 @@ static int register_block(struct pass *s, const char *name, struct ngl_node *blo
         }
     }
 
+    if (block_priv->buffer_refcount == 1) {
+        if (!ngli_darray_push(&s->ctx->pending_init_block_nodes, &block_node))
+            return NGL_ERROR_MEMORY;
+    }
+
     struct pgcraft_block crafter_block = {
         .type     = type,
         .stage    = stage,
@@ -296,10 +301,18 @@ static int register_attribute(struct pass *s, const char *name, struct ngl_node 
         stride = fi->stride;
         offset = fi->offset;
         buffer = block_priv->buffer;
+        if (block_priv->buffer_refcount == 1) {
+            if (!ngli_darray_push(&s->ctx->pending_init_block_nodes, &block_node))
+                return NGL_ERROR_MEMORY;
+        }
     } else {
         stride = attribute_priv->data_stride;
         offset = 0;
         buffer = attribute_priv->buffer;
+        if (attribute_priv->buffer_refcount == 1) {
+            if (!ngli_darray_push(&s->ctx->pending_init_buffer_nodes, &attribute))
+                return NGL_ERROR_MEMORY;
+        }
     }
 
     /*
@@ -386,6 +399,11 @@ static int pass_graphics_init(struct pass *s)
         s->indices_buffer = indices_priv->buffer;
         s->indices_format = indices_priv->data_format;
         s->nb_indices = indices_priv->count;
+
+        if (indices_priv->buffer_refcount == 1) {
+            if (!ngli_darray_push(&s->ctx->pending_init_buffer_nodes, &indices))
+                return NGL_ERROR_MEMORY;
+        }
     } else {
         struct ngl_node *vertices = geometry_priv->vertices_buffer;
         struct buffer_priv *buffer_priv = vertices->priv_data;
