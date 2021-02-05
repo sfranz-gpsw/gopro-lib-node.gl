@@ -222,6 +222,7 @@ int ngli_pipeline_ngfx_init(pipeline *s, const pipeline_params *params)
     } else {
         ngli_assert(0);
     }
+
     return 0;
 }
 
@@ -372,6 +373,7 @@ static void bind_textures(CommandBuffer *cmd_buf, pipeline *s) {
         auto texture_info = shader_module->findDescriptorInfo(texture_desc.name);
         if (!texture_info) continue;
         const texture_ngfx *texture = (texture_ngfx *)binding->texture;
+        if (!texture) texture = (texture_ngfx *)gctx->dummy_texture;
         LOG(INFO, "bind texture: [%d][%s]: %p set: %d", j, binding->desc.name, texture, texture_info->set);
         if (texture) gctx->graphics->bindTexture(cmd_buf, texture->v, texture_info->set);
     }
