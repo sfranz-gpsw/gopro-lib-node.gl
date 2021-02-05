@@ -112,6 +112,23 @@ static int create_offscreen_resources(struct gctx *s) {
     return 0;
 }
 
+static int create_dummy_texture(struct gctx *s) {
+    gctx_ngfx *s_priv = (gctx_ngfx *)s;
+    auto &dummy_texture = s_priv->dummy_texture;
+    dummy_texture = ngli_texture_create(s);
+    texture_params dummy_texture_params = {
+        .type = NGLI_TEXTURE_TYPE_2D,
+        .format = NGLI_FORMAT_R8G8B8A8_UNORM,
+        .width = 1,
+        .height = 1,
+        .samples = 1,
+        .usage = NGLI_TEXTURE_USAGE_SAMPLED_BIT | NGLI_TEXTURE_USAGE_TRANSFER_SRC_BIT
+    };
+
+    ngli_texture_init(dummy_texture, &dummy_texture_params);
+    return 0;
+}
+
 static void ngfx_set_clear_color(struct gctx *s, const float *color);
 
 static int ngfx_init(struct gctx *s)
@@ -149,6 +166,8 @@ static int ngfx_init(struct gctx *s)
     else {
         create_offscreen_resources(s);
     }
+
+    create_dummy_texture(s);
 
     const int *viewport = config->viewport;
     if (viewport[2] > 0 && viewport[3] > 0) {
@@ -257,8 +276,10 @@ static void ngfx_destroy(struct gctx *s)
 #endif
     auto output_color_texture = ((texture *)ctx->offscreen_resources.color_texture);
     auto output_depth_texture = ((texture *)ctx->offscreen_resources.depth_texture);
+    auto dummy_texture = ctx->dummy_texture;
     if (output_depth_texture) ngli_texture_freep(&output_depth_texture);
     if (output_color_texture) ngli_texture_freep(&output_color_texture);
+    if (dummy_texture) ngli_texture_freep(&dummy_texture);
     if (ctx->default_rendertarget) ngli_rendertarget_freep(&ctx->default_rendertarget);
     if (ctx->swapchain_util) delete ctx->swapchain_util;
     delete ctx->graphics;
