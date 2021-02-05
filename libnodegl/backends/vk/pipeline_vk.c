@@ -738,7 +738,7 @@ int ngli_pipeline_vk_update_texture(struct pipeline *s, int index, struct textur
 
     struct texture_binding *texture_binding = ngli_darray_get(&s_priv->texture_bindings, index);
     ngli_assert(texture_binding);
-
+    LOG(INFO, "binding: [%d][%s]: %p", index, texture_binding->desc.name, texture);
     texture_binding->texture = texture;
 
     if (texture) {
