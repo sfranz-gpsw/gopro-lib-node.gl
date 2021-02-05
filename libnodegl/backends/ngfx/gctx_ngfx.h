@@ -49,6 +49,8 @@ struct gctx_ngfx {
         texture *color_texture = nullptr, *depth_texture = nullptr;
         rendertarget *rt = nullptr;
     } offscreen_resources;
+
+    texture *dummy_texture = nullptr;
     
     swapchain_util_ngfx *swapchain_util = nullptr;
 };
