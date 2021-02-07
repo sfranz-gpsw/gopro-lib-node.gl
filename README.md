@@ -55,6 +55,7 @@ Following are how-to guides on various specific usages:
 - [Shaders][expl-shaders]
 - [Media (video) time remapping][expl-time-remap]
 - [The maths behind the YCbCr to RGBA color matrix][expl-colormatrix]
+- [How the Noise node works][expl-noise]
 
 ### 🗜 Reference documentation
 
@@ -75,6 +76,7 @@ Following are how-to guides on various specific usages:
 [expl-techchoices]:      /doc/expl/techchoices.md
 [expl-time-remap]:       /doc/expl/media-time-remapping.md
 [expl-colormatrix]:      /doc/expl/colormatrix.md
+[expl-noise]:            /doc/expl/noise.md
 [ref-libnodegl]:         /libnodegl/doc/libnodegl.md
 [ref-pynodegl]:          /doc/ref/pynodegl.md
 [ref-pynodegl-utils]:    /doc/ref/pynodegl-utils.md
