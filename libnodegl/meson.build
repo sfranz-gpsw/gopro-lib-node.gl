@@ -212,6 +212,9 @@ lib_deps = [
   dependency('libsxplayer', version: '>= 9.7.0'),
   dependency('threads'),
 ]
+if (cc.get_id() == 'msvc')
+  lib_deps += dependency('libpthreads')
+endif
 
 lib_c_args = []
 lib_include_dirs = []
@@ -427,24 +430,24 @@ ngfx_deps += json_dep
 
 if host_system == 'windows'
   spirv_cross_link_args = [
-    '-L' + meson.current_source_dir() + '\\..\\external\\win64\\spirv_cross_x64-windows\\lib',
+    '-L' + meson.current_source_dir() + '\\..\\external\\windows\\spirv_cross_x64-windows\\lib',
     '-lspirv-cross-cpp', '-lspirv-cross-core', '-lspirv-cross-glsl', '-lspirv-cross-hlsl', '-lspirv-cross-msl', '-lspirv-cross-reflect', '-lspirv-cross-util', '-lspirv-cross-c'
   ]
 
   glm_dep = declare_dependency(
-    include_directories: [ '../external/win64/glm-0.9.9.8/glm' ]
+    include_directories: [ '../external/windows/glm-0.9.9.8/glm' ]
   )
   ngfx_deps += glm_dep
 
-  ngfx_includes = [ '../external/win64/ngfx_x64-windows/include' ]
+  ngfx_includes = [ '../external/windows/ngfx_x64-windows/include' ]
   if ngfx_graphics_backend == 'NGFX_GRAPHICS_BACKEND_DIRECT3D12'
-    ngfx_includes += '../external/win64/d3dx12'
+    ngfx_includes += '../external/windows/d3dx12'
   endif
   ngfx_dep = declare_dependency(
     compile_args: ngfx_cflags,
     include_directories: ngfx_includes,
     link_args: [
-      '-L' + meson.current_source_dir() + '\\..\\external\\win64\\ngfx_x64-windows\\lib', '-lngfx',
+      '-L' + meson.current_source_dir() + '\\..\\external\\windows\\ngfx_x64-windows\\lib', '-lngfx',
       '-ld3d12', '-ldxgi', '-ld3dcompiler'
     ] + spirv_cross_link_args,
   )
@@ -452,7 +455,7 @@ if host_system == 'windows'
 
   shader_tools_dep = declare_dependency(
     include_directories: [ '../shader-tools/src' ],
-    link_args: [ '-L' + meson.current_source_dir() + '\\..\\external\\win64\\shader_tools_x64-windows\\lib', '-lshader_tools' ],
+    link_args: [ '-L' + meson.current_source_dir() + '\\..\\external\\windows\\shader_tools_x64-windows\\lib', '-lshader_tools' ],
   )
   ngfx_deps += shader_tools_dep
 elif host_system == 'linux'
@@ -513,7 +516,6 @@ if host_system == 'windows' and cc.get_id() == 'msvc'
   vulkan_sdk_library_directories = [ vulkan_sdk_dir + '\\Lib']
 
   cc_lib_dirs += windows_sdk_library_directories
-  lib_include_dirs += include_directories(external_dir + '\\win64\\gl\\include')
 
   lib_include_dirs += include_directories(vulkan_sdk_dir + '\\Include')
   cc_lib_dirs += vulkan_sdk_library_directories
@@ -541,7 +543,7 @@ if enable_renderdoc_capture
   conf_data.set10('ENABLE_CAPTURE', true)
   if host_system == 'windows'
     renderdoc_dep = declare_dependency(
-      include_directories: [ '..\\external\\win64\\RenderDoc_1.11_64' ]
+      include_directories: [ '..\\external\\windows\\RenderDoc_1.11_64' ]
     )
   else
     renderdoc_dep = declare_dependency(
@@ -555,7 +557,6 @@ endif
 
 foreach gbackend_name, gbackend_cfg : gbackends_cfg
   opt_gbackend = get_option('gbackend-' + gbackend_name)
-
   host_backend_cfg = gbackend_cfg.get('hosts_cfg').get(host_system, {})
   gbackend_deps = []
   foreach dep : host_backend_cfg.get('deps', [])
