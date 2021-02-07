@@ -23,7 +23,9 @@
 import array
 import pynodegl as ngl
 from pynodegl_utils.misc import scene
+from pynodegl_utils.toolbox.colors import COLORS
 from pynodegl_utils.tests.cmp_cuepoints import test_cuepoints
+from pynodegl_utils.tests.cmp_fingerprint import test_fingerprint
 from pynodegl_utils.tests.debug import get_debug_points
 
 from pynodegl_utils.tests.data import (
@@ -337,4 +339,27 @@ def data_integer_iovars(cfg):
     geometry = ngl.Quad(corner=(-1, -1, 0), width=(2, 0, 0), height=(0, 2, 0))
     render = ngl.Render(geometry, program)
     render.update_vert_resources(color_u32=ngl.UniformIVec4(value=(0x50, 0x80, 0xa0, 0xff)))
+    return render
+
+
+@test_fingerprint(nb_keyframes=30, tolerance=1)
+@scene()
+def data_noise(cfg):
+    cfg.aspect_ratio = (1, 1)
+    cfg.duration = 3
+    vert = '''void main() {
+    ngl_out_pos = ngl_projection_matrix * ngl_modelview_matrix * ngl_position;
+    ngl_out_pos += vec4(wiggle_x, wiggle_y, 0, 0);
+}
+'''
+    frag = '''void main() {
+    ngl_out_color = color;
+}
+'''
+
+    geometry = ngl.Circle(radius=0.25, npoints=6)
+    program = ngl.Program(vertex=vert, fragment=frag)
+    render = ngl.Render(geometry, program)
+    render.update_vert_resources(wiggle_x=ngl.Noise(seed=3000), wiggle_y=ngl.Noise(seed=3001))
+    render.update_frag_resources(color=ngl.UniformVec4(value=COLORS['white']))
     return render
