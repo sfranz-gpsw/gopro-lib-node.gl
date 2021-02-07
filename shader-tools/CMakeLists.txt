@@ -7,7 +7,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set (EXTERNAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../external)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-set (NGFX_DIR ${EXTERNAL_DIR}/win64/ngfx_x64-windows)
+set (NGFX_DIR ${EXTERNAL_DIR}/windows/ngfx_x64-windows)
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 set (NGFX_DIR ${EXTERNAL_DIR}/linux/ngfx_x64-linux)
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -19,22 +19,17 @@ set (NGFX_LIBRARY_DIRS ${NGFX_DIR}/lib)
 set (JSON_DIR ${EXTERNAL_DIR}/json)
 set (JSON_INCLUDE_DIRS ${JSON_DIR}/include)
 
+find_package (PkgConfig REQUIRED)
+pkg_check_modules(SHADERC REQUIRED shaderc)
+
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
-set (SHADERC_DIR ${EXTERNAL_DIR}/win64/shaderc_x64-windows)
-set (SHADERC_INCLUDE_DIRS ${SHADERC_DIR}/include)
-set (SHADERC_LIBRARY_DIRS ${SHADERC_DIR}/lib)
-set (SHADERC_LIBRARIES shaderc_shared)
-
-set (SPIRV_CROSS_DIR ${EXTERNAL_DIR}/win64/spirv_cross_x64-windows)
+set (SPIRV_CROSS_DIR ${EXTERNAL_DIR}/windows/spirv_cross_x64-windows)
 set (SPIRV_CROSS_INCLUDE_DIRS ${SPIRV_CROSS_DIR}/include)
 set (SPIRV_CROSS_LIBRARY_DIRS ${SPIRV_CROSS_DIR}/lib)
 set (SPIRV_CROSS_LIBRARIES spirv-cross-cpp spirv-cross-core spirv-cross-glsl spirv-cross-hlsl spirv-cross-msl spirv-cross-reflect spirv-cross-util spirv-cross-c)
 
 else()
-
-find_package (PkgConfig REQUIRED)
-pkg_check_modules(SHADERC REQUIRED shaderc)
 
 set (SPIRV_CROSS_DIR /usr/local)
 set (SPIRV_CROSS_INCLUDE_DIRS ${SPIRV_CROSS_DIR}/include)
