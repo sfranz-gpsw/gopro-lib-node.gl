@@ -23,6 +23,16 @@
 import os
 import os.path as op
 import sys
+import platform
+
+if platform.system() == 'Windows':
+    prefix = 'venv'
+    os.add_dll_directory(os.getcwd() + f'/{prefix}/Scripts')
+    env_path = os.getenv("PATH").split(';')
+    for p in env_path:
+        if os.path.exists(p):
+            os.add_dll_directory(p)
+
 
 from pynodegl_utils.com import load_script
 
