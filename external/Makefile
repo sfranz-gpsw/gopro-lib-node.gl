@@ -38,8 +38,8 @@ all: $(DEPENDENCIES)
 MoltenVK: MoltenVK-$(MOLTENVK_VERSION)
 	ln -snf $< $@
 
-MoltenVK-$(MOLTENVK_VERSION): MoltenVK-$(MOLTENVK_VERSION).tar.gz
-	$(TAR) xf $<
+MoltenVK-$(MOLTENVK_VERSION): | MoltenVK-$(MOLTENVK_VERSION).tar.gz
+	$(TAR) xf MoltenVK-$(MOLTENVK_VERSION).tar.gz
 
 MoltenVK-$(MOLTENVK_VERSION).tar.gz:
 	$(CURL) -L https://github.com/KhronosGroup/MoltenVK/archive/v$(MOLTENVK_VERSION).tar.gz -o $@
@@ -47,8 +47,8 @@ MoltenVK-$(MOLTENVK_VERSION).tar.gz:
 shaderc: shaderc-$(SHADERC_VERSION)
 	ln -snf $< $@
 
-shaderc-$(SHADERC_VERSION): shaderc-$(SHADERC_VERSION).tar.gz
-	$(TAR) xf $<
+shaderc-$(SHADERC_VERSION): | shaderc-$(SHADERC_VERSION).tar.gz
+	$(TAR) xf shaderc-$(SHADERC_VERSION).tar.gz
 
 shaderc-$(SHADERC_VERSION).tar.gz:
 	$(CURL) -L https://github.com/google/shaderc/archive/v$(SHADERC_VERSION).tar.gz -o $@
@@ -66,8 +66,8 @@ shaderc-$(SHADERC_VERSION).tar.gz:
 sxplayer: sxplayer-$(SXPLAYER_COMMIT_ID)
 	ln -snf $< $@
 
-sxplayer-$(SXPLAYER_COMMIT_ID): sxplayer-$(SXPLAYER_COMMIT_ID).zip
-	$(UNZIP) $<
+sxplayer-$(SXPLAYER_COMMIT_ID): | sxplayer-$(SXPLAYER_COMMIT_ID).zip
+	$(UNZIP) sxplayer-$(SXPLAYER_COMMIT_ID).zip
 
 sxplayer-$(SXPLAYER_COMMIT_ID).zip:
 	$(CURL) -L https://github.com/jmoguillansky-gpsw/sxplayer/archive/$(SXPLAYER_COMMIT_ID).zip -o $@
@@ -75,8 +75,8 @@ sxplayer-$(SXPLAYER_COMMIT_ID).zip:
 pkgconf: pkgconf-$(PKGCONF_COMMIT_ID)
 	ln -snf $< $@
 
-pkgconf-$(PKGCONF_COMMIT_ID): pkgconf-$(PKGCONF_COMMIT_ID).zip
-	$(UNZIP) $<
+pkgconf-$(PKGCONF_COMMIT_ID): | pkgconf-$(PKGCONF_COMMIT_ID).zip
+	$(UNZIP) pkgconf-$(PKGCONF_COMMIT_ID).zip
 
 pkgconf-$(PKGCONF_COMMIT_ID).zip:
 	$(CURL) -L https://codeload.github.com/pkgconf/pkgconf/zip/$(PKGCONF_COMMIT_ID) -o $@
