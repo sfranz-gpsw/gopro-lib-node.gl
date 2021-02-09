@@ -21,12 +21,19 @@
 
 TAR  ?= tar
 CURL ?= curl
+UNZIP ?= unzip
 
 MOLTENVK_VERSION ?= 1.1.1
 SHADERC_VERSION  ?= 2020.3
-SXPLAYER_VERSION ?= 9.7.0
+SXPLAYER_COMMIT_ID ?= d2e76248e3e35f0e2f53fbccb5ee3b03e78a7498
+PKGCONF_COMMIT_ID ?= dcf529b83d621ed09e99e41fc35fdffd068bd87a
 
-all: sxplayer
+DEPENDENCIES = sxplayer
+ifeq ($(TARGET_OS),Windows)
+DEPENDENCIES += pkgconf
+endif
+
+all: $(DEPENDENCIES)
 
 MoltenVK: MoltenVK-$(MOLTENVK_VERSION)
 	ln -snf $< $@
@@ -56,17 +63,22 @@ shaderc-$(SHADERC_VERSION).tar.gz:
 # The `touch` command makes sure the source target directory is more recent
 # than the prerequisite directory of the sxplayer rule. If this isn't true, the
 # symlink will be re-recreated on the next `make` call
-sxplayer: sxplayer-$(SXPLAYER_VERSION)
-ifneq ($(TARGET_OS),MinGW-w64)
+sxplayer: sxplayer-$(SXPLAYER_COMMIT_ID)
 	ln -snf $< $@
-else
-	cp -r $< $@
-endif
 
-sxplayer-$(SXPLAYER_VERSION): sxplayer-$(SXPLAYER_VERSION).tar.gz
-	$(TAR) -xf $<
+sxplayer-$(SXPLAYER_COMMIT_ID): sxplayer-$(SXPLAYER_COMMIT_ID).zip
+	$(UNZIP) $<
 
-sxplayer-$(SXPLAYER_VERSION).tar.gz:
-	$(CURL) -L https://github.com/Stupeflix/sxplayer/archive/v$(SXPLAYER_VERSION).tar.gz -o $@
+sxplayer-$(SXPLAYER_COMMIT_ID).zip:
+	$(CURL) -L https://github.com/jmoguillansky-gpsw/sxplayer/archive/$(SXPLAYER_COMMIT_ID).zip -o $@
+
+pkgconf: pkgconf-$(PKGCONF_COMMIT_ID)
+	ln -snf $< $@
+
+pkgconf-$(PKGCONF_COMMIT_ID): pkgconf-$(PKGCONF_COMMIT_ID).zip
+	$(UNZIP) $<
+
+pkgconf-$(PKGCONF_COMMIT_ID).zip:
+	$(CURL) -L https://codeload.github.com/pkgconf/pkgconf/zip/$(PKGCONF_COMMIT_ID) -o $@
 
 .PHONY: all
