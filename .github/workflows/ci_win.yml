@@ -85,4 +85,5 @@ jobs:
           bash build_scripts/windows/set_vcvars.sh
           export VCPKG_DIR='D:\a\gopro-lib-node.gl\gopro-lib-node.gl\vcpkg'
           source build_scripts/windows/setenv.sh
+          bash build_scripts/windows/patch_pkg_config_files.sh
           make
